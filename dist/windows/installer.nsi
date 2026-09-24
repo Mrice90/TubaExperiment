@@ -18,6 +18,16 @@ SetCompressor /SOLID lzma
 !define MUI_ICON "icon.ico"
 !define MUI_UNICON "icon.ico"
 
+; Version metadata — shows in Explorer file properties and the
+; Programs & Features entry. Publisher is unsigned for now (no budget
+; for a code-signing cert); SmartScreen will still prompt on first run.
+VIProductVersion "${VERSION}.0"
+VIAddVersionKey "CompanyName" "Grumpy Goose Studio"
+VIAddVersionKey "ProductName" "Infinite Conquest"
+VIAddVersionKey "ProductVersion" "${VERSION}"
+VIAddVersionKey "FileDescription" "Infinite Conquest Alpha ${VERSION} Setup"
+VIAddVersionKey "LegalCopyright" "© Grumpy Goose Studio"
+
 !insertmacro MUI_PAGE_WELCOME
 !insertmacro MUI_PAGE_DIRECTORY
 !insertmacro MUI_PAGE_INSTFILES
@@ -49,6 +59,10 @@ Section "Game" SecGame
                    "UninstallString" "$INSTDIR\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
                    "DisplayIcon" "$INSTDIR\icon.ico"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
+                   "Publisher" "Grumpy Goose Studio"
+  WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
+                   "DisplayVersion" "${VERSION}"
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
                    "NoModify" 1
   WriteRegDWORD HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
