@@ -2933,10 +2933,10 @@ public final class InfiniteConquestGui extends JFrame {
         /** Floating damage number with a tile hit-flash. */
         private void drawDamage(Graphics2D g, JButton targetButton, Point target, float progress) {
             String text = animation.overlayText() == null ? "" : animation.overlayText();
-            // Hit-flash: warm wash over the struck tile during the first ~150ms.
+            // Hit-flash: warm wash over the struck tile, easing out so it melts away.
             float flashWindow = Fx.HIT_FLASH_MS / (float) Fx.DAMAGE_FLOAT_MS;
             if (progress < flashWindow && targetButton != null) {
-                float flashAlpha = 1f - progress / flashWindow;
+                float flashAlpha = 1f - Fx.easeOutCubic(progress / flashWindow);
                 Rectangle tile = SwingUtilities.convertRectangle(
                         targetButton, targetButton.getBounds(), this);
                 g.setComposite(AlphaComposite.SrcOver.derive(0.55f * flashAlpha));
@@ -2944,10 +2944,12 @@ public final class InfiniteConquestGui extends JFrame {
                 g.fillRoundRect(tile.x + 4, tile.y + 4,
                         Math.max(8, tile.width - 8), Math.max(8, tile.height - 8), 18, 18);
             }
-            // Rising number: pops in, drifts up, fades out.
+            // Rising number: pops in, drifts up, holds so it can be read, then
+            // eases out on the fade instead of snapping away.
             float rise = Fx.easeOutCubic(Math.min(1f, progress * 1.15f));
             float pop = 1f + 0.35f * Math.max(0f, 1f - progress * 5f);
-            float alpha = progress < 0.7f ? 1f : Math.max(0f, 1f - (progress - 0.7f) / 0.3f);
+            float alpha = progress < 0.55f ? 1f
+                    : 1f - Fx.easeInOutQuad(Math.min(1f, (progress - 0.55f) / 0.45f));
             Font font = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(12, Math.round(30 * pop)));
             g.setFont(font);
             FontMetrics metrics = g.getFontMetrics();
@@ -2970,10 +2972,11 @@ public final class InfiniteConquestGui extends JFrame {
             g.setFont(font);
             FontMetrics metrics = g.getFontMetrics();
             int textWidth = metrics.stringWidth(bannerText);
-            float sweep = Fx.easeInOutQuad(Math.min(1f, bp / 0.55f));
+            float sweep = Fx.easeInOutQuad(Math.min(1f, bp / 0.45f));
             int x = Math.round(-textWidth + (getWidth() / 2f - textWidth / 2f + textWidth) * sweep);
             int y = getHeight() / 2;
-            float alpha = bp < 0.8f ? 1f : Math.max(0f, 1f - (bp - 0.8f) / 0.2f);
+            float alpha = bp < 0.70f ? 1f
+                    : 1f - Fx.easeInOutQuad(Math.min(1f, (bp - 0.70f) / 0.30f));
             g.setComposite(AlphaComposite.SrcOver.derive(alpha));
             g.setColor(new Color(0, 0, 0, 170));
             g.drawString(bannerText, x + 3, y + 3);
@@ -3027,7 +3030,8 @@ public final class InfiniteConquestGui extends JFrame {
             g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             if (shaking) {
                 float shakeProgress = (now - shakeStartedAt) / (float) Fx.nanos(Fx.SHAKE_MS);
-                float decay = 1f - shakeProgress;
+                // Ease the decay so the board settles instead of snapping back.
+                float decay = 1f - Fx.easeOutCubic(Math.min(1f, shakeProgress));
                 int dx = Math.round((float) (Math.sin(shakeProgress * 38.0) * 6.0 * decay * shakeIntensity));
                 int dy = Math.round((float) (Math.cos(shakeProgress * 31.0) * 6.0 * decay * shakeIntensity));
                 g.translate(dx, dy);

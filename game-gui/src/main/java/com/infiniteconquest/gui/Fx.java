@@ -20,18 +20,18 @@ public final class Fx {
     public static final int GENERIC_MS = 800;
 
     // ---- battle overlay (new in 0.7.0) -------------------------------------
-    /** Floating damage numbers: rise and fade. */
-    public static final int DAMAGE_FLOAT_MS = 700;
+    /** Floating damage numbers: rise, hold, and a slow readable fade. */
+    public static final int DAMAGE_FLOAT_MS = 1200;
     /** White/red flash washed over a struck tile. */
-    public static final int HIT_FLASH_MS = 150;
+    public static final int HIT_FLASH_MS = 350;
     /** Glass-pane shake on capital hits and lethal destruction. */
-    public static final int SHAKE_MS = 250;
+    public static final int SHAKE_MS = 450;
     /** "YOUR TURN / ENEMY TURN" banner sweep. */
-    public static final int TURN_BANNER_MS = 600;
+    public static final int TURN_BANNER_MS = 1300;
     /** Board badge lifetime (damage/destroyed/blink labels). */
-    public static final int BADGE_MS = 1600;
+    public static final int BADGE_MS = 2200;
     /** Badge fade in/out at each end of its lifetime. */
-    public static final int BADGE_FADE_MS = 250;
+    public static final int BADGE_FADE_MS = 500;
     /** Deploy landing pop: scale overshoot after the card arc lands. */
     public static final int LAND_POP_MS = 120;
 

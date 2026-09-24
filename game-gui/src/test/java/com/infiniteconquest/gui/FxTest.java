@@ -36,7 +36,7 @@ class FxTest {
     void fullModeKeepsAuthoredDurations() throws Exception {
         GameSettings settings = full();
         assertEquals(300_000_000L, Fx.durationNanos(Fx.DEPLOY_MS, settings));
-        assertEquals(700_000_000L, Fx.durationNanos(Fx.DAMAGE_FLOAT_MS, settings));
+        assertEquals(1_200_000_000L, Fx.durationNanos(Fx.DAMAGE_FLOAT_MS, settings));
         assertTrue(Fx.particles(settings));
         assertFalse(Fx.reduced(settings));
     }
