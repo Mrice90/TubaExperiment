@@ -42,6 +42,7 @@ final class TitleScreen extends JPanel implements ShellScreen {
         column.add(Box.createVerticalStrut(26));
 
         addMenuButton(column, "Play", e -> shell.play());
+        addMenuButton(column, "Multiplayer", e -> shell.showMultiplayer());
         addMenuButton(column, "Deck Builder", e -> shell.openDeckBuilder());
         addMenuButton(column, "How to Play", e -> shell.showHowToPlay());
         addMenuButton(column, "Settings", e -> shell.showSettings());

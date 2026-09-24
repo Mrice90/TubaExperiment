@@ -35,7 +35,7 @@ class ShellScreensTest {
         BufferedImage image = paint(screen, 1500, 950);
         // Something painted: not every pixel is the flat background.
         assertTrue(pixelVariance(image) > 0.02, "title screen should paint art, title, and buttons");
-        assertEquals(6, countButtons(screen));
+        assertEquals(7, countButtons(screen)); // Play, Multiplayer, Deck Builder, How to Play, Settings, Credits, Exit
         screen.onHide();
     }
 

@@ -138,6 +138,19 @@ public final class GameShell {
         screens.show(new TitleScreen(this, settings));
     }
 
+    void showMultiplayer() {
+        if (context == null) return;
+        screens.show(new MultiplayerScreen(this, settings, context));
+    }
+
+    /** Opens the online battle once the server confirms the match has started. */
+    void openNetBattle(com.infiniteconquest.gui.net.NetSession session) {
+        InfiniteConquestGui battle = new InfiniteConquestGui(context, this::showTitle, session,
+                MultiplayerScreen.definitionsFor(context));
+        battle.setVisible(true);
+        frame.setVisible(false);
+    }
+
     void showSettings() {
         screens.show(new SettingsScreen(this, settings));
     }

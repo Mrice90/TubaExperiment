@@ -50,6 +50,10 @@ public final class GameState {
             default -> true;
         };
     }
+    /** Lands played this turn, for client-side legality hints in net snapshots. */
+    public int landsPlayedThisTurn(int playerId) { return landsPlayedThisTurn[playerId]; }
+    /** Structures played this turn, for client-side legality hints in net snapshots. */
+    public int structuresPlayedThisTurn(int playerId) { return structuresPlayedThisTurn[playerId]; }
     public Phase phase() { return phase; }
     public OptionalInt winner() { return winner == null ? OptionalInt.empty() : OptionalInt.of(winner); }
     public List<GameEvent> events() { return Collections.unmodifiableList(events); }
@@ -336,5 +340,108 @@ public final class GameState {
     }
     private void emit(GameEvent.Type type, int playerId, String detail) {
         events.add(new GameEvent(nextEventSequence++, turnNumber, playerId, type, detail));
+    }
+
+    /**
+     * Placeholder definition for hidden opponent cards. Instances are inert:
+     * only hand/deck counts are ever read from them.
+     */
+    private static final CardDefinition HIDDEN_CARD =
+            new CardDefinition("hidden_card", "Hidden Card", CardType.CHARACTER, "HIDDEN", 0, 0, 0, 0, 0);
+
+    /** Deterministic placeholder IDs so consecutive snapshots diff cleanly. */
+    private static UUID hiddenCardId(int player, Zone zone, int index) {
+        return UUID.nameUUIDFromBytes(
+                ("ic-hidden:" + player + ":" + zone + ":" + index).getBytes(java.nio.charset.StandardCharsets.UTF_8));
+    }
+
+    /**
+     * Rebuilds a client-side {@code GameState} from a redacted {@link GameSnapshot}.
+     *
+     * <p>The result is a faithful copy of everything the viewing player may see:
+     * public zones in full, the viewer's own hand and deck in full, and opponent
+     * hidden zones as counts only. It is used to render confirmed server state;
+     * commands are never applied to it locally. Unknown definition IDs fail fast.
+     *
+     * @param snapshot    a snapshot produced for the viewing player
+     * @param definitions resolves definition IDs to {@link CardDefinition}s
+     */
+    public static GameState fromSnapshot(GameSnapshot snapshot,
+                                         java.util.function.Function<String, CardDefinition> definitions) {
+        Objects.requireNonNull(snapshot, "snapshot");
+        Objects.requireNonNull(definitions, "definitions");
+        MatchRules rules = "SQUARE".equals(snapshot.rulesId()) ? MatchRules.current() : MatchRules.hex();
+        GameState state = new GameState(snapshot.seed(), rules, false);
+        state.started = true;
+        state.activePlayer = snapshot.activePlayer();
+        state.startingPlayer = snapshot.startingPlayer();
+        state.turnNumber = snapshot.turnNumber();
+        System.arraycopy(snapshot.personalTurns(), 0, state.personalTurns, 0, 2);
+        state.phase = Phase.valueOf(snapshot.phase());
+        state.winner = snapshot.winner();
+        state.mulliganWindowOpen = false;
+        state.mulliganCompleted[0] = true;
+        state.mulliganCompleted[1] = true;
+        state.initialCapitalPassiveActivated = true;
+        System.arraycopy(snapshot.landsPlayed(), 0, state.landsPlayedThisTurn, 0, 2);
+        System.arraycopy(snapshot.structuresPlayed(), 0, state.structuresPlayedThisTurn, 0, 2);
+
+        List<List<UUID>> deckOrder = List.of(new ArrayList<>(), new ArrayList<>());
+        List<CardInstance> hands = new ArrayList<>();
+        List<CardInstance> discards = new ArrayList<>();
+        List<GameSnapshot.CardView> boardViews = new ArrayList<>();
+        for (GameSnapshot.CardView view : snapshot.cards()) {
+            CardDefinition definition = definitions.apply(view.definitionId());
+            if (definition == null)
+                throw new IllegalArgumentException("Unknown card definition: " + view.definitionId());
+            CardInstance card = new CardInstance(view.instanceId(), definition, view.owner(), view.zone());
+            card.addDamage(view.damage());
+            card.setTapped(view.tapped());
+            card.addAttackBonus(view.attackBonus());
+            card.addDefenseBonus(view.defenseBonus());
+            if (view.attackedThisTurn()) card.markAttacked();
+            if (view.blinkUsedThisTurn()) card.markBlinkUsed();
+            if (view.abilityUsedThisTurn()) card.markAbilityUsed();
+            card.spendMovement(view.movementSpent());
+            state.register(card);
+            switch (view.zone()) {
+                case DECK -> deckOrder.get(view.owner()).add(view.instanceId());
+                case HAND -> hands.add(card);
+                case DISCARD -> discards.add(card);
+                case BATTLEFIELD -> boardViews.add(view);
+            }
+        }
+        for (int playerId = 0; playerId < 2; playerId++) {
+            List<UUID> order = new ArrayList<>(deckOrder.get(playerId));
+            state.players.get(playerId).initializeGp(snapshot.maxGp()[playerId]);
+            int excess = snapshot.maxGp()[playerId] - snapshot.gp()[playerId];
+            if (excess > 0) state.players.get(playerId).spendGp(excess);
+            if (playerId != snapshot.viewingPlayer()) {
+                // Hidden deck: pad with deterministic placeholders so deck().size()
+                // is exact. Placeholders are inert; only counts are ever read.
+                for (int i = order.size(); i < snapshot.deckCounts()[playerId]; i++) {
+                    UUID id = hiddenCardId(playerId, Zone.DECK, i);
+                    state.register(new CardInstance(id, HIDDEN_CARD, playerId, Zone.DECK));
+                    order.add(id);
+                }
+            }
+            state.players.get(playerId).loadDeck(order);
+        }
+        for (CardInstance card : hands) state.players.get(card.owner()).addToHand(card.instanceId());
+        if (snapshot.viewingPlayer() == 0 || snapshot.viewingPlayer() == 1) {
+            int opponent = 1 - snapshot.viewingPlayer();
+            for (int i = 0; i < snapshot.handCounts()[opponent]; i++) {
+                UUID id = hiddenCardId(opponent, Zone.HAND, i);
+                state.register(new CardInstance(id, HIDDEN_CARD, opponent, Zone.HAND));
+                state.players.get(opponent).addToHand(id);
+            }
+        }
+        for (CardInstance card : discards) state.players.get(card.owner()).addToDiscard(card.instanceId());
+        for (GameSnapshot.CardView view : boardViews) state.board.push(view.position(), view.instanceId());
+
+        state.events.addAll(snapshot.events());
+        long maxSequence = snapshot.events().stream().mapToLong(GameEvent::sequence).max().orElse(-1L);
+        state.nextEventSequence = maxSequence + 1;
+        return state;
     }
 }

@@ -2,6 +2,8 @@ package com.infiniteconquest.gui;
 
 import com.infiniteconquest.cli.*;
 import com.infiniteconquest.core.*;
+import com.infiniteconquest.gui.net.NetClient;
+import com.infiniteconquest.gui.net.NetSession;
 
 import static com.infiniteconquest.gui.UiTheme.*;
 
@@ -20,7 +22,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.*;
 
-public final class InfiniteConquestGui extends JFrame {
+public final class InfiniteConquestGui extends JFrame implements NetClient.Listener {
     private InitiativeCoinPanel.Skin coinSkin = InitiativeCoinPanel.Skin.OLYMPIAN_GOLD;
     private final JLabel turnLabel = new JLabel();
     private final JLabel humanLabel = new JLabel();
@@ -68,6 +70,16 @@ public final class InfiniteConquestGui extends JFrame {
     private long lastSystemEvent = -1;
     private boolean playerOneBot;
     private boolean winnerSoundPlayed;
+    // --- Online battle state (null/absent in local play) ---
+    private NetSession netSession;
+    private int netPlayer = -1;
+    private java.util.function.Function<String, CardDefinition> netDefinitions;
+    private PresentationSnapshot.Frame netLastFrame;
+    private boolean netStarted;
+    private boolean netGameOver;
+    private Integer netWinner;
+    private String opponentName = "Opponent";
+    private String netPendingCommand;
     private boolean victoryDialogShown;
     private boolean fullScreen;
     private boolean boardFullScreen;
@@ -107,6 +119,11 @@ public final class InfiniteConquestGui extends JFrame {
         initialize(screenshotMode, false);
     }
 
+    /** Seat this client plays from: 0 in local play, the server-assigned seat online. */
+    private int localPlayer() { return netSession != null ? netPlayer : 0; }
+    private int remotePlayer() { return 1 - localPlayer(); }
+    private boolean netMode() { return netSession != null; }
+
     /**
      * Shell-launched battle: reuses the loading screen's shared context so Play is
      * instant, and returns to the title menu when the player quits.
@@ -123,6 +140,33 @@ public final class InfiniteConquestGui extends JFrame {
         savedDecks.putAll(context.savedDecks);
         presentationQueue = new PresentationQueue(this::playPresentation);
         initialize(false, true);
+    }
+
+    /**
+     * Online battle: the match is owned by the server; this frame renders only
+     * server-confirmed snapshots. The initial snapshot replays through the
+     * session as soon as the battle listener registers.
+     */
+    InfiniteConquestGui(GameContext context, Runnable onQuitToTitle, NetSession session,
+                        java.util.function.Function<String, CardDefinition> definitions) {
+        super("Infinite Conquest — Online Battle " + GameVersion.VERSION);
+        captureMode = false;
+        this.netSession = session;
+        this.netPlayer = session.localPlayer();
+        this.netDefinitions = definitions;
+        this.onQuitToTitle = () -> {
+            try { session.close(); } catch (RuntimeException ignored) {}
+            onQuitToTitle.run();
+        };
+        gameSettings = context.settings;
+        matchFactory = context.matchFactory;
+        factionDecks = context.factionDecks;
+        passiveRules = context.passiveRules;
+        buildStore = context.buildStore;
+        savedDecks.putAll(context.savedDecks);
+        presentationQueue = new PresentationQueue(this::playPresentation);
+        initialize(false, true);
+        beginNetMatch();
     }
 
     private void initialize(boolean screenshotMode, boolean decksReady) {
@@ -149,7 +193,134 @@ public final class InfiniteConquestGui extends JFrame {
         combatOverlay.setVisible(true);
         if (!screenshotMode && !decksReady) loadSavedDecks();
         if (screenshotMode) startMatch(defaultChoice(), 424242L, false);
-        else newMatch();
+        else if (netSession == null) newMatch();
+    }
+
+    /** Online battle setup: perspective, labels, and the initial server snapshot. */
+    private void beginNetMatch() {
+        boardPanel.setLocalPlayer(netPlayer);
+        for (com.infiniteconquest.net.Protocol.LobbyPlayer player : netSession.lobbyPlayers()) {
+            if (!player.uuid().equals(gameSettings.playerUuid)) opponentName = player.name();
+        }
+        netSession.addBattleListener(this);
+    }
+
+    /** First server snapshot: build the client-side state and paint the board. */
+    private void applyNetSnapshot(GameSnapshot snapshot) {
+        state = GameState.fromSnapshot(snapshot, netDefinitions);
+        netLastFrame = PresentationSnapshot.capture(state);
+        if (!netStarted) {
+            netStarted = true;
+            initNetMatchMeta();
+            historyModel.clear();
+            historyNumber = 0;
+            addHistory("Match", "Online battle — " + title(humanFaction) + " vs " + title(botFaction));
+            message("Connected. " + (state.activePlayer() == localPlayer()
+                    ? "Your move." : "Waiting for " + opponentName + "."));
+        }
+        refresh();
+    }
+
+    /** Derives labels/capitals/factions from the local player's snapshot view. */
+    private void initNetMatchMeta() {
+        CardDefinition localCapital = null;
+        CardDefinition remoteCapital = null;
+        // Capitals are the battlefield cards owned by each player with the capital type.
+        for (java.util.UUID id : state.board().positions().stream()
+                .map(position -> state.board().topAt(position)).filter(java.util.Optional::isPresent)
+                .map(java.util.Optional::get).toList()) {
+            CardInstance card = state.card(id).orElse(null);
+            if (card == null || card.definition().type() != CardType.CAPITAL) continue;
+            if (card.owner() == localPlayer()) localCapital = card.definition();
+            else remoteCapital = card.definition();
+        }
+        if (localCapital != null) {
+            humanCapital = localCapital;
+            humanFaction = localCapital.faction();
+        }
+        if (remoteCapital != null) {
+            botCapital = remoteCapital;
+            botFaction = remoteCapital.faction();
+        }
+        DeckBuild localDeck = savedDecks.get(humanFaction);
+        humanAlly = localDeck == null ? null : localDeck.allyFaction();
+        boardPanel.setBackgroundCard(humanCapital);
+        lastBannerTurn = -1;
+        lastBannerPlayer = -1;
+    }
+
+    // --- NetClient.Listener: server-confirmed events, already on the EDT ---
+
+    @Override public void onLobby(java.util.List<com.infiniteconquest.net.Protocol.LobbyPlayer> players,
+                                  String hostUuid) {
+        // Lobby UI lives in the shell; the battle only cares about snapshots.
+    }
+
+    @Override public void onSnapshot(long seq, GameSnapshot snapshot) {
+        applyNetSnapshot(snapshot);
+    }
+
+    @Override public void onStateUpdate(long seq, String command, String result, int actor,
+                                       GameSnapshot snapshot) {
+        if (netGameOver) return;
+        netPendingCommand = null;
+        GameState after = GameState.fromSnapshot(snapshot, netDefinitions);
+        PresentationSnapshot.Frame before = netLastFrame;
+        netLastFrame = PresentationSnapshot.capture(after);
+        state = after;
+        if (before != null) showResolution(PresentationSnapshot.between(command, before, after));
+        addHistory(actor == localPlayer() ? "You" : opponentName, describe(command));
+        message(result);
+        if (after.phase() == Phase.GAME_OVER) interaction.markGameOver();
+        else interaction.finishResolution();
+        refresh();
+    }
+
+    @Override public void onGameOver(Integer winner, GameSnapshot snapshot) {
+        netGameOver = true;
+        netWinner = winner;
+        netPendingCommand = null;
+        state = GameState.fromSnapshot(snapshot, netDefinitions);
+        netLastFrame = PresentationSnapshot.capture(state);
+        interaction.markGameOver();
+        refresh();
+    }
+
+    @Override public void onError(String message) {
+        message("Server: " + message);
+        if (netPendingCommand != null) {
+            // The command was rejected without a state update; unlock input.
+            netPendingCommand = null;
+            interaction.finishResolution();
+            refresh();
+        }
+    }
+
+    @Override public void onDisconnected(String reason) {
+        if (netGameOver) return;
+        netGameOver = true;
+        JOptionPane.showMessageDialog(this,
+                "Lost connection to the host.\n" + (reason == null ? "" : reason),
+                "Disconnected", JOptionPane.WARNING_MESSAGE);
+        onQuitToTitle.run();
+        dispose();
+    }
+
+    /** Net game-over dialog, shown once the final presentation finishes. */
+    private void showNetGameOver() {
+        if (netWinner == null) return;
+        boolean won = netWinner == localPlayer();
+        String title = won ? "Victory!" : "Defeat";
+        int answer = JOptionPane.showConfirmDialog(this,
+                (won ? "You have destroyed the enemy capital!" : opponentName + " has destroyed your capital.")
+                        + "\nReturn to the title menu?",
+                title, JOptionPane.YES_NO_OPTION,
+                won ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+        netWinner = null; // show once
+        if (answer == JOptionPane.YES_OPTION) {
+            onQuitToTitle.run();
+            dispose();
+        }
     }
 
     @Override public void dispose() { if(handHoverTimer!=null)handHoverTimer.stop();super.dispose(); }
@@ -962,7 +1133,7 @@ public final class InfiniteConquestGui extends JFrame {
         if (!canAcceptHumanInput()) return;
         interaction.toggleHand(index);
         handPinned=false;hoverSuppressed=true;setHandExpanded(false);
-        boardPanel.inspect(state.card(state.player(0).hand().get(index)).orElseThrow().definition());
+        boardPanel.inspect(state.card(state.player(localPlayer()).hand().get(index)).orElseThrow().definition());
         refresh();
     }
 
@@ -995,6 +1166,18 @@ public final class InfiniteConquestGui extends JFrame {
 
     private void executeHuman(String command) {
         if (!canAcceptHumanInput() || !confirmOpportunityRisk(command)) return;
+        if (netMode()) {
+            // Online: the server is authoritative. Send the command; the confirmed
+            // snapshot arrives via onStateUpdate and drives the animation.
+            handPinned = false;
+            hoverSuppressed = true;
+            setHandExpanded(false);
+            interaction.beginResolution();
+            netPendingCommand = command;
+            netSession.client().sendCommand(command);
+            refresh();
+            return;
+        }
         handPinned = false;
         hoverSuppressed = true;
         setHandExpanded(false);
@@ -1011,7 +1194,8 @@ public final class InfiniteConquestGui extends JFrame {
     }
 
     private boolean canAcceptHumanInput() {
-        return state != null && !playerOneBot && !botRunning && state.activePlayer() == 0
+        if (netMode() && netPendingCommand != null) return false; // awaiting server confirmation
+        return state != null && !playerOneBot && !botRunning && state.activePlayer() == localPlayer()
                 && state.phase() != Phase.GAME_OVER && interaction.acceptsHumanInput();
     }
 
@@ -1059,6 +1243,7 @@ public final class InfiniteConquestGui extends JFrame {
     }
 
     private boolean isAutomatedPlayer(int player) {
+        if (netMode()) return false; // online: both seats are human
         return player == 1 || playerOneBot;
     }
 
@@ -1098,29 +1283,33 @@ public final class InfiniteConquestGui extends JFrame {
         if (currentTurn != lastBannerTurn || currentPlayer != lastBannerPlayer) {
             lastBannerTurn = currentTurn;
             lastBannerPlayer = currentPlayer;
-            String banner = currentPlayer == 0
-                    ? (playerOneBot ? "BOT 1'S TURN" : "YOUR TURN")
+            String banner = currentPlayer == localPlayer()
+                    ? (playerOneBot && !netMode() ? "BOT 1'S TURN" : "YOUR TURN")
                     : "ENEMY TURN";
             combatOverlay.showBanner(banner, new Color(240, 191, 73));
         }
-        PlayerState human = state.player(0);
-        PlayerState enemy = state.player(1);
-        humanLabel.setText("<html><b>" + (playerOneBot ? "BOT 1" : "YOU") + " • " + humanFaction
+        PlayerState human = state.player(localPlayer());
+        PlayerState enemy = state.player(remotePlayer());
+        String foeName = netMode() ? opponentName : "BOT 2";
+        humanLabel.setText("<html><b>" + (playerOneBot && !netMode() ? "BOT 1" : "YOU") + " • " + humanFaction
                 + (humanAlly == null ? "" : " + " + humanAlly)
-                + " • " + html(humanCapital.name()) + "</b><br>GP held " + human.currentGp() + "  (income +" + state.gpIncomePerTurn(0) + "/turn)"
+                + " • " + html(humanCapital.name()) + "</b><br>GP held " + human.currentGp() + "  (income +" + state.gpIncomePerTurn(localPlayer()) + "/turn)"
                 + " • Deck " + human.deck().size() + " • Discard " + human.discard().size() + "</html>");
-        botLabel.setText("<html><b>BOT 2 • " + botFaction + " • " + html(botCapital.name()) + "</b><br>GP held " + enemy.currentGp()
-                + "  (+" + state.gpIncomePerTurn(1) + "/turn) • Hand " + enemy.hand().size()
+        botLabel.setText("<html><b>" + foeName + " • " + botFaction + " • " + html(botCapital.name()) + "</b><br>GP held " + enemy.currentGp()
+                + "  (+" + state.gpIncomePerTurn(remotePlayer()) + "/turn) • Hand " + enemy.hand().size()
                 + " • Deck " + enemy.deck().size() + "</html>");
         humanLabel.setToolTipText(humanLabel.getText());botLabel.setToolTipText(botLabel.getText());
-        humanLabel.setText("YOU · " + humanFaction + (humanAlly==null?"":" + "+humanAlly) + "    GP " + human.currentGp() + " (+" + state.gpIncomePerTurn(0) + ")    Deck " + human.deck().size());
-        botLabel.setText("BOT · " + botFaction + "    GP " + enemy.currentGp() + " (+" + state.gpIncomePerTurn(1) + ")    Hand " + enemy.hand().size() + " · Deck " + enemy.deck().size());
+        humanLabel.setText("YOU · " + humanFaction + (humanAlly==null?"":" + "+humanAlly) + "    GP " + human.currentGp() + " (+" + state.gpIncomePerTurn(localPlayer()) + ")    Deck " + human.deck().size());
+        botLabel.setText(foeName + " · " + botFaction + "    GP " + enemy.currentGp() + " (+" + state.gpIncomePerTurn(remotePlayer()) + ")    Hand " + enemy.hand().size() + " · Deck " + enemy.deck().size());
         humanLabel.setIcon(null);botLabel.setIcon(null);
         endTurnButton.setEnabled(canAcceptHumanInput() && state.phase() == Phase.PLAY);
         refreshBoard();
         refreshHand();
         refreshActions();
-        if (state.phase() == Phase.GAME_OVER && !presentationQueue.isPlaying()) showWinner();
+        if (state.phase() == Phase.GAME_OVER && !presentationQueue.isPlaying()) {
+            if (netMode()) showNetGameOver();
+            else showWinner();
+        }
     }
 
     private void refreshBoard() {
@@ -1128,7 +1317,7 @@ public final class InfiniteConquestGui extends JFrame {
             JButton cell = boardButtons.get(position);
             Optional<UUID> topId = maskedBoardCells.contains(position)
                     ? Optional.empty() : state.board().topAt(position);
-            Color base = position.isOnPlayerSide(0) ? HUMAN_PLOT : BOT_PLOT;
+            Color base = position.isOnPlayerSide(localPlayer()) ? HUMAN_PLOT : BOT_PLOT;
             Intent intent = destinationIntent(position);
             boolean selected = Objects.equals(interaction.boardPosition(), position);
             Color surface = intent == null ? base : blend(base, intent.color, TARGET_TINT);
@@ -1264,7 +1453,7 @@ public final class InfiniteConquestGui extends JFrame {
     private void refreshHand() {
         handPanel.removeAll();
         handButtons.clear();
-        List<UUID> hand = state.player(0).hand();
+        List<UUID> hand = state.player(localPlayer()).hand();
         for (int index = 0; index < hand.size(); index++) {
             CardInstance card = state.card(hand.get(index)).orElseThrow();
             CardDefinition def = card.definition();
@@ -1396,8 +1585,8 @@ public final class InfiniteConquestGui extends JFrame {
     }
 
     private void showHandCardContextMenu(MouseEvent event, int handIndex) {
-        if (handIndex < 0 || handIndex >= state.player(0).hand().size()) return;
-        CardInstance card = state.card(state.player(0).hand().get(handIndex)).orElseThrow();
+        if (handIndex < 0 || handIndex >= state.player(localPlayer()).hand().size()) return;
+        CardInstance card = state.card(state.player(localPlayer()).hand().get(handIndex)).orElseThrow();
         JPopupMenu menu = new JPopupMenu();
         JMenuItem view = new JMenuItem("View full card");
         view.addActionListener(action -> showFullCard(card));

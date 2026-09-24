@@ -10,9 +10,9 @@ import java.util.Properties;
 /**
  * Persisted desktop settings. Stored in {@code ~/.infinite-conquest/settings.properties}.
  * Every setting here is wired to something real: window placement, sound, animation pacing,
- * and loading-screen tips.
+ * loading-screen tips, and the player's online identity (random UUID + display name).
  */
-final class GameSettings {
+public final class GameSettings {
     enum AnimationMode { FULL, REDUCED }
 
     private static final String KEY_FULLSCREEN = "window.fullscreen";
@@ -26,8 +26,12 @@ final class GameSettings {
     private static final String KEY_LAST_CHECK = "updates.lastCheck";
     private static final String KEY_SKIPPED = "updates.skippedVersion";
     private static final String KEY_SETTINGS_VERSION = "settings.version";
+    private static final String KEY_PLAYER_UUID = "player.uuid";
+    private static final String KEY_PLAYER_NAME = "player.name";
+    /** Maximum display-name length, matching the netcode design. */
+    public static final int MAX_NAME_LENGTH = 24;
 
-    boolean fullscreen;
+    public boolean fullscreen;
     int windowWidth;
     int windowHeight;
     boolean soundEnabled;
@@ -37,6 +41,11 @@ final class GameSettings {
     boolean checkUpdatesOnStartup;
     long lastUpdateCheck; // epoch millis of the last check
     String skippedVersion; // update version the player asked not to be reminded about
+
+    /** Persistent random player UUID (never hardware-derived). Public for the net package. */
+    public String playerUuid;
+    /** Player-chosen display name, sanitized, max 24 chars. Shown to other players. */
+    public String playerName;
 
     private GameSettings() {
         resetToDefaults();
@@ -53,6 +62,26 @@ final class GameSettings {
         checkUpdatesOnStartup = true;
         lastUpdateCheck = 0;
         skippedVersion = "";
+        playerUuid = java.util.UUID.randomUUID().toString();
+        playerName = "Player";
+    }
+
+    /**
+     * Sets the display name: strips control characters, trims, caps at
+     * {@link #MAX_NAME_LENGTH}, and falls back to "Player" when blank.
+     * The name is public to other players; the UUID stays private.
+     */
+    public void setPlayerName(String name) {
+        playerName = sanitizeName(name);
+    }
+
+    /** Sanitizes a display name the same way the server does. */
+    public static String sanitizeName(String name) {
+        if (name == null) return "Player";
+        String cleaned = name.replaceAll("\\p{Cntrl}", "").trim();
+        if (cleaned.length() > MAX_NAME_LENGTH) cleaned = cleaned.substring(0, MAX_NAME_LENGTH).trim();
+        if (cleaned.isEmpty()) cleaned = "Player";
+        return cleaned;
     }
 
     Dimension windowSize() {
@@ -68,7 +97,7 @@ final class GameSettings {
         return Path.of(System.getProperty("user.home"), ".infinite-conquest", "settings.properties");
     }
 
-    static GameSettings load() {
+    public static GameSettings load() {
         GameSettings settings = new GameSettings();
         Path file = settingsFile();
         if (!Files.isRegularFile(file)) return settings;
@@ -93,6 +122,15 @@ final class GameSettings {
                 Boolean.parseBoolean(props.getProperty(KEY_CHECK_UPDATES, "true"));
         settings.lastUpdateCheck = parseLong(props.getProperty(KEY_LAST_CHECK), 0);
         settings.skippedVersion = props.getProperty(KEY_SKIPPED, "");
+        String uuid = props.getProperty(KEY_PLAYER_UUID, "").trim();
+        try {
+            if (uuid.isEmpty()) throw new IllegalArgumentException("missing");
+            java.util.UUID.fromString(uuid);
+            settings.playerUuid = uuid;
+        } catch (IllegalArgumentException e) {
+            settings.playerUuid = java.util.UUID.randomUUID().toString();
+        }
+        settings.playerName = sanitizeName(props.getProperty(KEY_PLAYER_NAME, "Player"));
         // 0.6.0 changed the display default: pre-0.6.0 settings files adopt fullscreen once.
         if (!props.containsKey(KEY_SETTINGS_VERSION)) {
             settings.fullscreen = true;
@@ -100,7 +138,7 @@ final class GameSettings {
         return settings;
     }
 
-    void save() {
+    public void save() {
         Properties props = new Properties();
         props.setProperty(KEY_FULLSCREEN, Boolean.toString(fullscreen));
         props.setProperty(KEY_WIDTH, Integer.toString(windowWidth));
@@ -112,6 +150,8 @@ final class GameSettings {
         props.setProperty(KEY_CHECK_UPDATES, Boolean.toString(checkUpdatesOnStartup));
         props.setProperty(KEY_LAST_CHECK, Long.toString(lastUpdateCheck));
         props.setProperty(KEY_SKIPPED, skippedVersion);
+        props.setProperty(KEY_PLAYER_UUID, playerUuid);
+        props.setProperty(KEY_PLAYER_NAME, playerName);
         props.setProperty(KEY_SETTINGS_VERSION, GameVersion.VERSION);
         try {
             Files.createDirectories(settingsFile().getParent());
