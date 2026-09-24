@@ -46,11 +46,12 @@ public final class InfiniteConquestGui extends JFrame {
     private CommandProcessor commands;
     private final ActionHints hints = new ActionHints();
     private final BotPlayer bot = new BotPlayer();
-    private final DemoMatchFactory matchFactory = new DemoMatchFactory();
-    private final FactionDecks factionDecks = new FactionDecks(matchFactory.pool());
-    private final CapitalPassiveRules passiveRules = new CapitalPassiveRules();
+    private DemoMatchFactory matchFactory;
+    private FactionDecks factionDecks;
+    private CapitalPassiveRules passiveRules;
     private final Map<String, DeckBuild> savedDecks = new HashMap<>();
-    private final DeckBuildStore buildStore = new DeckBuildStore(matchFactory.pool(), matchFactory.capitals());
+    private DeckBuildStore buildStore;
+    private final Runnable onQuitToTitle;
     private final Path deckDirectory = Path.of(System.getProperty("user.home"), ".infinite-conquest", "decks");
     private final InteractionState interaction = new InteractionState();
     private boolean botRunning;
@@ -91,10 +92,47 @@ public final class InfiniteConquestGui extends JFrame {
     }
 
     InfiniteConquestGui(boolean screenshotMode) {
-        super("Infinite Conquest — Hex & Allies 0.4.2");
-        captureMode=screenshotMode;
+        super("Infinite Conquest — Hex & Allies 0.5.0");
+        captureMode = screenshotMode;
+        onQuitToTitle = null;
+        matchFactory = new DemoMatchFactory();
+        factionDecks = new FactionDecks(matchFactory.pool());
+        passiveRules = new CapitalPassiveRules();
+        buildStore = new DeckBuildStore(matchFactory.pool(), matchFactory.capitals());
         presentationQueue = new PresentationQueue(this::playPresentation);
-        setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+        initialize(screenshotMode, false);
+    }
+
+    /**
+     * Shell-launched battle: reuses the loading screen's shared context so Play is
+     * instant, and returns to the title menu when the player quits.
+     */
+    InfiniteConquestGui(GameContext context, Runnable onQuitToTitle) {
+        super("Infinite Conquest — Hex & Allies 0.5.0");
+        captureMode = false;
+        this.onQuitToTitle = onQuitToTitle;
+        matchFactory = context.matchFactory;
+        factionDecks = context.factionDecks;
+        passiveRules = context.passiveRules;
+        buildStore = context.buildStore;
+        savedDecks.putAll(context.savedDecks);
+        presentationQueue = new PresentationQueue(this::playPresentation);
+        initialize(false, true);
+    }
+
+    private void initialize(boolean screenshotMode, boolean decksReady) {
+        setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        addWindowListener(new java.awt.event.WindowAdapter() {
+            @Override public void windowClosing(java.awt.event.WindowEvent event) {
+                int answer = JOptionPane.showConfirmDialog(InfiniteConquestGui.this,
+                        "Quit Infinite Conquest?", "Exit",
+                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
+                if (answer == JOptionPane.YES_OPTION) {
+                    dispose();
+                    System.exit(0);
+                }
+            }
+        });
         setMinimumSize(new Dimension(1100, 640));
         setSize(1500, 980);
         if (!screenshotMode) setExtendedState(JFrame.MAXIMIZED_BOTH);
@@ -104,7 +142,7 @@ public final class InfiniteConquestGui extends JFrame {
         setContentPane(buildScreen());
         setGlassPane(combatOverlay);
         combatOverlay.setVisible(true);
-        if (!screenshotMode) loadSavedDecks();
+        if (!screenshotMode && !decksReady) loadSavedDecks();
         if (screenshotMode) startMatch(defaultChoice(), 424242L, false);
         else newMatch();
     }
@@ -384,7 +422,16 @@ public final class InfiniteConquestGui extends JFrame {
         boardView.setAccelerator(KeyStroke.getKeyStroke("F4"));
         boardView.addActionListener(event -> toggleBoardFullScreen());
         game.add(decks); game.addSeparator(); game.add(newGame); game.add(fullscreen);
-        game.add(actions); game.add(history); game.add(boardView); bar.add(game);
+        game.add(actions); game.add(history); game.add(boardView);
+        if (onQuitToTitle != null) {
+            JMenuItem quitToTitle = new JMenuItem("Quit to Title");
+            quitToTitle.addActionListener(event -> {
+                dispose();
+                onQuitToTitle.run();
+            });
+            game.addSeparator(); game.add(quitToTitle);
+        }
+        bar.add(game);
         return bar;
     }
 

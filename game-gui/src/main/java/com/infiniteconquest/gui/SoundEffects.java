@@ -11,7 +11,12 @@ final class SoundEffects {
     enum Cue { MOVE, DEPLOY, MELEE, RANGED, SPELL, DAMAGE, PENALTY, DESTROY, VICTORY, DEFEAT }
     private static final Set<Clip> activeClips = ConcurrentHashMap.newKeySet();
     private static volatile boolean muted;
+    private static volatile double volume = 1.0; // 0.0..1.0, applied to newly started clips
     private SoundEffects() { }
+
+    static void setVolume(double value) {
+        volume = Math.min(1.0, Math.max(0.0, value));
+    }
 
     static void play(Cue cue) {
         if (muted) return;
@@ -19,6 +24,17 @@ final class SoundEffects {
                 "infinite-conquest-sound");
         thread.setDaemon(true);
         thread.start();
+    }
+
+    private static void applyVolume(Clip clip) {
+        try {
+            if (!clip.isControlSupported(FloatControl.Type.MASTER_GAIN)) return;
+            FloatControl gain = (FloatControl) clip.getControl(FloatControl.Type.MASTER_GAIN);
+            float db = volume <= 0.001 ? gain.getMinimum() : (float) (20 * Math.log10(volume));
+            gain.setValue(Math.min(gain.getMaximum(), Math.max(gain.getMinimum(), db)));
+        } catch (Exception ignored) {
+            // Volume shaping is best-effort; the cue still plays.
+        }
     }
 
     private static void playResource(String path) {
@@ -34,6 +50,7 @@ final class SoundEffects {
                     }
                 });
                 clip.open(audio);
+                applyVolume(clip);
                 if (muted) clip.close();
                 else {
                     activeClips.add(clip);

@@ -28,6 +28,42 @@ final class CardArtFactory {
 
     private CardArtFactory() { }
 
+    /**
+     * Decodes the paintings the title screen needs so first paint never hitches.
+     * Safe to call off the EDT; failures are ignored and retried lazily later.
+     */
+    static void warmCache() {
+        for (String id : new String[]{
+                "zeus_capital_olympus_citadel", "zeus_capital_keraunos_spire", "zeus_capital_cloud_throne",
+                "poseidon_capital_atlantis_nexus", "poseidon_capital_trident_bastion", "poseidon_capital_abyssal_court"}) {
+            try (InputStream stream = CardArtFactory.class.getResourceAsStream("/art/capitals/" + id + ".jpg")) {
+                if (stream == null) continue;
+                BufferedImage loaded = ImageIO.read(stream);
+                if (loaded != null) PAINTED_ART.put(id, loaded);
+            } catch (IOException ignored) {
+            }
+        }
+    }
+
+    /** Full-resolution capital painting for title-screen flourishes; null when missing. */
+    static BufferedImage capitalPainting(String id) {
+        BufferedImage cached = PAINTED_ART.get(id);
+        if (cached != null) return cached;
+        try (InputStream stream = CardArtFactory.class.getResourceAsStream("/art/capitals/" + id + ".jpg")) {
+            if (stream == null) return null;
+            BufferedImage loaded = ImageIO.read(stream);
+            if (loaded != null) PAINTED_ART.put(id, loaded);
+            return loaded;
+        } catch (IOException ignored) {
+            return null;
+        }
+    }
+
+    /** The shared world backdrop, already decoded at class load. May be null. */
+    static BufferedImage worldBackdrop() {
+        return WORLDS;
+    }
+
     static ImageIcon iconFor(CardDefinition card, int width, int height) {
         return CACHE.computeIfAbsent(card.id()+":"+width+"x"+height, key -> render(card,width,height));
     }
