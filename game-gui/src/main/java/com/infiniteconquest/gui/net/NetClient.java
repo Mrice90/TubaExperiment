@@ -18,10 +18,10 @@ public final class NetClient {
     /** Typed server events, delivered on the client's executor. */
     public interface Listener {
         void onLobby(List<Protocol.LobbyPlayer> players, String hostUuid);
-        void onSnapshot(long seq, com.infiniteconquest.core.GameSnapshot snapshot);
+        void onSnapshot(long seq, String matchId, com.infiniteconquest.core.GameSnapshot snapshot);
         void onStateUpdate(long seq, String command, String result, int actor,
                            com.infiniteconquest.core.GameSnapshot snapshot);
-        void onGameOver(Integer winner, com.infiniteconquest.core.GameSnapshot snapshot);
+        void onGameOver(Integer winner, String matchId, com.infiniteconquest.core.GameSnapshot snapshot);
         void onError(String message);
         void onDisconnected(String reason);
     }
@@ -77,7 +77,7 @@ public final class NetClient {
                 }
                 case "snapshot" -> {
                     Protocol.FullSnapshot full = Protocol.decode(line, Protocol.FullSnapshot.class);
-                    dispatch.execute(() -> listener.onSnapshot(full.seq(), full.snapshot()));
+                    dispatch.execute(() -> listener.onSnapshot(full.seq(), full.matchId(), full.snapshot()));
                 }
                 case "state_update" -> {
                     Protocol.StateUpdate update = Protocol.decode(line, Protocol.StateUpdate.class);
@@ -86,7 +86,7 @@ public final class NetClient {
                 }
                 case "game_over" -> {
                     Protocol.GameOver over = Protocol.decode(line, Protocol.GameOver.class);
-                    dispatch.execute(() -> listener.onGameOver(over.winner(), over.snapshot()));
+                    dispatch.execute(() -> listener.onGameOver(over.winner(), over.matchId(), over.snapshot()));
                 }
                 case "error" -> {
                     Protocol.ErrorMessage error = Protocol.decode(line, Protocol.ErrorMessage.class);

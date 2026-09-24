@@ -48,9 +48,9 @@ class NetClientTest {
         final BlockingQueue<Object> events = new LinkedBlockingQueue<>();
 
         record Lobby(List<Protocol.LobbyPlayer> players) {}
-        record Snapshot(long seq, GameSnapshot snapshot) {}
+        record Snapshot(long seq, String matchId, GameSnapshot snapshot) {}
         record Update(long seq, String command, String result, int actor, GameSnapshot snapshot) {}
-        record GameOver(Integer winner, GameSnapshot snapshot) {}
+        record GameOver(Integer winner, String matchId, GameSnapshot snapshot) {}
         record Error(String message) {}
         record Disconnected(String reason) {}
 
@@ -58,8 +58,8 @@ class NetClientTest {
             events.add(new Lobby(players));
         }
 
-        @Override public void onSnapshot(long seq, GameSnapshot snapshot) {
-            events.add(new Snapshot(seq, snapshot));
+        @Override public void onSnapshot(long seq, String matchId, GameSnapshot snapshot) {
+            events.add(new Snapshot(seq, matchId, snapshot));
         }
 
         @Override public void onStateUpdate(long seq, String command, String result, int actor,
@@ -67,8 +67,8 @@ class NetClientTest {
             events.add(new Update(seq, command, result, actor, snapshot));
         }
 
-        @Override public void onGameOver(Integer winner, GameSnapshot snapshot) {
-            events.add(new GameOver(winner, snapshot));
+        @Override public void onGameOver(Integer winner, String matchId, GameSnapshot snapshot) {
+            events.add(new GameOver(winner, matchId, snapshot));
         }
 
         @Override public void onError(String message) {

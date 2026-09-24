@@ -127,4 +127,22 @@ class EmbeddedServerTest {
             assertTrue(intruder.nextOfType("error", 3000).contains("Already joined"));
         }
     }
+
+    @Test void versionMismatchIsRejectedWithClearError() throws Exception {
+        try (TestClient guest = new TestClient("127.0.0.1", port)) {
+            guest.send(new Protocol.Hello("hello", guestUuid, "Guest",
+                    dto(deck("POSEIDON")), "ic-net-0"));
+            assertTrue(guest.nextOfType("error", 3000).contains("Version mismatch"));
+        }
+    }
+
+    @Test void legacyHelloWithoutVersionIsRejectedWithClearError() throws Exception {
+        try (TestClient guest = new TestClient("127.0.0.1", port)) {
+            // Hand-written JSON predating the dataVersion field: decodes to
+            // "unknown" and must be rejected, not silently accepted.
+            guest.sendRaw("{\"type\":\"hello\",\"uuid\":\"" + guestUuid
+                    + "\",\"name\":\"Guest\",\"deck\":null,\"dataVersion\":null}");
+            assertTrue(guest.nextOfType("error", 3000).contains("Version mismatch"));
+        }
+    }
 }

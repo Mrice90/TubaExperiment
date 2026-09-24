@@ -73,3 +73,38 @@ The wire protocol may contain only: player UUIDs, display names, deck lists
 
 The guest deck list is sent to the host only. It is never forwarded to lobby or
 matchmaking services, workers, or spectators.
+
+## Internet transport (milestone c)
+
+- The host spawns the bundled `cloudflared` binary
+  (`cloudflared tunnel --url http://127.0.0.1:<bridge-port>`, free quick
+  tunnel, no account). Guests connect to the `wss://*.trycloudflare.com` URL.
+  Both players connect **outward** through Cloudflare's edge, so neither
+  player's IP address is exposed to the other.
+- `WsBridge` listens on 127.0.0.1 only and refuses non-loopback connections.
+  It translates WebSocket text frames into the existing line-delimited TCP
+  protocol, so the authoritative server and its redaction are untouched: the
+  bridge is a byte-pipe, not a second protocol.
+- The bridge enforces that client-sent frames are masked (RFC 6455); unmasked
+  client frames are rejected. The guest client always masks its frames.
+- The bridge never logs or persists traffic.
+
+## Lobby/rating Worker (milestone c)
+
+The Cloudflare Worker (`lobby-worker/`, code only — not deployed) is a
+rendezvous and rating ledger. Data minimization is deliberate:
+
+- It stores only: player UUIDs (random, never hardware-derived), public
+  display names, Elo ratings, win/loss counts, public lobby entries
+  (`code`, `hostName`, `hostRating`, tunnel URL), quick-match tickets, and
+  match result reports. Lobby entries expire after ~2 minutes; match reports
+  after 24 hours.
+- It never receives, stores, or logs: game traffic, hands, deck lists,
+  file paths, settings, system information, or IP addresses.
+- The leaderboard exposes display name, rating, wins, losses — never UUIDs.
+- Rating integrity: both clients independently report `(matchId, winnerUuid,
+  loserUuid)`. Elo is applied only when both reports agree; disagreements
+  are discarded and flagged for review. The `matchId` (random per match,
+  carried in `snapshot`/`game_over` envelopes) binds reports to one match.
+- Public lobby deletion requires the registering UUID, so one player cannot
+  close another's lobby.

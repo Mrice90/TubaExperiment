@@ -70,6 +70,7 @@ final class UpdateApplier {
 
             List<String> jarEntries = new ArrayList<>();
             String launcherEntry = null;
+            String cloudflaredEntry = null;
             try (ZipFile zip = new ZipFile(download.toFile())) {
                 var entries = zip.entries();
                 while (entries.hasMoreElements()) {
@@ -77,6 +78,7 @@ final class UpdateApplier {
                     String name = e.getName().replace('\\', '/');
                     if (name.startsWith("app/") && name.endsWith(".jar")) jarEntries.add(name);
                     else if (name.equals("Play Infinite Conquest.vbs")) launcherEntry = name;
+                    else if (name.equals("app/cloudflared.exe")) cloudflaredEntry = name;
                 }
             }
             if (jarEntries.isEmpty()) {
@@ -107,6 +109,14 @@ final class UpdateApplier {
                     String fileName = name.substring(name.lastIndexOf('/') + 1);
                     try (InputStream in = zip.getInputStream(zip.getEntry(name))) {
                         Files.copy(in, pending.resolve(fileName),
+                                StandardCopyOption.REPLACE_EXISTING);
+                    }
+                }
+                // cloudflared.exe (internet hosting) rides the same pending
+                // mechanism; the launcher moves every staged file into app/.
+                if (cloudflaredEntry != null) {
+                    try (InputStream in = zip.getInputStream(zip.getEntry(cloudflaredEntry))) {
+                        Files.copy(in, pending.resolve("cloudflared.exe"),
                                 StandardCopyOption.REPLACE_EXISTING);
                     }
                 }

@@ -88,6 +88,8 @@ public final class EmbeddedServer implements AutoCloseable {
     private final Seat[] slots = new Seat[2];
     private DeckBuild guestDeck;
     private GameState state;
+    /** Rating-service match id, generated when a match starts. */
+    private String matchId;
     private CommandProcessor commands;
     private long seq;
 
@@ -230,6 +232,12 @@ public final class EmbeddedServer implements AutoCloseable {
     private void handleHello(Seat seat, Protocol.Hello hello) {
         if (phase != SessionPhase.LOBBY) { sendError(seat.peer, "Match already started"); return; }
         if (seat.playerIndex != -1) { sendError(seat.peer, "Already joined"); return; }
+        if (!Protocol.DATA_VERSION.equals(hello.dataVersion())) {
+            sendError(seat.peer, "Version mismatch: this host runs " + Protocol.DATA_VERSION
+                    + " but your client sent " + hello.dataVersion()
+                    + ". Update the game so both sides match.");
+            return;
+        }
         String uuid = hello.uuid() == null ? "" : hello.uuid().trim();
         if (uuid.isEmpty()) { sendError(seat.peer, "Missing player id"); return; }
         for (Seat existing : seats.values())
@@ -293,6 +301,7 @@ public final class EmbeddedServer implements AutoCloseable {
         state.mulligan(0, List.of());
         state.mulligan(1, List.of());
         commands = new CommandProcessor(state);
+        matchId = java.util.UUID.randomUUID().toString();
         phase = SessionPhase.PLAYING;
         seq = 0;
         broadcastSnapshot();
@@ -346,7 +355,7 @@ public final class EmbeddedServer implements AutoCloseable {
         for (int viewer = 0; viewer < 2; viewer++)
             if (slots[viewer] != null)
                 send(slots[viewer].peer,
-                        Protocol.encode(new Protocol.FullSnapshot(seq, Redactor.redact(state, viewer))));
+                        Protocol.encode(new Protocol.FullSnapshot(seq, matchId, Redactor.redact(state, viewer))));
     }
 
     private void broadcastStateUpdate(String command, String result, int actor) {
@@ -361,7 +370,7 @@ public final class EmbeddedServer implements AutoCloseable {
         for (int viewer = 0; viewer < 2; viewer++)
             if (slots[viewer] != null)
                 send(slots[viewer].peer, Protocol.encode(
-                        new Protocol.GameOver(winner, Redactor.redact(state, viewer))));
+                        new Protocol.GameOver(winner, matchId, Redactor.redact(state, viewer))));
     }
 
     private void sendError(Peer peer, String message) {

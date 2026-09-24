@@ -45,6 +45,13 @@ final class TestClient implements Closeable {
         out.flush();
     }
 
+    /** Sends a hand-written JSON line, bypassing the encoder. */
+    void sendRaw(String jsonLine) {
+        out.print(jsonLine);
+        out.print('\n');
+        out.flush();
+    }
+
     String next(long timeoutMs) throws InterruptedException {
         String line = incoming.poll(timeoutMs, TimeUnit.MILLISECONDS);
         if (line == null) throw new AssertionError("Timed out waiting for server message");

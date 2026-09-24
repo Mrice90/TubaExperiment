@@ -8,6 +8,7 @@ import com.infiniteconquest.gui.GameSettings;
 import com.infiniteconquest.net.DeckDto;
 import com.infiniteconquest.net.EmbeddedServer;
 import com.infiniteconquest.net.Protocol;
+import com.infiniteconquest.net.WsBridge;
 
 import java.io.IOException;
 import java.util.List;
@@ -42,6 +43,12 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
     private final List<NetClient.Listener> battleListeners = new CopyOnWriteArrayList<>();
     private volatile List<Protocol.LobbyPlayer> lobbyPlayers = List.of();
     private volatile GameSnapshot initialSnapshot;
+    private volatile String matchId;
+    // Tunnel hosting resources (hostWithTunnel only).
+    private volatile WsBridge bridge;
+    private volatile TunnelManager tunnel;
+    private volatile String wssUrl;
+    private volatile LobbyLease lobbyLease;
 
     private NetSession(boolean host, GameSettings settings, EmbeddedServer server,
                        NetTransport transport, int localPlayer, Listener listener) {
@@ -87,10 +94,148 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
         return session;
     }
 
+    /**
+     * Joins a host through a cloudflared tunnel URL
+     * ({@code wss://*.trycloudflare.com}). The tunnel terminates TLS at
+     * Cloudflare's edge; neither player learns the other's IP.
+     */
+    public static NetSession joinViaTunnel(GameSettings settings, DeckBuild deck, String wssUrl,
+                                           Listener listener) throws IOException {
+        Objects.requireNonNull(deck, "deck");
+        WsNetTransport transport = new WsNetTransport(wssUrl);
+        transport.connect();
+        try {
+            transport.awaitReady(20, java.util.concurrent.TimeUnit.SECONDS);
+        } catch (java.util.concurrent.TimeoutException | InterruptedException e) {
+            transport.close();
+            throw new IOException("Timed out opening the tunnel connection", e);
+        }
+        NetSession session = new NetSession(false, settings, null, transport, 1, listener);
+        session.client.hello(settings.playerUuid, settings.playerName, toDto(deck));
+        return session;
+    }
+
     /** Deck sent to the host at lobby time; the host never forwards it. */
     public static DeckDto toDto(DeckBuild deck) {
         return new DeckDto(deck.name(), deck.primaryFaction(), deck.allyFaction(),
                 deck.capital().id(), deck.cards().stream().map(CardDefinition::id).toList());
+    }
+
+    /**
+     * Starts an embedded server plus a cloudflared tunnel, and optionally
+     * registers a public lobby. The host's own client connects over loopback
+     * TCP; guests arrive through {@code wss://*.trycloudflare.com} via the
+     * WebSocket bridge. {@link #tunnelUrl()} and {@link #lobbyCode()} are
+     * available once this returns.
+     *
+     * @param lobby   lobby service, or null to host without a public listing
+     *                (direct tunnel URL sharing or quick-match hosting)
+     * @param publish when true, register a public lobby (requires {@code lobby})
+     */
+    public static NetSession hostWithTunnel(GameSettings settings, DeckBuild deck,
+                                            DemoMatchFactory factory, LobbyService lobby,
+                                            boolean publish, Listener listener) throws IOException {
+        Objects.requireNonNull(deck, "deck");
+        EmbeddedServer server = new EmbeddedServer(settings.playerUuid, settings.playerName, deck);
+        try {
+            server.start(EmbeddedServer.DEFAULT_PORT);
+        } catch (IOException e) {
+            server.start(0);
+        }
+        WsBridge bridge;
+        try {
+            bridge = WsBridge.listen(0, "127.0.0.1", server.port());
+        } catch (IOException e) {
+            server.close();
+            throw new IOException("Could not start the tunnel bridge", e);
+        }
+        java.util.concurrent.CountDownLatch urlLatch = new java.util.concurrent.CountDownLatch(1);
+        java.util.concurrent.atomic.AtomicReference<String> urlRef =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        java.util.concurrent.atomic.AtomicReference<String> errorRef =
+                new java.util.concurrent.atomic.AtomicReference<>();
+        TunnelManager tunnel = new TunnelManager(new TunnelManager.Listener() {
+            @Override public void onUrl(String httpsUrl) {
+                urlRef.set(httpsUrl);
+                urlLatch.countDown();
+            }
+
+            @Override public void onError(String message) {
+                errorRef.set(message);
+                urlLatch.countDown();
+            }
+        });
+        tunnel.start(bridge.port());
+        String wssUrl;
+        try {
+            boolean settled = urlLatch.await(TunnelManager.STARTUP_TIMEOUT_SECONDS + 10,
+                    java.util.concurrent.TimeUnit.SECONDS);
+            String httpsUrl = urlRef.get();
+            if (!settled || httpsUrl == null) {
+                tunnel.stop();
+                bridge.close();
+                server.close();
+                String detail = errorRef.get();
+                throw new IOException("Tunnel failed: "
+                        + (detail != null ? detail : "timed out waiting for cloudflared"));
+            }
+            wssUrl = TunnelManager.toWssUrl(httpsUrl);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            tunnel.stop();
+            try { bridge.close(); } catch (Exception ignored) {}
+            server.close();
+            throw new IOException("Interrupted while starting the tunnel", e);
+        }
+        LobbyLease lease = null;
+        if (lobby != null && publish) {
+            try {
+                lease = LobbyLease.register(lobby, settings, wssUrl);
+            } catch (RuntimeException e) {
+                tunnel.stop();
+                try { bridge.close(); } catch (Exception ignored) {}
+                server.close();
+                throw new IOException("Could not register the public lobby", e);
+            }
+        }
+        TcpNetTransport transport = new TcpNetTransport("127.0.0.1", server.port());
+        transport.connect();
+        NetSession session = new NetSession(true, settings, server, transport, 0, listener);
+        session.bridge = bridge;
+        session.tunnel = tunnel;
+        session.wssUrl = wssUrl;
+        session.lobbyLease = lease;
+        session.client.hello(settings.playerUuid, settings.playerName, null);
+        return session;
+    }
+
+    /** Tunnel URL guests use to join (host with tunnel only; null otherwise). */
+    public String tunnelUrl() { return wssUrl; }
+
+    /** Public lobby code (host with public lobby only; null otherwise). */
+    public String lobbyCode() {
+        return lobbyLease == null ? null : lobbyLease.code();
+    }
+
+    /**
+     * Registers a quick-match pairing for the guest and stops advertising
+     * (removes any public lobby). The guest's queue poll will report "ready".
+     */
+    public void publishQuickMatchPairing(LobbyService lobby, String guestUuid) throws IOException {
+        if (!host) throw new IllegalStateException("Only the host can publish a pairing");
+        Objects.requireNonNull(lobby, "lobby");
+        String code = lobbyCode();
+        if (lobbyLease != null) {
+            lobbyLease.close();
+            lobbyLease = null;
+        }
+        lobby.publishPairing(settings.playerUuid, guestUuid, wssUrl, code == null ? "" : code,
+                settings.playerName, currentRating());
+    }
+
+    /** The host's rating for matchmaking display; defaults to 1000 offline. */
+    public int currentRating() {
+        return Math.max(0, settings.playerRating);
     }
 
     public boolean isHost() { return host; }
@@ -98,6 +243,8 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
     public NetClient client() { return client; }
     public List<Protocol.LobbyPlayer> lobbyPlayers() { return lobbyPlayers; }
     public GameSnapshot initialSnapshot() { return initialSnapshot; }
+    /** Rating-service match id from the host's match-start snapshot (null before start). */
+    public String matchId() { return matchId; }
 
     /** Host only: starts the match once a guest has joined. */
     public void startMatch() {
@@ -112,7 +259,7 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
     public void addBattleListener(NetClient.Listener battle) {
         battleListeners.add(battle);
         GameSnapshot snapshot = initialSnapshot;
-        if (snapshot != null) battle.onSnapshot(0, snapshot);
+        if (snapshot != null) battle.onSnapshot(0, matchId, snapshot);
     }
 
     // --- NetClient.Listener (already on the EDT) ---
@@ -122,8 +269,9 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
         listener.onLobby(lobbyPlayers);
     }
 
-    @Override public void onSnapshot(long seq, GameSnapshot snapshot) {
+    @Override public void onSnapshot(long seq, String matchId, GameSnapshot snapshot) {
         initialSnapshot = snapshot;
+        this.matchId = matchId;
         listener.onMatchStarted(snapshot);
     }
 
@@ -133,9 +281,10 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
             battle.onStateUpdate(seq, command, result, actor, snapshot);
     }
 
-    @Override public void onGameOver(Integer winner, GameSnapshot snapshot) {
+    @Override public void onGameOver(Integer winner, String matchId, GameSnapshot snapshot) {
+        if (matchId != null) this.matchId = matchId;
         for (NetClient.Listener battle : battleListeners)
-            battle.onGameOver(winner, snapshot);
+            battle.onGameOver(winner, this.matchId, snapshot);
     }
 
     @Override public void onError(String message) {
@@ -148,6 +297,17 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
 
     @Override public void close() {
         try { client.close(); } catch (RuntimeException ignored) {}
+        LobbyLease lease = lobbyLease;
+        lobbyLease = null;
+        if (lease != null) lease.close(); // stops heartbeat, unregisters lobby (best-effort)
+        TunnelManager tm = tunnel;
+        tunnel = null;
+        if (tm != null) tm.stop();
+        WsBridge b = bridge;
+        bridge = null;
+        if (b != null) {
+            try { b.close(); } catch (Exception ignored) {}
+        }
         if (server != null) server.close();
     }
 }

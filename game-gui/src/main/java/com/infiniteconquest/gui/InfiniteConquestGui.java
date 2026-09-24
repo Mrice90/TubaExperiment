@@ -78,6 +78,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private boolean netStarted;
     private boolean netGameOver;
     private Integer netWinner;
+    /** Rating line for the game-over dialog, e.g. "Rating 1016 (+16)". Null = no rating to show. */
+    private String netRatingLine;
+    /** True once the rating report has resolved (or was skipped); gates the game-over dialog. */
+    private boolean netRatingReady;
     private String opponentName = "Opponent";
     private String netPendingCommand;
     private boolean victoryDialogShown;
@@ -256,7 +260,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         // Lobby UI lives in the shell; the battle only cares about snapshots.
     }
 
-    @Override public void onSnapshot(long seq, GameSnapshot snapshot) {
+    @Override public void onSnapshot(long seq, String matchId, GameSnapshot snapshot) {
         applyNetSnapshot(snapshot);
     }
 
@@ -276,13 +280,14 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         refresh();
     }
 
-    @Override public void onGameOver(Integer winner, GameSnapshot snapshot) {
+    @Override public void onGameOver(Integer winner, String matchId, GameSnapshot snapshot) {
         netGameOver = true;
         netWinner = winner;
         netPendingCommand = null;
         state = GameState.fromSnapshot(snapshot, netDefinitions);
         netLastFrame = PresentationSnapshot.capture(state);
         interaction.markGameOver();
+        requestRatingReport(winner);
         refresh();
     }
 
@@ -308,12 +313,16 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
 
     /** Net game-over dialog, shown once the final presentation finishes. */
     private void showNetGameOver() {
-        if (netWinner == null) return;
+        if (netWinner == null || !netRatingReady) return;
         boolean won = netWinner == localPlayer();
         String title = won ? "Victory!" : "Defeat";
+        String ratingLine = netRatingLine == null ? ""
+                : "<br><br><font color='#f0bf49'>" + html(netRatingLine) + "</font>";
         int answer = JOptionPane.showConfirmDialog(this,
-                (won ? "You have destroyed the enemy capital!" : opponentName + " has destroyed your capital.")
-                        + "\nReturn to the title menu?",
+                "<html><div style='text-align:center'>"
+                        + (won ? "You have destroyed the enemy capital!" : opponentName + " has destroyed your capital.")
+                        + ratingLine
+                        + "<br><br>Return to the title menu?</div></html>",
                 title, JOptionPane.YES_NO_OPTION,
                 won ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
         netWinner = null; // show once
@@ -321,6 +330,133 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             onQuitToTitle.run();
             dispose();
         }
+    }
+
+    /**
+     * Reports this client's view of the match result to the lobby/rating
+     * service. Both clients report independently; the service only applies
+     * the Elo change when both reports agree (see net-server/SECURITY.md).
+     * The game-over dialog waits for the report to resolve so it can show
+     * the rating change.
+     */
+    private void requestRatingReport(Integer winner) {
+        netRatingReady = false;
+        netRatingLine = null;
+        String workerUrl = gameSettings.lobbyWorkerUrl;
+        String matchId = netSession != null ? netSession.matchId() : null;
+        if (workerUrl == null || workerUrl.isBlank() || matchId == null || winner == null) {
+            netRatingReady = true;
+            return;
+        }
+        String winnerUuid = seatUuid(winner);
+        String loserUuid = seatUuid(winner == 0 ? 1 : 0);
+        if (winnerUuid == null || loserUuid == null) {
+            netRatingReady = true;
+            return;
+        }
+        int ratingBefore = gameSettings.playerRating;
+        new javax.swing.SwingWorker<com.infiniteconquest.gui.net.LobbyService.ReportResult, Void>() {
+            @Override
+            protected com.infiniteconquest.gui.net.LobbyService.ReportResult doInBackground() {
+                try {
+                    com.infiniteconquest.gui.net.LobbyService service =
+                            new com.infiniteconquest.gui.net.LobbyService(workerUrl);
+                    return service.report(matchId, gameSettings.playerUuid, winnerUuid, loserUuid);
+                } catch (Exception e) {
+                    return null;
+                }
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    com.infiniteconquest.gui.net.LobbyService.ReportResult result = get();
+                    if (result != null && result.applied()) {
+                        applyRatingResult(result.rating(), ratingBefore);
+                    } else if (result != null && result.reason() != null
+                            && result.reason().toLowerCase(java.util.Locale.ROOT).contains("waiting")) {
+                        // We reported first: the change lands when the opponent's
+                        // report arrives. Poll the rating until it moves.
+                        pollRatingUntilApplied(workerUrl, ratingBefore);
+                    } else if (result != null && result.reason() != null) {
+                        netRatingLine = "Rating unchanged (" + result.reason() + ")";
+                        netRatingReady = true;
+                        refresh();
+                    } else {
+                        netRatingReady = true;
+                        refresh();
+                    }
+                } catch (Exception ignored) {
+                    netRatingReady = true;
+                    refresh();
+                }
+            }
+        }.execute();
+    }
+
+    /**
+     * After reporting first, the Elo change is applied when the opponent's
+     * report lands. Poll our rating until it moves (or a timeout), so both
+     * players eventually see the delta instead of only the second reporter.
+     */
+    private void pollRatingUntilApplied(String workerUrl, int ratingBefore) {
+        new javax.swing.SwingWorker<Integer, Void>() {
+            @Override
+            protected Integer doInBackground() {
+                com.infiniteconquest.gui.net.LobbyService service =
+                        new com.infiniteconquest.gui.net.LobbyService(workerUrl);
+                long deadline = System.currentTimeMillis() + 90_000;
+                while (System.currentTimeMillis() < deadline) {
+                    try {
+                        Thread.sleep(5_000);
+                        com.infiniteconquest.gui.net.LobbyService.Rating rating =
+                                service.ratingOf(gameSettings.playerUuid);
+                        if (rating.rating() != ratingBefore) return rating.rating();
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        return null;
+                    } catch (Exception ignored) {
+                        // Transient: keep polling until the deadline.
+                    }
+                }
+                return null;
+            }
+
+            @Override
+            protected void done() {
+                try {
+                    Integer now = get();
+                    if (now != null) {
+                        applyRatingResult(now, ratingBefore);
+                    } else {
+                        netRatingLine = "Rating will update once both results are in";
+                        netRatingReady = true;
+                        refresh();
+                    }
+                } catch (Exception ignored) {
+                    netRatingReady = true;
+                    refresh();
+                }
+            }
+        }.execute();
+    }
+
+    /** Shows the rating delta, persists the new rating, and releases the game-over dialog. */
+    private void applyRatingResult(int ratingNow, int ratingBefore) {
+        int delta = ratingNow - ratingBefore;
+        String sign = delta >= 0 ? "+" : "";
+        netRatingLine = "Rating " + ratingNow + " (" + sign + delta + ")";
+        gameSettings.playerRating = ratingNow;
+        gameSettings.save();
+        netRatingReady = true;
+        refresh();
+    }
+
+    /** UUID of the player in the given seat, from the lobby roster. */
+    private String seatUuid(int seat) {
+        if (netSession == null) return null;
+        java.util.List<com.infiniteconquest.net.Protocol.LobbyPlayer> players = netSession.lobbyPlayers();
+        return seat >= 0 && seat < players.size() ? players.get(seat).uuid() : null;
     }
 
     @Override public void dispose() { if(handHoverTimer!=null)handHoverTimer.stop();super.dispose(); }

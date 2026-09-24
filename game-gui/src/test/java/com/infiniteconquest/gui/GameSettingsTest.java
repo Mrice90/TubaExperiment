@@ -62,6 +62,24 @@ class GameSettingsTest {
     }
 
     @Test
+    void ratingRoundTripsWithDefault() throws Exception {
+        String originalHome = System.getProperty("user.home");
+        Path fakeHome = Files.createTempDirectory("ic-settings-rating-test");
+        System.setProperty("user.home", fakeHome.toString());
+        try {
+            GameSettings settings = GameSettings.load();
+            assertEquals(GameSettings.DEFAULT_RATING, settings.playerRating);
+            settings.playerRating = 1016;
+            settings.save();
+
+            GameSettings reloaded = GameSettings.load();
+            assertEquals(1016, reloaded.playerRating);
+        } finally {
+            System.setProperty("user.home", originalHome);
+        }
+    }
+
+    @Test
     void corruptSettingsFallBackToDefaults() throws Exception {
         String originalHome = System.getProperty("user.home");
         Path fakeHome = Files.createTempDirectory("ic-settings-corrupt");

@@ -28,6 +28,10 @@ public final class GameSettings {
     private static final String KEY_SETTINGS_VERSION = "settings.version";
     private static final String KEY_PLAYER_UUID = "player.uuid";
     private static final String KEY_PLAYER_NAME = "player.name";
+    private static final String KEY_LOBBY_WORKER_URL = "lobby.worker.url";
+    private static final String KEY_PLAYER_RATING = "player.rating";
+    /** Rating assigned by the lobby service (Elo, starts at 1000). */
+    public static final int DEFAULT_RATING = 1000;
     /** Maximum display-name length, matching the netcode design. */
     public static final int MAX_NAME_LENGTH = 24;
 
@@ -46,6 +50,14 @@ public final class GameSettings {
     public String playerUuid;
     /** Player-chosen display name, sanitized, max 24 chars. Shown to other players. */
     public String playerName;
+    /**
+     * Lobby/rating Worker origin, e.g. {@code https://ic-lobby.workers.dev}.
+     * Empty until the lobby service is deployed; direct tunnel links work
+     * without it, but the lobby browser, quick match, and ratings need it.
+     */
+    public String lobbyWorkerUrl;
+    /** Last known Elo rating from the lobby service; 1000 until the first report. */
+    public int playerRating;
 
     private GameSettings() {
         resetToDefaults();
@@ -64,6 +76,8 @@ public final class GameSettings {
         skippedVersion = "";
         playerUuid = java.util.UUID.randomUUID().toString();
         playerName = "Player";
+        playerRating = DEFAULT_RATING;
+        lobbyWorkerUrl = "";
     }
 
     /**
@@ -131,6 +145,12 @@ public final class GameSettings {
             settings.playerUuid = java.util.UUID.randomUUID().toString();
         }
         settings.playerName = sanitizeName(props.getProperty(KEY_PLAYER_NAME, "Player"));
+        try {
+            settings.playerRating = Integer.parseInt(props.getProperty(KEY_PLAYER_RATING, "1000"));
+        } catch (NumberFormatException e) {
+            settings.playerRating = DEFAULT_RATING;
+        }
+        settings.lobbyWorkerUrl = props.getProperty(KEY_LOBBY_WORKER_URL, "").trim();
         // 0.6.0 changed the display default: pre-0.6.0 settings files adopt fullscreen once.
         if (!props.containsKey(KEY_SETTINGS_VERSION)) {
             settings.fullscreen = true;
@@ -152,6 +172,8 @@ public final class GameSettings {
         props.setProperty(KEY_SKIPPED, skippedVersion);
         props.setProperty(KEY_PLAYER_UUID, playerUuid);
         props.setProperty(KEY_PLAYER_NAME, playerName);
+        props.setProperty(KEY_PLAYER_RATING, Integer.toString(playerRating));
+        props.setProperty(KEY_LOBBY_WORKER_URL, lobbyWorkerUrl == null ? "" : lobbyWorkerUrl);
         props.setProperty(KEY_SETTINGS_VERSION, GameVersion.VERSION);
         try {
             Files.createDirectories(settingsFile().getParent());

@@ -41,9 +41,11 @@ class ProtocolTest {
                 new int[]{3, 3}, new int[]{3, 3}, new int[]{4, 4}, new int[]{36, 36},
                 new int[]{0, 0}, new int[]{0, 0},
                 List.of(), List.of());
-        Protocol.FullSnapshot out = new Protocol.FullSnapshot(7L, snapshot);
+        String matchId = UUID.randomUUID().toString();
+        Protocol.FullSnapshot out = new Protocol.FullSnapshot(7L, matchId, snapshot);
         Protocol.FullSnapshot back = Protocol.decode(Protocol.encode(out), Protocol.FullSnapshot.class);
         assertEquals(7L, back.seq());
+        assertEquals(matchId, back.matchId(), "match id must survive the wire for rating reports");
         assertEquals(1, back.snapshot().viewingPlayer());
         assertEquals("snapshot", Protocol.typeOf(Protocol.encode(out)));
 
@@ -52,9 +54,10 @@ class ProtocolTest {
         assertEquals("state_update", updateBack.type());
         assertEquals("OK: Turn ended", updateBack.result());
 
-        Protocol.GameOver gameOver = new Protocol.GameOver(0, snapshot);
+        Protocol.GameOver gameOver = new Protocol.GameOver(0, matchId, snapshot);
         assertEquals("game_over", Protocol.typeOf(Protocol.encode(gameOver)));
         assertEquals(0, Protocol.decode(Protocol.encode(gameOver), Protocol.GameOver.class).winner());
+        assertEquals(matchId, Protocol.decode(Protocol.encode(gameOver), Protocol.GameOver.class).matchId());
     }
 
     @Test void malformedInputFailsFast() {

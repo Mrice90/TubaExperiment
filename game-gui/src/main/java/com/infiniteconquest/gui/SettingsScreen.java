@@ -18,6 +18,7 @@ final class SettingsScreen extends SubScreen {
     private JCheckBox tipsEnabled;
     private JCheckBox checkUpdatesOnStartup;
     private JLabel updateStatus;
+    private JTextField lobbyWorkerUrlField;
 
     SettingsScreen(GameShell shell, GameSettings settings) {
         super(shell, "Settings");
@@ -76,6 +77,24 @@ final class SettingsScreen extends SubScreen {
         card.add(SubScreen.row("Updates", updateRow));
         card.add(Box.createVerticalStrut(8));
         card.add(SubScreen.row("", checkUpdatesOnStartup));
+        card.add(Box.createVerticalStrut(8));
+
+        lobbyWorkerUrlField = new JTextField(settings.lobbyWorkerUrl == null ? "" : settings.lobbyWorkerUrl, 24);
+        lobbyWorkerUrlField.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+        lobbyWorkerUrlField.setBackground(new Color(25, 35, 52));
+        lobbyWorkerUrlField.setForeground(new Color(232, 236, 244));
+        lobbyWorkerUrlField.setCaretColor(new Color(240, 191, 73));
+        lobbyWorkerUrlField.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 85, 110)),
+                new EmptyBorder(6, 8, 6, 8)));
+        lobbyWorkerUrlField.setMaximumSize(new Dimension(280, 38));
+        lobbyWorkerUrlField.setToolTipText("Lobby/rating server URL. Empty disables the lobby browser, quick match, and ratings; direct tunnel links still work.");
+        card.add(SubScreen.row("Lobby server", lobbyWorkerUrlField));
+        card.add(Box.createVerticalStrut(8));
+        JLabel lobbyHint = new JLabel("<html><i>Optional. Powers the lobby browser, quick match, and Elo ratings. Direct tunnel links work without it.</i></html>");
+        lobbyHint.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+        lobbyHint.setForeground(new Color(150, 158, 172));
+        card.add(SubScreen.row("", lobbyHint));
         card.add(Box.createVerticalStrut(26));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
@@ -114,6 +133,7 @@ final class SettingsScreen extends SubScreen {
                 ? GameSettings.AnimationMode.FULL : GameSettings.AnimationMode.REDUCED;
         settings.tipsEnabled = tipsEnabled.isSelected();
         settings.checkUpdatesOnStartup = checkUpdatesOnStartup.isSelected();
+        settings.lobbyWorkerUrl = lobbyWorkerUrlField.getText().trim();
         settings.save();
         shell.applySettings();
         shell.showTitle();
