@@ -1,0 +1,275 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_chain_lightning",
+      "name": "Chain Lightning",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "STRIKE_CHARACTER",
+          "amount": 4,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "A forked bolt overwhelms a vulnerable enemy Character.",
+      "description": "A forked bolt overwhelms a vulnerable enemy Character.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_skybreaker_bolt",
+      "name": "Skybreaker Bolt",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 4,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "DAMAGE_PERMANENT",
+          "amount": 4,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "A focused thunder strike tears into hostile infrastructure.",
+      "description": "A focused thunder strike tears into hostile infrastructure.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_windstep_protocol",
+      "name": "Windstep Protocol",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "TELEPORT_CHARACTER",
+          "amount": 1,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "Storm code relocates a friendly Character to an empty square.",
+      "description": "Storm code relocates a friendly Character to an empty square.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_stormcharge",
+      "name": "Stormcharge",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "BUFF_ATTACK",
+          "amount": 2,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "Charged air grants a friendly Character +2 Attack until its controller's next turn.",
+      "description": "Charged air grants a friendly Character +2 Attack until its controller's next turn.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_aegis_of_the_sky",
+      "name": "Aegis of the Sky",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "BUFF_DEFENSE",
+          "amount": 3,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "A storm shield grants a friendly Character +3 Defense until its controller's next turn.",
+      "description": "A storm shield grants a friendly Character +3 Defense until its controller's next turn.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "poseidon_crushing_depths",
+      "name": "Crushing Depths",
+      "type": "SPELL",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "STRIKE_CHARACTER",
+          "amount": 4,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "A pressure wave tests an enemy Character against the deep.",
+      "description": "A pressure wave tests an enemy Character against the deep.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "TIDAL"
+      ]
+    },
+    {
+      "id": "poseidon_erode_foundation",
+      "name": "Erode Foundation",
+      "type": "SPELL",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "DAMAGE_PERMANENT",
+          "amount": 3,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "Relentless currents grind down an enemy Permanent.",
+      "description": "Relentless currents grind down an enemy Permanent.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "TIDAL"
+      ]
+    },
+    {
+      "id": "poseidon_restorative_tide",
+      "name": "Restorative Tide",
+      "type": "SPELL",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "HEAL_PERMANENT",
+          "amount": 4,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "Mineral-rich water repairs four damage from a friendly Permanent.",
+      "description": "Mineral-rich water repairs four damage from a friendly Permanent.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "TIDAL"
+      ]
+    },
+    {
+      "id": "poseidon_undertow_recall",
+      "name": "Undertow Recall",
+      "type": "SPELL",
+      "faction": "POSEIDON",
+      "cost": 4,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "RETURN_CHARACTER",
+          "amount": 1,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "A violent current returns an exposed enemy Character to hand.",
+      "description": "A violent current returns an exposed enemy Character to hand.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "TIDAL"
+      ]
+    },
+    {
+      "id": "poseidon_tidal_armor",
+      "name": "Tidal Armor",
+      "type": "SPELL",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "BUFF_DEFENSE",
+          "amount": 3,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "Living water grants a friendly Character +3 Defense until its controller's next turn.",
+      "description": "Living water grants a friendly Character +3 Defense until its controller's next turn.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "TIDAL"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_land_thunderstep_plateau",
+      "name": "Thunderstep Plateau",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 9,
+      "gpGeneration": 1,
+      "keywords": [
+        "HIGH_GROUND"
+      ],
+      "effects": [],
+      "rulesText": "Turn 2. Generates 1 GP each turn.",
+      "description": "High stone storing the storm's first charge.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HIGHLAND"
+      ],
+      "keywordValues": {
+        "HIGH_GROUND": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "zeus_land_aurora_reach",
+      "name": "Aurora Reach",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 15,
+      "gpGeneration": 3,
+      "keywords": [
+        "WAYSTATION"
+      ],
+      "effects": [],
+      "rulesText": "Turn 5. Generates 3 GP each turn.",
+      "description": "A radiant frontier above the weather.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "WAYSTATION": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "zeus_structure_stormglass_relay",
+      "name": "Stormglass Relay",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 11,
+      "gpGeneration": 2,
+      "keywords": [
+        "WATCHTOWER"
+      ],
+      "effects": [],
+      "rulesText": "Turn 3. Generates 2 GP each turn.",
+      "description": "It catches lightning and sells the echo.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "WATCHTOWER": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 2
+    },
+    {
+      "id": "zeus_structure_cloud_archive",
+      "name": "Cloud Archive",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 6,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 17,
+      "gpGeneration": 2,
+      "developmentPassive": "DRAW_ON_DEPLOY",
+      "keywords": [],
+      "effects": [],
+      "rulesText": "Turn 6. Generates 2 GP. Draw when deployed.",
+      "description": "Every storm leaves a record in vapor.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_land_coral_tributary",
+      "name": "Coral Tributary",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 10,
+      "gpGeneration": 1,
+      "keywords": [
+        "SANCTUARY"
+      ],
+      "effects": [],
+      "rulesText": "Turn 2. Generates 1 GP each turn.",
+      "description": "Young reefs channel tribute toward Atlantis.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST"
+      ],
+      "keywordValues": {
+        "SANCTUARY": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "poseidon_land_leviathan_shelf",
+      "name": "Leviathan Shelf",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 5,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 17,
+      "gpGeneration": 3,
+      "keywords": [],
+      "effects": [],
+      "rulesText": "Turn 5. Generates 3 GP each turn.",
+      "description": "A continental ledge broad enough for giants.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST",
+        "HIGHLAND"
+      ]
+    },
+    {
+      "id": "poseidon_structure_tidevault",
+      "name": "Tidevault",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 12,
+      "gpGeneration": 2,
+      "keywords": [],
+      "effects": [],
+      "rulesText": "Turn 3. Generates 2 GP each turn.",
+      "description": "The sea deposits wealth behind pressure seals.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "FORTRESS"
+      ]
+    },
+    {
+      "id": "poseidon_structure_pearl_infirmary",
+      "name": "Pearl Infirmary",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 6,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 18,
+      "gpGeneration": 2,
+      "developmentPassive": "HEAL_CAPITAL_ON_DEPLOY",
+      "keywords": [
+        "MEDIC_TENT"
+      ],
+      "effects": [],
+      "rulesText": "Turn 6. Generates 2 GP. Heals your Capital when deployed. Medic Tent (range 2, amount 2).",
+      "description": "Restorative currents flow through nacre halls.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MEDICAL"
+      ],
+      "keywordValues": {
+        "MEDIC_TENT": {
+          "range": 2,
+          "amount": 2
+        }
+      },
+      "developmentGoldCost": 2
+    }
+  ]
+}

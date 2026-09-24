@@ -1,0 +1,198 @@
+{
+  "ZEUS": [
+    {
+      "id": "zeus_olympian_cloudbank",
+      "copies": 4
+    },
+    {
+      "id": "zeus_land_dawncloud_step",
+      "copies": 4
+    },
+    {
+      "id": "zeus_throneward_conduit",
+      "copies": 4
+    },
+    {
+      "id": "zeus_eagles_perch_array",
+      "copies": 2
+    },
+    {
+      "id": "zeus_tutor_land_1",
+      "copies": 2
+    },
+    {
+      "id": "zeus_land_aurora_reach",
+      "copies": 2
+    },
+    {
+      "id": "zeus_storm_relay_pylon",
+      "copies": 4
+    },
+    {
+      "id": "zeus_keraunos_charging_spire",
+      "copies": 2
+    },
+    {
+      "id": "zeus_cloudwall_bastion",
+      "copies": 2
+    },
+    {
+      "id": "zeus_structure_stormglass_relay",
+      "copies": 2
+    },
+    {
+      "id": "zeus_tutor_structure_1",
+      "copies": 2
+    },
+    {
+      "id": "zeus_ability_oracle_spire",
+      "copies": 2
+    },
+    {
+      "id": "zeus_cloudline_courier",
+      "copies": 3
+    },
+    {
+      "id": "zeus_arc_relay_scout",
+      "copies": 3
+    },
+    {
+      "id": "zeus_iris_signal_runner",
+      "copies": 3
+    },
+    {
+      "id": "zeus_keyword_stormgate_sentinel",
+      "copies": 3
+    },
+    {
+      "id": "zeus_ability_skyline_seer",
+      "copies": 2
+    },
+    {
+      "id": "zeus_boltwing_cavalier",
+      "copies": 2
+    },
+    {
+      "id": "zeus_stormgate_adept",
+      "copies": 2
+    },
+    {
+      "id": "zeus_keyword_thunderhead_guardian",
+      "copies": 2
+    },
+    {
+      "id": "zeus_chain_lightning",
+      "copies": 2
+    },
+    {
+      "id": "zeus_windstep_protocol",
+      "copies": 2
+    },
+    {
+      "id": "zeus_aegis_of_the_sky",
+      "copies": 2
+    },
+    {
+      "id": "zeus_skybreaker_bolt",
+      "copies": 2
+    }
+  ],
+  "POSEIDON": [
+    {
+      "id": "poseidon_neon_tidelands",
+      "copies": 4
+    },
+    {
+      "id": "poseidon_coral_data_reef",
+      "copies": 4
+    },
+    {
+      "id": "poseidon_palace_of_tides_approach",
+      "copies": 4
+    },
+    {
+      "id": "poseidon_ability_healing_shoal",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_tutor_land_1",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_apex_worldsea_platform",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_sonar_beacon",
+      "copies": 4
+    },
+    {
+      "id": "poseidon_structure_tidevault",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_coral_bulwark",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_tidal_pump_station",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_tutor_structure_1",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_ability_tidewell",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_tidepool_surveyor",
+      "copies": 3
+    },
+    {
+      "id": "poseidon_undertow_stalker",
+      "copies": 3
+    },
+    {
+      "id": "poseidon_reefline_defender",
+      "copies": 3
+    },
+    {
+      "id": "poseidon_keyword_breakwater_hoplite",
+      "copies": 3
+    },
+    {
+      "id": "poseidon_delphic_sonar_adept",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_keyword_trench_stalker",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_ability_reefwarden",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_kraken_tendril_drone",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_crushing_depths",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_restorative_tide",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_tidal_armor",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_erode_foundation",
+      "copies": 2
+    }
+  ]
+}

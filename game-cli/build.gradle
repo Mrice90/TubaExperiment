@@ -1,0 +1,31 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation project(':game-core')
+    implementation 'com.fasterxml.jackson.core:jackson-databind:2.18.2'
+
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+application {
+    mainClass = 'com.infiniteconquest.cli.InfiniteConquestCli'
+}
+
+// Run with -PbalanceOutput=... -PbalanceManifest=...; reuse the manifest for comparisons.
+tasks.register('balancePass', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.infiniteconquest.cli.BalancePassRunner'
+    maxHeapSize = '768m'
+    args rootProject.file(findProperty('balanceOutput') ?: 'docs/balance/current').absolutePath,
+         rootProject.file(findProperty('balanceManifest') ?: 'docs/balance/scenarios.json').absolutePath
+}
+
+tasks.register('starterBalance', JavaExec) {
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.infiniteconquest.cli.StarterBalanceRunner'
+    maxHeapSize = '768m'
+    args rootProject.file('docs/starters').absolutePath
+}

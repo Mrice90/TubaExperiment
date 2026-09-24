@@ -1,0 +1,12 @@
+package com.infiniteconquest.data;
+
+public enum Keyword {
+    MOLE,
+    VANGUARD,
+    BLINK,
+    FAST_STRIKE,
+    SIEGE,
+    SHARP_SHOT,
+    HIGH_GROUND, COVER, WAYSTATION, FERTILE, SANCTUARY, ARCHIVE,
+    TURRET, MEDIC_TENT, WATCHTOWER, BULWARK, WORKSHOP, BEACON
+}

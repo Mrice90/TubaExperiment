@@ -1,0 +1,40 @@
+name: GUI screenshot review
+
+on:
+  push:
+    branches: [main, "feature/**", "fix/**"]
+    paths:
+      - "game-gui/**"
+      - ".github/workflows/gui-screenshots.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "game-gui/**"
+      - ".github/workflows/gui-screenshots.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Install virtual display
+        run: sudo apt-get update && sudo apt-get install -y xvfb
+      - name: Capture deterministic GUI states
+        run: xvfb-run -a gradle :game-gui:captureGuiScreenshots --no-daemon
+      - name: Upload GUI screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: infinite-conquest-gui-screenshots
+          path: game-gui/build/screenshots/*.png
+          if-no-files-found: error

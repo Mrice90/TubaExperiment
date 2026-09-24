@@ -1,0 +1,434 @@
+{
+  "zeus_arc_relay_scout": [
+    "A 1-GP ranged scout should trade damage for reach."
+  ],
+  "zeus_iris_signal_runner": [
+    "Blink plus ranged combat is a premium early combination."
+  ],
+  "zeus_tempest_oracle": [
+    "Durable range-3 control carries a premium on the compact hex board."
+  ],
+  "zeus_keyword_sparkstep_runner": [
+    "Give the fragile Blink specialist a mobility niche beside Iris."
+  ],
+  "zeus_keyword_cloudline_raider": [
+    "Trade one Attack for one Defense relative to Stormgate Adept instead of strictly outclassing it."
+  ],
+  "zeus_keyword_aetherbolt_avatar": [
+    "Pay for draw-on-entry in addition to the elite mobile ranged body."
+  ],
+  "zeus_apex_keraunos_seraph": [
+    "Range 3 with movement 4 and Blink exceeds the 7-GP tier."
+  ],
+  "zeus_apex_skyfather_archon": [
+    "Price the durable ranged Blink finisher alongside comparable elites."
+  ],
+  "poseidon_nereid_current_rider": [
+    "A 2-Attack movement-4 Blink body needs more than 1 GP."
+  ],
+  "poseidon_tidepool_surveyor": [
+    "Keep its early defensive body but charge reach through later specialists."
+  ],
+  "poseidon_reefline_defender": [
+    "Reduce early Vanguard lockout while retaining the slow blocker role."
+  ],
+  "poseidon_keyword_reef_tunneler": [
+    "Trade attack for movement compared with Undertow Stalker."
+  ],
+  "poseidon_ability_reefwarden": [
+    "Its recurring defense bonus already supplies the seventh point."
+  ],
+  "hades_shade_packet": [
+    "Ranged Mole deployment and 2 Attack exceed the 1-GP slot."
+  ],
+  "hades_styx_ferryman_drone": [
+    "Give the utility-free starter a movement niche."
+  ],
+  "hades_fast_final_breath": [
+    "Reward its 1-Defense fragility relative to other Fast Strike units."
+  ],
+  "hades_lethe_memory_thief": [
+    "Range 3 plus Blink needs a mobility surcharge."
+  ],
+  "hades_keyword_styx_burrower": [
+    "Fast, high-attack Mole should remain vulnerable once revealed."
+  ],
+  "ares_redline_recruit": [
+    "Differentiate the durable recruit from the fast Phobos Pursuer."
+  ],
+  "ares_keyword_phalanx_breaker": [
+    "Fast Strike and high mobility require a defensive tradeoff."
+  ],
+  "ares_titanblood_berserker": [
+    "Melee attacker without a keyword was behind nearby 5-GP options."
+  ],
+  "ares_apex_enyo_citybreaker": [
+    "Make the citybreaker a slow dedicated siege finisher."
+  ],
+  "athena_owl_recon_unit": [
+    "Keep the 1-GP range-3 scout fragile; its reach trades away Defense."
+  ],
+  "athena_pallas_counter_sniper": [
+    "Its range-3 body outclasses other 3-GP marksmen."
+  ],
+  "athena_keyword_hidden_flank_scholar": [
+    "Sharp Shot adds further reach to an already durable ranged body.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_keyword_aegis_cadet": [
+    "Differentiate it from the identical Silver Shield Drone.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_ability_highwall_archon": [
+    "Recurring defense and Sharp Shot warrant an elite-control price."
+  ],
+  "athena_apex_owl_of_absolute_foresight": [
+    "Range 3, Blink and 8 Defense exceed the 6-GP tier."
+  ],
+  "hephaestus_tunnel_riveter": [
+    "Siege plus death refund should not be a nearly free 2/2 attacker."
+  ],
+  "hephaestus_automaton_shieldsmith": [
+    "Reward its movement-1 limitation versus mobile Vanguard peers."
+  ],
+  "hephaestus_talos_patrol_frame": [
+    "Reduce the efficient early Vanguard wall."
+  ],
+  "hephaestus_daedalus_prototype": [
+    "Range 3 and Blink require the same mobility premium as other factions."
+  ],
+  "hephaestus_cyclops_arc_welder": [
+    "Give the keyword-free melee body a reason to compete with siege specialists."
+  ],
+  "hephaestus_foundry_siege_walker": [
+    "Exchange raw attack for its named siege role without raising ranged burst."
+  ],
+  "hephaestus_keyword_bronze_line_automaton": [
+    "Separate a mobile line unit from the stationary Shieldsmith."
+  ],
+  "zeus_apex_divine_tailwind": [
+    "Same teleport effect as Windstep; remove the cosmetic apex surcharge.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_apex_lethe_absolute": [
+    "Same unconditional return effect as Lethe's Embrace; match its cost.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_stormcharge": [
+    "Match the price of other temporary +2 Attack spells."
+  ],
+  "hades_deathly_vigor": [
+    "Match the price of other temporary +2 Attack spells."
+  ],
+  "ares_blood_frenzy": [
+    "Give the melee faction efficient temporary offensive support."
+  ],
+  "poseidon_restorative_tide": [
+    "Healing cannot remove a threat; improve defensive tempo."
+  ],
+  "athena_aegis_restoration": [
+    "Make reactive repair viable against similarly priced damage."
+  ],
+  "hephaestus_field_repair": [
+    "Repair efficiency is a forge faction strength."
+  ],
+  "hephaestus_reactive_plating": [
+    "Match equivalent +3 Defense spells."
+  ],
+  "hephaestus_apex_masterwork_restoration": [
+    "Large single-target repair should not cost almost as much as lethal burn.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_apex_crownstorm_ascendance": [
+    "Discount temporary single-unit attack support relative to permanent removal.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_apex_crown_of_the_unquiet": [
+    "Discount temporary single-unit attack support relative to permanent removal.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_apex_total_war": [
+    "Ares gets the strongest attack buff, but still needs a living attacker.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_apex_imperial_sky_aegis": [
+    "Keep a large defensive reaction affordable without making it removal.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_apex_erebus_null_shroud": [
+    "Keep the equivalent defensive effect on the same price tier.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_apex_champions_refusal": [
+    "Lower defense magnitude than the 5-GP apex shields.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_land_thunderstep_plateau": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "zeus_land_aurora_reach": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "zeus_structure_stormglass_relay": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "zeus_apex_worldstorm_spire": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "zeus_apex_celestial_throne_grid": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "poseidon_coral_bulwark": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "poseidon_land_coral_tributary": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "poseidon_apex_leviathan_nursery_trench": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "poseidon_apex_oceanus_current_vault": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "poseidon_apex_leviathan_gate": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hades_land_asphodel_lease": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hades_land_erebus_claim": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hades_structure_silent_mortuary": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hades_apex_necropolis_root_server": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hades_apex_gate_beyond_death": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "ares_land_red_dust_march": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "ares_land_conquerors_divide": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "ares_chariot_deployment_rack": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "ares_apex_endless_arena": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "ares_apex_siege_god_arsenal": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_land_measured_terrace": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "athena_land_oracles_province": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "athena_aegis_projection_wall": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "athena_apex_parthenon_aegis_citadel": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_apex_strategos_command_vault": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "athena_apex_city_of_reason": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_smart_metal_bulwark": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hephaestus_land_caldera_works": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hephaestus_structure_automender_foundry": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hephaestus_apex_cyclops_star_furnace": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_apex_daedalus_infinite_workshop": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_apex_adamant_bulwark_engine": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_apex_talos_resurrection_cradle": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "hephaestus_apex_titan_salvage_expanse": [
+    "Add faction-role utility; surcharge pays for the benefit beyond the free income/HP baseline."
+  ],
+  "zeus_land_dawncloud_step": [
+    "Keep a free turn-1 option while reducing the strict durability upgrade over earlier lands."
+  ],
+  "zeus_structure_aegis_conductor": [
+    "Free turn-4 infrastructure trades utility for moderate durability."
+  ],
+  "zeus_structure_oracle_of_storms": [
+    "Late high-HP, high-income infrastructure also has a passive; add a modest utility surcharge."
+  ],
+  "poseidon_land_saltmarsh_harbor": [
+    "Keep a free turn-1 option while reducing the strict durability upgrade over earlier lands.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_structure_current_exchange": [
+    "Free turn-4 infrastructure trades utility for moderate durability."
+  ],
+  "poseidon_structure_ambrosial_spring": [
+    "Late high-HP, high-income infrastructure also has a passive; add a modest utility surcharge.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_land_unmarked_crossing": [
+    "Keep a free turn-1 option while reducing the strict durability upgrade over earlier lands."
+  ],
+  "hades_structure_chthonic_registry": [
+    "Free turn-4 infrastructure trades utility for moderate durability."
+  ],
+  "hades_structure_undying_treasury": [
+    "Late high-HP, high-income infrastructure also has a passive; add a modest utility surcharge."
+  ],
+  "ares_land_muster_field": [
+    "Keep a free turn-1 option while reducing the strict durability upgrade over earlier lands."
+  ],
+  "ares_structure_campaign_forge": [
+    "Free turn-4 infrastructure trades utility for moderate durability.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_structure_triumph_foundry": [
+    "Late high-HP, high-income infrastructure also has a passive; add a modest utility surcharge.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_land_academy_gardens": [
+    "Keep a free turn-1 option while reducing the strict durability upgrade over earlier lands.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_structure_civic_ledger": [
+    "Free turn-4 infrastructure trades utility for moderate durability."
+  ],
+  "athena_structure_owl_of_providence": [
+    "Late high-HP, high-income infrastructure also has a passive; add a modest utility surcharge."
+  ],
+  "hephaestus_land_slag_claim": [
+    "Keep a free turn-1 option while reducing the strict durability upgrade over earlier lands.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_structure_precision_mill": [
+    "Free turn-4 infrastructure trades utility for moderate durability.",
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_structure_perpetual_works": [
+    "Late high-HP, high-income infrastructure also has a passive; add a modest utility surcharge."
+  ],
+  "poseidon_ability_tidewell": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_apex_thunder_gods_verdict": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_apex_wrath_of_olympus": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_apex_kraken_prime_avatar": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_apex_abysswalker_nereid": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_apex_maelstrom_verdict": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_apex_final_passage": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_apex_tomb_of_all_systems": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_apex_cerberus_omega": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_apex_ares_godframe_unbound": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_apex_no_safe_ground": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_apex_nike_victory_algorithm": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_apex_gorgon_reflection_wall": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_apex_perfect_counterstroke": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_apex_forge_of_divine_machines": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_apex_golden_factory_district": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_capital_olympus_citadel": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_capital_trident_bastion": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_capital_red_citadel": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_capital_spearpoint_keep": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_capital_owlwatch_fortress": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_capital_great_forge": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_capital_volcanic_foundry": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hades_cerberus_tri_core": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_spartan_exoframe": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_eris_riot_engine": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "hephaestus_volcanic_survey_rig": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_land_leviathan_shelf": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_keyword_breakwater_hoplite": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "ares_keyword_bloodshield_recruit": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "athena_keyword_labyrinth_tactician": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "zeus_fast_tempest_duelist": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ],
+  "poseidon_siege_kraken_sapper": [
+    "Add or correct a searchable archetype from the card's explicit identity; no automatic stat bonus."
+  ]
+}

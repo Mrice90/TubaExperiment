@@ -1,0 +1,37 @@
+{
+  "baselineCommit": "0be362e4810e742d2b24c80aca138a9e979a76ba",
+  "geometry": "HEX",
+  "capitalPositions": [
+    [
+      1,
+      0
+    ],
+    [
+      2,
+      5
+    ]
+  ],
+  "seedStart": 230926,
+  "scenarioCount": 174,
+  "rosterMatches": 108,
+  "starterMatches": 36,
+  "allyMatches": 30,
+  "maxGlobalTurns": 120,
+  "maxActionsPerTurn": 200,
+  "botPolicy": "Existing BotPlayer scoring unchanged for both runs",
+  "catalogEntries": 426,
+  "factionDeckCards": 384,
+  "capitals": 18,
+  "legacyDemoCards": 24,
+  "notes": [
+    "The scenario manifest fixes deck IDs, order, Capital IDs and seeds across versions.",
+    "Roster decks contain one copy of all 64 faction cards; these are coverage decks, not optimized decks.",
+    "Each ordered faction pair plays the three matching-index Capital pairs; not all nine Capital pairings.",
+    "Ally scenarios use the first 32 cards of each faction, against the ally faction starter.",
+    "Faction wins/games includes draws, mirrors and allied-deck scenarios.",
+    "seatZeroWinRate measures seating among completed games, not the initiative winner.",
+    "Before report field firstPlayerWinRate was relabeled seatZeroWinRate without altering any values.",
+    "Card deckAppearances counts player-deck inclusions once per ID, not copies; plays are actual CARD_PLAYED events.",
+    "Baseline source catalogs and Capital behavior are from the baseline commit, with the same corrected hex simulation harness."
+  ]
+}

@@ -1,0 +1,137 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_fast_tempest_duelist",
+      "name": "Tempest Duelist",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 4,
+      "defense": 2,
+      "range": 1,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "FAST_STRIKE"
+      ],
+      "effects": [],
+      "rulesText": "Fast Strike.",
+      "description": "The thunder arrives before the warning.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_siege_thunder_ram",
+      "name": "Thunder Ram",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 6,
+      "attack": 6,
+      "defense": 5,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "SIEGE"
+      ],
+      "effects": [],
+      "rulesText": "Siege.",
+      "description": "A storm front taught to break walls.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_sharp_aether_spotter",
+      "name": "Aether Spotter",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 4,
+      "defense": 4,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "SHARP_SHOT"
+      ],
+      "effects": [],
+      "rulesText": "Sharp Shot.",
+      "description": "From the spire, no horizon is distant.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_fast_razorfin_lancer",
+      "name": "Razorfin Lancer",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 4,
+      "defense": 2,
+      "range": 1,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "FAST_STRIKE"
+      ],
+      "effects": [],
+      "rulesText": "Fast Strike.",
+      "description": "A flash of silver beneath the surf.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    },
+    {
+      "id": "poseidon_siege_kraken_sapper",
+      "name": "Kraken Sapper",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 6,
+      "attack": 6,
+      "defense": 6,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "SIEGE"
+      ],
+      "effects": [],
+      "rulesText": "Siege.",
+      "description": "Stone yields to enough patient arms.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "poseidon_sharp_tidewall_harpooner",
+      "name": "Tidewall Harpooner",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 5,
+      "attack": 4,
+      "defense": 5,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "SHARP_SHOT"
+      ],
+      "effects": [],
+      "rulesText": "Sharp Shot.",
+      "description": "The tower rises; the trident follows.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    }
+  ]
+}

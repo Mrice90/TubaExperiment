@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover"><title>Infinite Conquest · Hex concepts</title><link rel="stylesheet" href="style.css"></head>
+<body>
+<header class="studio"><div><span class="eyebrow">INFINITE CONQUEST / DESIGN STUDY 01</span><h1>A battlefield worth conquering.</h1></div><p>Interactive concept · not the live game</p></header>
+<nav class="workspace" aria-label="Prototype controls">
+ <div class="segmented" aria-label="Screen"><button id="battleTab" aria-pressed="true">Battlefield</button><button id="deckTab" aria-pressed="false">Build a deck</button></div>
+ <label>Direction<select id="theme"><option value="storm">01 · Stormfront</option><option value="obsidian">02 · Obsidian Table</option></select></label>
+ <label>View<select id="device"><option value="desktop">Desktop</option><option value="phone">Phone · portrait</option></select></label>
+ <label id="sceneLabel">Position<select id="scene"><option value="opening">Opening</option><option value="crowded">Crowded</option></select></label>
+</nav>
+<main id="product" class="product storm" data-device="desktop">
+ <section id="battleView" aria-label="Battlefield concept">
+  <div class="matchbar"><div class="identity"><img id="homePortrait" alt="Your Capital"><div><b id="homeName">YOU · ZEUS</b><span id="homeAlly">Ally · Poseidon</span></div></div><div class="round"><span>TURN 07</span><strong>YOUR TURN</strong></div><div class="identity opponent"><div><b>RIVAL · ARES</b><span>Red Citadel</span></div><img id="enemyPortrait" alt="Enemy Capital"></div></div>
+  <div class="economy"><span><b>8</b> GP <small>+3 income</small></span><span>24 hexes · 12 per side</span><span><b>6</b> GP <small>+2 income</small></span></div>
+  <div class="battlebody"><aside class="flavor"><span class="eyebrow">THE BORDERLANDS</span><h2 id="landscapeTitle">Where storms<br>meet empires.</h2><p id="landscapeCopy">One field. Two strongholds.<br>Every hex is a decision.</p><div class="legend"><span>○ You · P1</span><span>◇ Rival · P2</span><span>✦ Capital</span><span>×2 Stack</span></div></aside><div class="field" id="field"><div class="hexboard" id="hexboard" aria-label="24 hex battlefield"></div></div><aside class="inspect" id="desktopInspect"><span class="eyebrow">BATTLEFIELD INSPECTOR</span><h3 id="inspectName">Choose a hex</h3><p id="inspectText">Tap a piece to inspect its owner, stats, and stack.</p><img id="inspectArt" alt="Selected card" hidden><button id="inspectButton" disabled>Inspect stack</button><p class="micro">Preview selection only. No moves or attacks resolve here.</p></aside></div>
+  <div class="actionbar"><span id="event" role="status">↻ Your turn · +3 GP from controlled developments</span><button id="history">History</button></div>
+  <div class="handbar"><div class="hand" id="hand" aria-label="Sample hand"></div><button class="endturn" id="endTurn">End turn</button></div>
+ </section>
+ <section id="deckView" hidden aria-label="Deck creation concept">
+  <div class="decktop"><div><span class="eyebrow">YOUR NEXT CONQUEST</span><h2>Forge an alliance.</h2></div><span id="deckCount">0 / 40 cards</span></div>
+  <ol class="steps"><li class="active" data-step="0">1 <span>Faction</span></li><li data-step="1">2 <span>Ally</span></li><li data-step="2">3 <span>Capital</span></li><li data-step="3">4 <span>Deck</span></li></ol>
+  <div class="sharetools"><button id="shareDeck">Share deck</button><button id="importDeck">Import deck code</button></div>
+  <div id="deckStage"></div>
+  <div class="deckfooter"><button id="back">Back</button><span id="deckStatus" role="status">Choose your primary faction.</span><button class="gold" id="next">Continue</button></div>
+ </section>
+ <dialog id="sheet"><div class="sheethead"><h3 id="sheetTitle"></h3><button id="closeSheet" aria-label="Close inspection">Close</button></div><div id="sheetBody"></div></dialog>
+</main>
+<footer class="study-note"><b>Design checkpoint:</b> explore both directions, opening/crowded boards, phone view, and Faction → optional Ally → Capital → Deck. Drafts stay in this browser; Share deck codes also import into desktop Hex &amp; Allies 0.2. No purchases are enabled.</footer>
+<script src="data.js"></script><script src="deck-code.js"></script><script src="app.js"></script>
+</body></html>

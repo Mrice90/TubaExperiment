@@ -1,0 +1,194 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_ability_stormfront",
+      "name": "Stormfront Plateau",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 7,
+      "gpGeneration": 1,
+      "keywords": [],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "ENTERS_PLAY",
+          "effect": "DRAW_CARD",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "When this enters play, draw a card.",
+      "description": "The first thunder always brings news.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HIGHLAND"
+      ]
+    },
+    {
+      "id": "zeus_ability_oracle_spire",
+      "name": "Oracle Spire",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 4,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 10,
+      "gpGeneration": 1,
+      "keywords": [],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "DRAW_CARD",
+          "amount": 1,
+          "gpCost": 2
+        }
+      ],
+      "rulesText": "Activate once per turn — 2 GP: draw a card.",
+      "description": "Lightning writes tomorrow across bronze needles.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_ability_skyline_seer",
+      "name": "Skyline Seer",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 4,
+      "defense": 4,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "SHARP_SHOT"
+      ],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "BUFF_SELF_ATTACK",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "Sharp Shot. Start of your turn: +1 Attack this turn.",
+      "description": "Height turns weather into strategy.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "poseidon_ability_healing_shoal",
+      "name": "Healing Shoal",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 8,
+      "gpGeneration": 1,
+      "keywords": [
+        "SANCTUARY"
+      ],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "HEAL_SELF",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "Start of your turn: heal this 1. Sanctuary (range 0, amount 1).",
+      "description": "Every tide returns carrying life.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST"
+      ],
+      "keywordValues": {
+        "SANCTUARY": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "poseidon_ability_tidewell",
+      "name": "Tidewell Bastion",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 4,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 12,
+      "gpGeneration": 1,
+      "keywords": [],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "HEAL_CAPITAL",
+          "amount": 2,
+          "gpCost": 2
+        }
+      ],
+      "rulesText": "Activate once per turn — 2 GP: heal your Capital 2.",
+      "description": "The sea reinforces every wall it touches.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "FORTRESS",
+        "MEDICAL"
+      ]
+    },
+    {
+      "id": "poseidon_ability_reefwarden",
+      "name": "Reefwarden",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 5,
+      "attack": 4,
+      "defense": 6,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "BUFF_SELF_DEFENSE",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "Vanguard. Start of your turn: +1 Defense this turn.",
+      "description": "A living breakwater in bronze and shell.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    }
+  ]
+}

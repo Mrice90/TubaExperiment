@@ -1,0 +1,483 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_apex_thunder_gods_verdict",
+      "name": "Thunder God's Verdict",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 7,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "STRIKE_CHARACTER",
+          "amount": 8,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "A sovereign bolt erases all but the strongest enemy combatants.",
+      "description": "A sovereign bolt erases all but the strongest enemy combatants.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_apex_wrath_of_olympus",
+      "name": "Wrath of Olympus",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 8,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "DAMAGE_PERMANENT",
+          "amount": 8,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "The upper grid discharges directly into hostile infrastructure.",
+      "description": "The upper grid discharges directly into hostile infrastructure.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_apex_divine_tailwind",
+      "name": "Divine Tailwind",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "TELEPORT_CHARACTER",
+          "amount": 1,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "A chosen warrior crosses the entire battlefield on command.",
+      "description": "A chosen warrior crosses the entire battlefield on command.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_apex_crownstorm_ascendance",
+      "name": "Crownstorm Ascendance",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "BUFF_ATTACK",
+          "amount": 6,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "Royal lightning grants overwhelming temporary force.",
+      "description": "Royal lightning grants overwhelming temporary force.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_apex_imperial_sky_aegis",
+      "name": "Imperial Sky Aegis",
+      "type": "SPELL",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "BUFF_DEFENSE",
+          "amount": 7,
+          "target": "FRIENDLY"
+        }
+      ],
+      "rulesText": "A dome of stormglass turns aside a decisive assault.",
+      "description": "A dome of stormglass turns aside a decisive assault.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "STORM"
+      ]
+    },
+    {
+      "id": "zeus_apex_skyfather_archon",
+      "name": "Skyfather Archon",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 9,
+      "attack": 8,
+      "defense": 7,
+      "range": 3,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "effects": [],
+      "rulesText": "A senior Olympian intelligence wielding command over the cloudline.",
+      "description": "A senior Olympian intelligence wielding command over the cloudline.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_apex_keraunos_seraph",
+      "name": "Keraunos Seraph",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 8,
+      "attack": 7,
+      "defense": 6,
+      "range": 3,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "effects": [],
+      "rulesText": "A lightning-winged executioner moving faster than prediction.",
+      "description": "A lightning-winged executioner moving faster than prediction.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_apex_olympian_storm_titan",
+      "name": "Olympian Storm Titan",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 10,
+      "attack": 10,
+      "defense": 11,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "effects": [],
+      "rulesText": "A colossal weather engine standing between Zeus and defeat.",
+      "description": "A colossal weather engine standing between Zeus and defeat.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_apex_celestial_throne_grid",
+      "name": "Celestial Throne Grid",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 7,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 17,
+      "keywords": [
+        "HIGH_GROUND"
+      ],
+      "effects": [],
+      "rulesText": "The highest district of Neo-Olympus, charged with divine authority.",
+      "description": "The highest district of Neo-Olympus, charged with divine authority.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "HIGH_GROUND": {
+          "range": 0,
+          "amount": 2
+        }
+      },
+      "developmentGoldCost": 2
+    },
+    {
+      "id": "zeus_apex_worldstorm_spire",
+      "name": "Worldstorm Spire",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 8,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 20,
+      "keywords": [
+        "TURRET"
+      ],
+      "effects": [],
+      "rulesText": "A planetary-scale conductor dominating every visible skyline.",
+      "description": "A planetary-scale conductor dominating every visible skyline.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "TURRET": {
+          "range": 2,
+          "amount": 2
+        }
+      },
+      "developmentGoldCost": 3
+    },
+    {
+      "id": "poseidon_apex_atlantis_crown_basin",
+      "name": "Atlantis Crown Basin",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 9,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 19,
+      "keywords": [],
+      "effects": [],
+      "rulesText": "The drowned capital's central reservoir rises into war.",
+      "description": "The drowned capital's central reservoir rises into war.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_apex_oceanus_current_vault",
+      "name": "Oceanus Current Vault",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 8,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 18,
+      "keywords": [
+        "WAYSTATION"
+      ],
+      "effects": [],
+      "rulesText": "Ancient currents are stored beneath unbreakable pressure seals.",
+      "description": "Ancient currents are stored beneath unbreakable pressure seals.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "WAYSTATION": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "poseidon_apex_leviathan_nursery_trench",
+      "name": "Leviathan Nursery Trench",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 7,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 17,
+      "keywords": [
+        "SANCTUARY"
+      ],
+      "effects": [],
+      "rulesText": "A deep biome where siege organisms mature unseen.",
+      "description": "A deep biome where siege organisms mature unseen.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "SANCTUARY": {
+          "range": 0,
+          "amount": 2
+        }
+      },
+      "developmentGoldCost": 2
+    },
+    {
+      "id": "poseidon_apex_trident_confluence",
+      "name": "Trident Confluence",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 6,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 15,
+      "keywords": [],
+      "effects": [],
+      "rulesText": "Three artificial seas meet beneath Poseidon's control.",
+      "description": "Three artificial seas meet beneath Poseidon's control.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_apex_worldsea_platform",
+      "name": "Worldsea Platform",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 5,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 14,
+      "keywords": [],
+      "effects": [],
+      "rulesText": "A mobile oceanic district supporting a complete battle line.",
+      "description": "A mobile oceanic district supporting a complete battle line.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_apex_atlantis_tide_sovereign",
+      "name": "Atlantis Tide Sovereign",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 9,
+      "attack": 8,
+      "defense": 10,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "effects": [],
+      "rulesText": "A royal guardian armored in living abyssal crystal.",
+      "description": "A royal guardian armored in living abyssal crystal.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_apex_kraken_prime_avatar",
+      "name": "Kraken Prime Avatar",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 10,
+      "attack": 10,
+      "defense": 10,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "effects": [],
+      "rulesText": "The ocean god's largest autonomous war-body.",
+      "description": "The ocean god's largest autonomous war-body.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "poseidon_apex_abysswalker_nereid",
+      "name": "Abysswalker Nereid",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 7,
+      "attack": 7,
+      "defense": 7,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "MOLE",
+        "BLINK"
+      ],
+      "effects": [],
+      "rulesText": "An impossible infiltrator moving through water, stone, and folded space.",
+      "description": "An impossible infiltrator moving through water, stone, and folded space.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "NYMPH"
+      ]
+    },
+    {
+      "id": "poseidon_apex_maelstrom_verdict",
+      "name": "Maelstrom Verdict",
+      "type": "SPELL",
+      "faction": "POSEIDON",
+      "cost": 8,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 0,
+      "keywords": [],
+      "effects": [
+        {
+          "type": "DAMAGE_PERMANENT",
+          "amount": 9,
+          "target": "ENEMY"
+        }
+      ],
+      "rulesText": "A contained maelstrom tears nine damage from an enemy Permanent.",
+      "description": "A contained maelstrom tears nine damage from an enemy Permanent.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "TIDAL"
+      ]
+    },
+    {
+      "id": "poseidon_apex_leviathan_gate",
+      "name": "Leviathan Gate",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 9,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 21,
+      "keywords": [
+        "MEDIC_TENT"
+      ],
+      "effects": [],
+      "rulesText": "A living fortress sealing the road to Atlantis.",
+      "description": "A living fortress sealing the road to Atlantis.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "MEDIC_TENT": {
+          "range": 2,
+          "amount": 2
+        }
+      },
+      "developmentGoldCost": 2
+    }
+  ]
+}

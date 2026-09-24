@@ -1,0 +1,844 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_cloudline_courier",
+      "name": "Cloudline Courier",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 1,
+      "attack": 1,
+      "defense": 1,
+      "range": 1,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "rulesText": "BLINK",
+      "description": "A winged messenger riding the Olympian data-stream.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_arc_relay_scout",
+      "name": "Arc Relay Scout",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 1,
+      "attack": 1,
+      "defense": 1,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A light recon frame that marks safe firing lanes.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_thunderhead_skirmisher",
+      "name": "Thunderhead Skirmisher",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 3,
+      "defense": 1,
+      "range": 1,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A shock trooper built for rapid flanking.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_iris_signal_runner",
+      "name": "Iris Signal Runner",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 2,
+      "defense": 2,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "rulesText": "BLINK",
+      "description": "A prism-linked courier carrying battlefield commands.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_aegis_airguard",
+      "name": "Aegis Airguard",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 2,
+      "defense": 4,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "rulesText": "VANGUARD",
+      "description": "A shield drone that anchors exposed skyways.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_cyclone_marksman",
+      "name": "Cyclone Marksman",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 3,
+      "defense": 2,
+      "range": 3,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A patient shooter stabilized by wind-control gyros.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_boltwing_cavalier",
+      "name": "Boltwing Cavalier",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 4,
+      "attack": 4,
+      "defense": 3,
+      "range": 1,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A mounted striker descending with artificial lightning.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_tempest_oracle",
+      "name": "Tempest Oracle",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 3,
+      "defense": 4,
+      "range": 3,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A predictive intelligence reading combat like weather.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_hera_protocol_warden",
+      "name": "Hera Protocol Warden",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 4,
+      "defense": 6,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "rulesText": "VANGUARD",
+      "description": "An imperial guardian enforcing Olympian command law.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_stormgate_adept",
+      "name": "Stormgate Adept",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 5,
+      "defense": 3,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "rulesText": "BLINK",
+      "description": "A spatial technician stepping through ionized gates.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN"
+      ]
+    },
+    {
+      "id": "zeus_eagle_of_the_high_grid",
+      "name": "Eagle of the High Grid",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 6,
+      "attack": 6,
+      "defense": 4,
+      "range": 3,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "Zeus's sovereign hunter above the neon cloudline.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "zeus_keraunos_prime",
+      "name": "Keraunos Prime",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 7,
+      "attack": 7,
+      "defense": 6,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "rulesText": "VANGUARD",
+      "description": "A living thunder weapon reserved for decisive battles.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_olympian_cloudbank",
+      "name": "Olympian Cloudbank",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 0,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 5,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A floating district wrapped in conductive mist.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_ionized_skyway",
+      "name": "Ionized Skyway",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 6,
+      "keywords": [
+        "WAYSTATION"
+      ],
+      "rulesText": "Waystation (range 0, amount 1).",
+      "description": "A charged transit lane linking the upper towers.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "keywordValues": {
+        "WAYSTATION": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "zeus_eagles_perch_array",
+      "name": "Eagle's Perch Array",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 7,
+      "keywords": [
+        "HIGH_GROUND"
+      ],
+      "rulesText": "High Ground (range 0, amount 1).",
+      "description": "A sensor plateau overlooking Neo-Olympus.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HIGHLAND"
+      ],
+      "keywordValues": {
+        "HIGH_GROUND": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "zeus_throneward_conduit",
+      "name": "Throneward Conduit",
+      "type": "LAND",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 9,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A fortified power route feeding Zeus's command spire.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "INDUSTRIAL"
+      ]
+    },
+    {
+      "id": "zeus_storm_relay_pylon",
+      "name": "Storm Relay Pylon",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 5,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A compact conductor redirecting atmospheric power.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_cloudwall_bastion",
+      "name": "Cloudwall Bastion",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 7,
+      "keywords": [
+        "BULWARK"
+      ],
+      "rulesText": "Bulwark (range 0, amount 1).",
+      "description": "A dense weather shield that breaks enemy sightlines.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "FORTRESS"
+      ],
+      "keywordValues": {
+        "BULWARK": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "zeus_keraunos_charging_spire",
+      "name": "Keraunos Charging Spire",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 8,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A lightning reservoir beneath the Olympian grid.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_zeus_command_nexus",
+      "name": "Zeus Command Nexus",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 4,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 11,
+      "keywords": [],
+      "rulesText": "Deploy: draw 1 card.",
+      "description": "A hardened tactical node issuing battlefield corrections.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "gpGeneration": 1,
+      "developmentPassive": "DRAW_ON_DEPLOY"
+    },
+    {
+      "id": "poseidon_tidepool_surveyor",
+      "name": "Tidepool Surveyor",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 1,
+      "attack": 1,
+      "defense": 2,
+      "range": 1,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A coastal drone mapping pressure shifts and hidden paths.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    },
+    {
+      "id": "poseidon_nereid_current_rider",
+      "name": "Nereid Current-Rider",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 2,
+      "defense": 1,
+      "range": 1,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "rulesText": "BLINK",
+      "description": "A water-born scout slipping between holographic currents.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "NYMPH"
+      ]
+    },
+    {
+      "id": "poseidon_reefline_defender",
+      "name": "Reefline Defender",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 2,
+      "defense": 3,
+      "range": 1,
+      "movement": 1,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "rulesText": "VANGUARD",
+      "description": "A coral-armored sentinel grown to hold narrow lanes.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    },
+    {
+      "id": "poseidon_undertow_stalker",
+      "name": "Undertow Stalker",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 3,
+      "defense": 2,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "MOLE"
+      ],
+      "rulesText": "MOLE",
+      "description": "An amphibious hunter waiting beneath flooded terrain.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_triton_waveguard",
+      "name": "Triton Waveguard",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 3,
+      "defense": 4,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "rulesText": "VANGUARD",
+      "description": "A disciplined marine carrying a resonant trident.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    },
+    {
+      "id": "poseidon_delphic_sonar_adept",
+      "name": "Delphic Sonar Adept",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 2,
+      "defense": 3,
+      "range": 3,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A ranged operator reading enemies through reflected sound.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MERFOLK"
+      ]
+    },
+    {
+      "id": "poseidon_kraken_tendril_drone",
+      "name": "Kraken Tendril Drone",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 4,
+      "attack": 5,
+      "defense": 3,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A severed machine-limb guided by abyssal code.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "AUTOMATON"
+      ]
+    },
+    {
+      "id": "poseidon_naiad_flowshaper",
+      "name": "Naiad Flowshaper",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 4,
+      "attack": 3,
+      "defense": 5,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "rulesText": "BLINK",
+      "description": "A liquid-motion engineer who bends battlefield routes.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "NYMPH"
+      ]
+    },
+    {
+      "id": "poseidon_abyssal_molecrab",
+      "name": "Abyssal Molecrab",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 4,
+      "attack": 4,
+      "defense": 5,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "MOLE"
+      ],
+      "rulesText": "MOLE",
+      "description": "A plated excavator concealed beneath seabed holdings.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "poseidon_oceanid_pressure_mage",
+      "name": "Oceanid Pressure Mage",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 5,
+      "attack": 5,
+      "defense": 4,
+      "range": 3,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A hydrokinetic artillery specialist from the deep arcologies.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "NYMPH"
+      ]
+    },
+    {
+      "id": "poseidon_leviathan_wakeborn",
+      "name": "Leviathan Wakeborn",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 6,
+      "attack": 6,
+      "defense": 6,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "rulesText": "VANGUARD",
+      "description": "A massive bioframe rising in the wake of old sea gods.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "poseidon_poseidons_trident_core",
+      "name": "Poseidon's Trident Core",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 7,
+      "attack": 7,
+      "defense": 5,
+      "range": 3,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [],
+      "rulesText": "",
+      "description": "An autonomous weapon carrying a shard of oceanic authority.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_neon_tidelands",
+      "name": "Neon Tidelands",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 0,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 6,
+      "keywords": [],
+      "rulesText": "",
+      "description": "Shallow luminous water surrounding the sea districts.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST"
+      ]
+    },
+    {
+      "id": "poseidon_coral_data_reef",
+      "name": "Coral Data Reef",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 7,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A living archive grown through synthetic coral.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST"
+      ]
+    },
+    {
+      "id": "poseidon_abyssal_pressure_trench",
+      "name": "Abyssal Pressure Trench",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 8,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A deep channel armored against surface assault.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST"
+      ]
+    },
+    {
+      "id": "poseidon_palace_of_tides_approach",
+      "name": "Palace of Tides Approach",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 10,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A fortified current leading toward Poseidon's domain.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "COAST"
+      ]
+    },
+    {
+      "id": "poseidon_tidal_pump_station",
+      "name": "Tidal Pump Station",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 6,
+      "keywords": [
+        "MEDIC_TENT"
+      ],
+      "rulesText": "Medic Tent (range 1, amount 1).",
+      "description": "A pressure engine sustaining the flooded grid.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "MEDICAL"
+      ],
+      "keywordValues": {
+        "MEDIC_TENT": {
+          "range": 1,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "poseidon_coral_bulwark",
+      "name": "Coral Bulwark",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 8,
+      "keywords": [
+        "BULWARK"
+      ],
+      "rulesText": "",
+      "description": "A regenerative wall hardened by mineral growth.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "FORTRESS"
+      ],
+      "keywordValues": {
+        "BULWARK": {
+          "range": 0,
+          "amount": 1
+        }
+      },
+      "developmentGoldCost": 1
+    },
+    {
+      "id": "poseidon_sonar_beacon",
+      "name": "Sonar Beacon",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 6,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A resonant tower revealing motion through water and steel.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_abyss_gate",
+      "name": "Abyss Gate",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 4,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 12,
+      "keywords": [],
+      "rulesText": "Deploy: heal your Capital for 3.",
+      "description": "A colossal seal protecting the deepest arcology.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE",
+      "gpGeneration": 1,
+      "developmentPassive": "HEAL_CAPITAL_ON_DEPLOY",
+      "archetypes": [
+        "FORTRESS"
+      ]
+    }
+  ]
+}

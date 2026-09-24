@@ -1,0 +1,23 @@
+plugins {
+    id 'application'
+}
+
+dependencies {
+    implementation project(':game-core')
+    implementation project(':game-cli')
+    testImplementation platform('org.junit:junit-bom:5.10.2')
+    testImplementation 'org.junit.jupiter:junit-jupiter'
+}
+
+application {
+    mainClass = 'com.infiniteconquest.gui.InfiniteConquestGui'
+}
+
+
+tasks.register('captureGuiScreenshots', JavaExec) {
+    group = 'verification'
+    description = 'Captures deterministic GUI screenshots for visual review.'
+    classpath = sourceSets.main.runtimeClasspath
+    mainClass = 'com.infiniteconquest.gui.GuiScreenshotHarness'
+    args layout.buildDirectory.dir('screenshots').get().asFile.absolutePath
+}

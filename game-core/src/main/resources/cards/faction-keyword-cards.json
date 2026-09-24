@@ -1,0 +1,228 @@
+{
+  "schemaVersion": 1,
+  "cards": [
+    {
+      "id": "zeus_keyword_sparkstep_runner",
+      "name": "Sparkstep Runner",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 2,
+      "defense": 1,
+      "range": 1,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "effects": [],
+      "rulesText": "Blink. A cheap storm courier for sudden lane pressure.",
+      "description": "Lightning learns the shortest road.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_keyword_cloudline_raider",
+      "name": "Cloudline Raider",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 5,
+      "attack": 4,
+      "defense": 4,
+      "range": 2,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "effects": [],
+      "rulesText": "Blink. A mobile midgame threat that attacks from changing angles.",
+      "description": "It strikes where the forecast said clear skies.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_keyword_aetherbolt_avatar",
+      "name": "Aetherbolt Avatar",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 9,
+      "attack": 8,
+      "defense": 7,
+      "range": 3,
+      "movement": 4,
+      "hitPoints": 0,
+      "keywords": [
+        "BLINK"
+      ],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "ENTERS_PLAY",
+          "effect": "DRAW_CARD",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "Blink. When this enters play, draw a card.",
+      "description": "The storm itself takes a war-form.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_keyword_stormgate_sentinel",
+      "name": "Stormgate Sentinel",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 3,
+      "attack": 2,
+      "defense": 4,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "SHARP_SHOT"
+      ],
+      "effects": [],
+      "rulesText": "Sharp Shot. Controls firing lanes from storm-built towers.",
+      "description": "A grounded rod for enemy violence.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_keyword_thunderhead_guardian",
+      "name": "Thunderhead Guardian",
+      "type": "CHARACTER",
+      "faction": "ZEUS",
+      "cost": 6,
+      "attack": 5,
+      "defense": 6,
+      "range": 2,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "SHARP_SHOT"
+      ],
+      "effects": [],
+      "rulesText": "Sharp Shot. A storm marksman for elevated formations.",
+      "description": "Behind it, the sky prepares judgment.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_keyword_reef_tunneler",
+      "name": "Reef Tunneler",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 2,
+      "attack": 2,
+      "defense": 2,
+      "range": 1,
+      "movement": 3,
+      "hitPoints": 0,
+      "keywords": [
+        "MOLE"
+      ],
+      "effects": [],
+      "rulesText": "Mole. Deploy beneath a controlled Land and emerge when it falls.",
+      "description": "It swims through stone as easily as surf.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_keyword_trench_stalker",
+      "name": "Trench Stalker",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 5,
+      "attack": 5,
+      "defense": 5,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "MOLE"
+      ],
+      "effects": [],
+      "rulesText": "Mole. A resilient ambusher hidden beneath tidal Lands.",
+      "description": "Pressure and patience make its armor.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_keyword_abyssal_leviathan",
+      "name": "Abyssal Leviathan",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 8,
+      "attack": 9,
+      "defense": 8,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "MOLE"
+      ],
+      "effects": [],
+      "abilities": [
+        {
+          "trigger": "ENTERS_PLAY",
+          "effect": "HEAL_CAPITAL",
+          "amount": 3,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "Mole. When this enters play, heal your Capital 3.",
+      "description": "The seabed rises because it has awakened.",
+      "rarity": 4,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "BEAST"
+      ]
+    },
+    {
+      "id": "poseidon_keyword_breakwater_hoplite",
+      "name": "Breakwater Hoplite",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 2,
+      "defense": 5,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "effects": [],
+      "rulesText": "Vanguard. Holds firing lanes while Poseidon builds its board.",
+      "description": "Every wave breaks somewhere.",
+      "rarity": 2,
+      "contentStatus": "PROTOTYPE",
+      "archetypes": [
+        "HUMAN",
+        "MERFOLK"
+      ]
+    },
+    {
+      "id": "poseidon_keyword_maelstrom_bulwark",
+      "name": "Maelstrom Bulwark",
+      "type": "CHARACTER",
+      "faction": "POSEIDON",
+      "cost": 6,
+      "attack": 5,
+      "defense": 8,
+      "range": 1,
+      "movement": 2,
+      "hitPoints": 0,
+      "keywords": [
+        "VANGUARD"
+      ],
+      "effects": [],
+      "rulesText": "Vanguard. A heavy guardian for layered tidal positions.",
+      "description": "The current circles an immovable heart.",
+      "rarity": 3,
+      "contentStatus": "PROTOTYPE"
+    }
+  ]
+}

@@ -1,0 +1,1198 @@
+{
+  "matchesPerCapitalPair" : 1,
+  "baseSeed" : 424200,
+  "totalMatches" : 108,
+  "completedMatches" : 81,
+  "draws" : 27,
+  "averageTurns" : 65.0093,
+  "seatZeroWinRate" : 0.7037,
+  "averageUnusedGpAtEndTurn" : 99.8361,
+  "averageEndingHandSize" : 1.3843,
+  "matchesWithExhaustion" : 56,
+  "factions" : [ {
+    "faction" : "ARES",
+    "games" : 36,
+    "wins" : 11,
+    "winRate" : 0.3056
+  }, {
+    "faction" : "ATHENA",
+    "games" : 36,
+    "wins" : 16,
+    "winRate" : 0.4444
+  }, {
+    "faction" : "HADES",
+    "games" : 36,
+    "wins" : 9,
+    "winRate" : 0.25
+  }, {
+    "faction" : "HEPHAESTUS",
+    "games" : 36,
+    "wins" : 17,
+    "winRate" : 0.4722
+  }, {
+    "faction" : "POSEIDON",
+    "games" : 36,
+    "wins" : 8,
+    "winRate" : 0.2222
+  }, {
+    "faction" : "ZEUS",
+    "games" : 36,
+    "wins" : 20,
+    "winRate" : 0.5556
+  } ],
+  "capitals" : [ {
+    "capitalId" : "ares_capital_iron_war_camp",
+    "faction" : "ARES",
+    "games" : 12,
+    "wins" : 4,
+    "winRate" : 0.3333,
+    "passiveTriggers" : 119,
+    "triggersPerGame" : 9.9167
+  }, {
+    "capitalId" : "ares_capital_red_citadel",
+    "faction" : "ARES",
+    "games" : 12,
+    "wins" : 4,
+    "winRate" : 0.3333,
+    "passiveTriggers" : 56,
+    "triggersPerGame" : 4.6667
+  }, {
+    "capitalId" : "ares_capital_spearpoint_keep",
+    "faction" : "ARES",
+    "games" : 12,
+    "wins" : 3,
+    "winRate" : 0.25,
+    "passiveTriggers" : 128,
+    "triggersPerGame" : 10.6667
+  }, {
+    "capitalId" : "athena_capital_acropolis_command",
+    "faction" : "ATHENA",
+    "games" : 12,
+    "wins" : 4,
+    "winRate" : 0.3333,
+    "passiveTriggers" : 166,
+    "triggersPerGame" : 13.8333
+  }, {
+    "capitalId" : "athena_capital_aegis_archive",
+    "faction" : "ATHENA",
+    "games" : 12,
+    "wins" : 5,
+    "winRate" : 0.4167,
+    "passiveTriggers" : 59,
+    "triggersPerGame" : 4.9167
+  }, {
+    "capitalId" : "athena_capital_owlwatch_fortress",
+    "faction" : "ATHENA",
+    "games" : 12,
+    "wins" : 7,
+    "winRate" : 0.5833,
+    "passiveTriggers" : 12,
+    "triggersPerGame" : 1.0
+  }, {
+    "capitalId" : "hades_capital_house_of_hades",
+    "faction" : "HADES",
+    "games" : 12,
+    "wins" : 4,
+    "winRate" : 0.3333,
+    "passiveTriggers" : 277,
+    "triggersPerGame" : 23.0833
+  }, {
+    "capitalId" : "hades_capital_styx_gate",
+    "faction" : "HADES",
+    "games" : 12,
+    "wins" : 2,
+    "winRate" : 0.1667,
+    "passiveTriggers" : 15,
+    "triggersPerGame" : 1.25
+  }, {
+    "capitalId" : "hades_capital_tartarus_vault",
+    "faction" : "HADES",
+    "games" : 12,
+    "wins" : 3,
+    "winRate" : 0.25,
+    "passiveTriggers" : 126,
+    "triggersPerGame" : 10.5
+  }, {
+    "capitalId" : "hephaestus_capital_bronze_heart",
+    "faction" : "HEPHAESTUS",
+    "games" : 12,
+    "wins" : 5,
+    "winRate" : 0.4167,
+    "passiveTriggers" : 106,
+    "triggersPerGame" : 8.8333
+  }, {
+    "capitalId" : "hephaestus_capital_great_forge",
+    "faction" : "HEPHAESTUS",
+    "games" : 12,
+    "wins" : 7,
+    "winRate" : 0.5833,
+    "passiveTriggers" : 85,
+    "triggersPerGame" : 7.0833
+  }, {
+    "capitalId" : "hephaestus_capital_volcanic_foundry",
+    "faction" : "HEPHAESTUS",
+    "games" : 12,
+    "wins" : 5,
+    "winRate" : 0.4167,
+    "passiveTriggers" : 49,
+    "triggersPerGame" : 4.0833
+  }, {
+    "capitalId" : "poseidon_capital_abyssal_court",
+    "faction" : "POSEIDON",
+    "games" : 12,
+    "wins" : 2,
+    "winRate" : 0.1667,
+    "passiveTriggers" : 30,
+    "triggersPerGame" : 2.5
+  }, {
+    "capitalId" : "poseidon_capital_atlantis_nexus",
+    "faction" : "POSEIDON",
+    "games" : 12,
+    "wins" : 3,
+    "winRate" : 0.25,
+    "passiveTriggers" : 138,
+    "triggersPerGame" : 11.5
+  }, {
+    "capitalId" : "poseidon_capital_trident_bastion",
+    "faction" : "POSEIDON",
+    "games" : 12,
+    "wins" : 3,
+    "winRate" : 0.25,
+    "passiveTriggers" : 145,
+    "triggersPerGame" : 12.0833
+  }, {
+    "capitalId" : "zeus_capital_cloud_throne",
+    "faction" : "ZEUS",
+    "games" : 12,
+    "wins" : 6,
+    "winRate" : 0.5,
+    "passiveTriggers" : 186,
+    "triggersPerGame" : 15.5
+  }, {
+    "capitalId" : "zeus_capital_keraunos_spire",
+    "faction" : "ZEUS",
+    "games" : 12,
+    "wins" : 6,
+    "winRate" : 0.5,
+    "passiveTriggers" : 53,
+    "triggersPerGame" : 4.4167
+  }, {
+    "capitalId" : "zeus_capital_olympus_citadel",
+    "faction" : "ZEUS",
+    "games" : 12,
+    "wins" : 8,
+    "winRate" : 0.6667,
+    "passiveTriggers" : 122,
+    "triggersPerGame" : 10.1667
+  } ],
+  "cards" : [ {
+    "cardId" : "hades_styx_ferryman_drone",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 161,
+    "playRate" : 4.4722,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_keyword_shade_ferryman",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 117,
+    "playRate" : 3.25,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "hades_fast_final_breath",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 115,
+    "playRate" : 3.1944,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "hades_gravecode_collector",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 113,
+    "playRate" : 3.1389,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "athena_tactical_relay_post",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 111,
+    "playRate" : 3.0833,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "athena_owlwatch_promenade",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 108,
+    "playRate" : 3.0,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "hades_asphodel_server_field",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 108,
+    "playRate" : 3.0,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "athena_parthenon_data_court",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 106,
+    "playRate" : 2.9444,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "poseidon_palace_of_tides_approach",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 105,
+    "playRate" : 2.9167,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "poseidon_coral_data_reef",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 104,
+    "playRate" : 2.8889,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "athena_academy_training_grid",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 103,
+    "playRate" : 2.8611,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "poseidon_neon_tidelands",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 103,
+    "playRate" : 2.8611,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "zeus_storm_relay_pylon",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 103,
+    "playRate" : 2.8611,
+    "winsWhenPlayed" : 20
+  }, {
+    "cardId" : "hades_erebus_sniper",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 102,
+    "playRate" : 2.8333,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "hades_obol_archive",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 102,
+    "playRate" : 2.8333,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_styx_transit_channel",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 101,
+    "playRate" : 2.8056,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "poseidon_sonar_beacon",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 101,
+    "playRate" : 2.8056,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_gate_of_the_dead_grid",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 100,
+    "playRate" : 2.7778,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "zeus_land_dawncloud_step",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 98,
+    "playRate" : 2.7222,
+    "winsWhenPlayed" : 20
+  }, {
+    "cardId" : "athena_keyword_aegis_cadet",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 95,
+    "playRate" : 2.6389,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "zeus_throneward_conduit",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 93,
+    "playRate" : 2.5833,
+    "winsWhenPlayed" : 20
+  }, {
+    "cardId" : "athena_athenian_cadet",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 92,
+    "playRate" : 2.5556,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "hephaestus_automaton_assembly_line",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 92,
+    "playRate" : 2.5556,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "hephaestus_magma_conduit_field",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 91,
+    "playRate" : 2.5278,
+    "winsWhenPlayed" : 17
+  }, {
+    "cardId" : "zeus_olympian_cloudbank",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 91,
+    "playRate" : 2.5278,
+    "winsWhenPlayed" : 20
+  }, {
+    "cardId" : "athena_grid_tactician",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 90,
+    "playRate" : 2.5,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "hephaestus_hephaestus_core_forge",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 89,
+    "playRate" : 2.4722,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "athena_pallas_counter_sniper",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 88,
+    "playRate" : 2.4444,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "poseidon_reefline_defender",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 88,
+    "playRate" : 2.4444,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "zeus_cloudline_courier",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 88,
+    "playRate" : 2.4444,
+    "winsWhenPlayed" : 19
+  }, {
+    "cardId" : "poseidon_tidepool_surveyor",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 85,
+    "playRate" : 2.3611,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "poseidon_undertow_stalker",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 83,
+    "playRate" : 2.3056,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "zeus_arc_relay_scout",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 83,
+    "playRate" : 2.3056,
+    "winsWhenPlayed" : 19
+  }, {
+    "cardId" : "hephaestus_cinderworks_lot",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 82,
+    "playRate" : 2.2778,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "poseidon_keyword_breakwater_hoplite",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 82,
+    "playRate" : 2.2778,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "hephaestus_keyword_subforge_sapper",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 79,
+    "playRate" : 2.1944,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "ares_phobos_launch_strip",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 78,
+    "playRate" : 2.1667,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "hades_ability_graveflash",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 77,
+    "playRate" : 2.1389,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hephaestus_automaton_shieldsmith",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 77,
+    "playRate" : 2.1389,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "zeus_iris_signal_runner",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 76,
+    "playRate" : 2.1111,
+    "winsWhenPlayed" : 18
+  }, {
+    "cardId" : "ares_warforge_front",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 75,
+    "playRate" : 2.0833,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hephaestus_bronze_assembly_bot",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 75,
+    "playRate" : 2.0833,
+    "winsWhenPlayed" : 12
+  }, {
+    "cardId" : "hephaestus_forge_spark_drone",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 75,
+    "playRate" : 2.0833,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "zeus_keyword_stormgate_sentinel",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 74,
+    "playRate" : 2.0556,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "ares_crimson_training_yard",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 73,
+    "playRate" : 2.0278,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "ares_forward_barricade",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 69,
+    "playRate" : 1.9167,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "hades_keyword_erebus_reaper",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 66,
+    "playRate" : 1.8333,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "hades_keyword_styx_burrower",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 65,
+    "playRate" : 1.8056,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "athena_keyword_hidden_flank_scholar",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 62,
+    "playRate" : 1.7222,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "ares_keyword_bloodshield_recruit",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 61,
+    "playRate" : 1.6944,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "athena_ability_highwall_archon",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 61,
+    "playRate" : 1.6944,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "athena_medusa_pattern_analyst",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 61,
+    "playRate" : 1.6944,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "ares_spearwall_breaker",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 60,
+    "playRate" : 1.6667,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "athena_tutor_structure_1",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 60,
+    "playRate" : 1.6667,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "zeus_ability_skyline_seer",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 60,
+    "playRate" : 1.6667,
+    "winsWhenPlayed" : 19
+  }, {
+    "cardId" : "ares_redline_recruit",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 59,
+    "playRate" : 1.6389,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "ares_keyword_flashblade_skirmisher",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 58,
+    "playRate" : 1.6111,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hephaestus_keyword_foundry_bastion",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 58,
+    "playRate" : 1.6111,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "athena_expose_structural_weakness",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 57,
+    "playRate" : 1.5833,
+    "winsWhenPlayed" : 12
+  }, {
+    "cardId" : "athena_keyword_labyrinth_tactician",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 57,
+    "playRate" : 1.5833,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "athena_land_oracles_province",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 57,
+    "playRate" : 1.5833,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "hades_tutor_land_1",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 57,
+    "playRate" : 1.5833,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "poseidon_tutor_land_1",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 57,
+    "playRate" : 1.5833,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "athena_brace_formation",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 56,
+    "playRate" : 1.5556,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "athena_structure_logistics_stoa",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 56,
+    "playRate" : 1.5556,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "athena_aegis_defensive_quarter",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "athena_owlwatch_tower",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "athena_tutor_land_1",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "hades_cerberus_gate_node",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_grave_pressure",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "poseidon_erode_foundation",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "poseidon_tidal_pump_station",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "zeus_boltwing_cavalier",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 18
+  }, {
+    "cardId" : "zeus_keyword_thunderhead_guardian",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 55,
+    "playRate" : 1.5278,
+    "winsWhenPlayed" : 18
+  }, {
+    "cardId" : "athena_aegis_projection_wall",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 54,
+    "playRate" : 1.5,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "poseidon_ability_healing_shoal",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 54,
+    "playRate" : 1.5,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "poseidon_ability_tidewell",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 54,
+    "playRate" : 1.5,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "poseidon_keyword_trench_stalker",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 54,
+    "playRate" : 1.5,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "poseidon_restorative_tide",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 54,
+    "playRate" : 1.5,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "zeus_stormgate_adept",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 54,
+    "playRate" : 1.5,
+    "winsWhenPlayed" : 20
+  }, {
+    "cardId" : "athena_ability_council_tower",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 53,
+    "playRate" : 1.4722,
+    "winsWhenPlayed" : 11
+  }, {
+    "cardId" : "poseidon_coral_bulwark",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 53,
+    "playRate" : 1.4722,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "poseidon_structure_tidevault",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 53,
+    "playRate" : 1.4722,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "zeus_keraunos_charging_spire",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 53,
+    "playRate" : 1.4722,
+    "winsWhenPlayed" : 17
+  }, {
+    "cardId" : "athena_calculated_shot",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "athena_tactical_edge",
+    "faction" : "ATHENA",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 11
+  }, {
+    "cardId" : "hades_ability_soul_furnace",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_structure_silent_mortuary",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_tutor_structure_1",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "hephaestus_cyclops_arc_welder",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "poseidon_ability_reefwarden",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "poseidon_apex_worldsea_platform",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "poseidon_delphic_sonar_adept",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "poseidon_kraken_tendril_drone",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "poseidon_tutor_structure_1",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 52,
+    "playRate" : 1.4444,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_hades_throne_vault",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 51,
+    "playRate" : 1.4167,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "hades_lethes_embrace",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 51,
+    "playRate" : 1.4167,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "hephaestus_cyclops_plasma_furnace",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 51,
+    "playRate" : 1.4167,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "hephaestus_foundry_siege_walker",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 51,
+    "playRate" : 1.4167,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "poseidon_crushing_depths",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 51,
+    "playRate" : 1.4167,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "zeus_structure_stormglass_relay",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 51,
+    "playRate" : 1.4167,
+    "winsWhenPlayed" : 18
+  }, {
+    "cardId" : "hades_erebus_undercity",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 50,
+    "playRate" : 1.3889,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "zeus_skybreaker_bolt",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 50,
+    "playRate" : 1.3889,
+    "winsWhenPlayed" : 17
+  }, {
+    "cardId" : "hades_deathly_vigor",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 48,
+    "playRate" : 1.3333,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "hades_land_erebus_claim",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 48,
+    "playRate" : 1.3333,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "hades_soul_sever",
+    "faction" : "HADES",
+    "deckAppearances" : 36,
+    "plays" : 48,
+    "playRate" : 1.3333,
+    "winsWhenPlayed" : 7
+  }, {
+    "cardId" : "hephaestus_ability_forge_ram",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 48,
+    "playRate" : 1.3333,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "zeus_ability_oracle_spire",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 48,
+    "playRate" : 1.3333,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "zeus_cloudwall_bastion",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 48,
+    "playRate" : 1.3333,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "hephaestus_field_repair",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 47,
+    "playRate" : 1.3056,
+    "winsWhenPlayed" : 12
+  }, {
+    "cardId" : "hephaestus_tutor_land_1",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 47,
+    "playRate" : 1.3056,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "hephaestus_tutor_structure_1",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 47,
+    "playRate" : 1.3056,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "zeus_chain_lightning",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 47,
+    "playRate" : 1.3056,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "hephaestus_land_copper_seam",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 46,
+    "playRate" : 1.2778,
+    "winsWhenPlayed" : 13
+  }, {
+    "cardId" : "poseidon_tidal_armor",
+    "faction" : "POSEIDON",
+    "deckAppearances" : 36,
+    "plays" : 45,
+    "playRate" : 1.25,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "zeus_land_aurora_reach",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 45,
+    "playRate" : 1.25,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "zeus_tutor_land_1",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 45,
+    "playRate" : 1.25,
+    "winsWhenPlayed" : 14
+  }, {
+    "cardId" : "zeus_tutor_structure_1",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 45,
+    "playRate" : 1.25,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "hephaestus_smart_metal_bulwark",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 44,
+    "playRate" : 1.2222,
+    "winsWhenPlayed" : 12
+  }, {
+    "cardId" : "zeus_aegis_of_the_sky",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 44,
+    "playRate" : 1.2222,
+    "winsWhenPlayed" : 16
+  }, {
+    "cardId" : "zeus_eagles_perch_array",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 44,
+    "playRate" : 1.2222,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "hephaestus_ability_repair_foundry",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 43,
+    "playRate" : 1.1944,
+    "winsWhenPlayed" : 10
+  }, {
+    "cardId" : "hephaestus_overclock",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 43,
+    "playRate" : 1.1944,
+    "winsWhenPlayed" : 9
+  }, {
+    "cardId" : "hephaestus_structure_gear_mint",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 43,
+    "playRate" : 1.1944,
+    "winsWhenPlayed" : 12
+  }, {
+    "cardId" : "zeus_windstep_protocol",
+    "faction" : "ZEUS",
+    "deckAppearances" : 36,
+    "plays" : 43,
+    "playRate" : 1.1944,
+    "winsWhenPlayed" : 15
+  }, {
+    "cardId" : "ares_land_red_dust_march",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 42,
+    "playRate" : 1.1667,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "ares_ability_gate_ravager",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "ares_ability_war_drum",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "ares_ballistic_shrine",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "ares_siege_fury",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 3
+  }, {
+    "cardId" : "ares_tutor_structure_1",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "hephaestus_core_meltdown",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 10
+  }, {
+    "cardId" : "hephaestus_land_caldera_works",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 40,
+    "playRate" : 1.1111,
+    "winsWhenPlayed" : 12
+  }, {
+    "cardId" : "ares_chariot_deployment_rack",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 39,
+    "playRate" : 1.0833,
+    "winsWhenPlayed" : 3
+  }, {
+    "cardId" : "ares_keyword_phalanx_breaker",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 39,
+    "playRate" : 1.0833,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "ares_warhound_assault_pack",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 39,
+    "playRate" : 1.0833,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "ares_keyword_warpath_telearch",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 38,
+    "playRate" : 1.0556,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "ares_tutor_land_1",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 38,
+    "playRate" : 1.0556,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "ares_blood_frenzy",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 37,
+    "playRate" : 1.0278,
+    "winsWhenPlayed" : 3
+  }, {
+    "cardId" : "ares_structure_spoil_depot",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 37,
+    "playRate" : 1.0278,
+    "winsWhenPlayed" : 5
+  }, {
+    "cardId" : "hephaestus_plasma_cut",
+    "faction" : "HEPHAESTUS",
+    "deckAppearances" : 36,
+    "plays" : 37,
+    "playRate" : 1.0278,
+    "winsWhenPlayed" : 8
+  }, {
+    "cardId" : "ares_land_conquerors_divide",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 36,
+    "playRate" : 1.0,
+    "winsWhenPlayed" : 4
+  }, {
+    "cardId" : "ares_forced_march",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 34,
+    "playRate" : 0.9444,
+    "winsWhenPlayed" : 6
+  }, {
+    "cardId" : "ares_spear_volley",
+    "faction" : "ARES",
+    "deckAppearances" : 36,
+    "plays" : 34,
+    "playRate" : 0.9444,
+    "winsWhenPlayed" : 2
+  } ],
+  "balanceFlags" : [ "ARES faction win rate below 45%", "ATHENA faction win rate below 45%", "HADES faction win rate below 45%", "POSEIDON faction win rate below 45%", "ZEUS faction win rate above 55%", "ares_capital_iron_war_camp Capital win rate below 40%", "ares_capital_red_citadel Capital win rate below 40%", "ares_capital_spearpoint_keep Capital win rate below 40%", "athena_capital_acropolis_command Capital win rate below 40%", "hades_capital_house_of_hades Capital win rate below 40%", "hades_capital_styx_gate Capital win rate below 40%", "hades_capital_tartarus_vault Capital win rate below 40%", "poseidon_capital_abyssal_court Capital win rate below 40%", "poseidon_capital_atlantis_nexus Capital win rate below 40%", "poseidon_capital_trident_bastion Capital win rate below 40%", "zeus_capital_olympus_citadel Capital win rate above 60%", "Draw rate above 10%" ]
+}
