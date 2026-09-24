@@ -34,6 +34,13 @@ public final class GameSettings {
     public static final int DEFAULT_RATING = 1000;
     /** Maximum display-name length, matching the netcode design. */
     public static final int MAX_NAME_LENGTH = 24;
+    /**
+     * Built-in lobby/rating Worker URL shipped with the game, so players get
+     * the lobby browser, quick match, and ratings with zero setup. The
+     * Settings field overrides this when non-blank (empty field = use this).
+     * Set to the studio's deployed Worker origin once it exists.
+     */
+    public static final String DEFAULT_LOBBY_WORKER_URL = "";
 
     public boolean fullscreen;
     int windowWidth;
@@ -52,12 +59,22 @@ public final class GameSettings {
     public String playerName;
     /**
      * Lobby/rating Worker origin, e.g. {@code https://ic-lobby.workers.dev}.
-     * Empty until the lobby service is deployed; direct tunnel links work
-     * without it, but the lobby browser, quick match, and ratings need it.
+     * Blank means "use the built-in default" ({@link #DEFAULT_LOBBY_WORKER_URL});
+     * direct tunnel links work without any lobby service, but the lobby
+     * browser, quick match, and ratings need one of the two.
      */
     public String lobbyWorkerUrl;
     /** Last known Elo rating from the lobby service; 1000 until the first report. */
     public int playerRating;
+
+    /**
+     * The lobby Worker URL actually in effect: the player's Settings override
+     * when set, otherwise the built-in default shipped with the game.
+     */
+    public String effectiveLobbyWorkerUrl() {
+        if (lobbyWorkerUrl != null && !lobbyWorkerUrl.isBlank()) return lobbyWorkerUrl.trim();
+        return DEFAULT_LOBBY_WORKER_URL;
+    }
 
     private GameSettings() {
         resetToDefaults();

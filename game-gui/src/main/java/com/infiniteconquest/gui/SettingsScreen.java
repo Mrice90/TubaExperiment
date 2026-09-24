@@ -88,7 +88,7 @@ final class SettingsScreen extends SubScreen {
                 BorderFactory.createLineBorder(new Color(70, 85, 110)),
                 new EmptyBorder(6, 8, 6, 8)));
         lobbyWorkerUrlField.setMaximumSize(new Dimension(280, 38));
-        lobbyWorkerUrlField.setToolTipText("Lobby/rating server URL. Empty disables the lobby browser, quick match, and ratings; direct tunnel links still work.");
+        lobbyWorkerUrlField.setToolTipText("Lobby/rating server URL. Empty uses the built-in Grumpy Goose Studio lobby; direct tunnel links always work.");
         card.add(SubScreen.row("Lobby server", lobbyWorkerUrlField));
         card.add(Box.createVerticalStrut(8));
         JLabel lobbyHint = new JLabel("<html><i>Optional. Powers the lobby browser, quick match, and Elo ratings. Direct tunnel links work without it.</i></html>");

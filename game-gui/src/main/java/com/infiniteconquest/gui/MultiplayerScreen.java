@@ -227,7 +227,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
 
     /** Lobby service, or null when no lobby server URL is configured. */
     private LobbyService lobbyService() {
-        String url = settings.lobbyWorkerUrl;
+        String url = settings.effectiveLobbyWorkerUrl();
         if (url == null || url.isBlank()) return null;
         return new LobbyService(url.trim());
     }

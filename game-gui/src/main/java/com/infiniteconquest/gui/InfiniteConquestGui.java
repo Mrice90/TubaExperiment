@@ -342,7 +342,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private void requestRatingReport(Integer winner) {
         netRatingReady = false;
         netRatingLine = null;
-        String workerUrl = gameSettings.lobbyWorkerUrl;
+        String workerUrl = gameSettings.effectiveLobbyWorkerUrl();
         String matchId = netSession != null ? netSession.matchId() : null;
         if (workerUrl == null || workerUrl.isBlank() || matchId == null || winner == null) {
             netRatingReady = true;
