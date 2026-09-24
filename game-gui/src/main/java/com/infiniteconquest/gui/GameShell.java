@@ -5,6 +5,7 @@ import com.infiniteconquest.core.DeckBuild;
 
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.nio.file.Path;
@@ -42,6 +43,7 @@ public final class GameShell {
             @Override public void windowClosing(WindowEvent event) { requestExit(); }
         });
         frame.setMinimumSize(new Dimension(1100, 640));
+        installFullscreenEscapeHatch();
         applyWindowSettings();
         frame.setLocationRelativeTo(null);
         screens = new ScreenManager(frame, settings);
@@ -78,18 +80,55 @@ public final class GameShell {
 
     private void applyWindowSettings() {
         if (settings.fullscreen) {
+            // Borderless windowed, NOT exclusive fullscreen. It covers the display
+            // like fullscreen, but stays an ordinary window, so Alt+Tab, the Windows
+            // key, and Task Manager keep working. Exclusive mode (setFullScreenWindow)
+            // trapped players behind the frame whenever a dialog misbehaved.
             frame.setUndecorated(true);
-            GraphicsDevice device = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice();
-            if (device.isFullScreenSupported()) {
-                frame.setVisible(true);
-                device.setFullScreenWindow(frame);
-                return;
+            if (!GraphicsEnvironment.isHeadless()) {
+                Rectangle bounds = GraphicsEnvironment.getLocalGraphicsEnvironment()
+                        .getDefaultScreenDevice().getDefaultConfiguration().getBounds();
+                frame.setBounds(bounds);
+            } else {
+                frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
             }
-            frame.setExtendedState(JFrame.MAXIMIZED_BOTH);
         } else {
             frame.setSize(settings.windowSize());
             frame.setExtendedState(JFrame.NORMAL);
         }
+    }
+
+    /**
+     * The escape hatch: while the shell is fullscreen, Esc always drops back to
+     * windowed mode before any menu or dialog sees the keystroke, and Alt+Enter
+     * toggles fullscreen. Installed on the focus manager so no stuck dialog or
+     * misbehaving screen can swallow it and trap the player again.
+     */
+    private void installFullscreenEscapeHatch() {
+        KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(event -> {
+            if (event.getID() != KeyEvent.KEY_PRESSED) return false;
+            Window focused = KeyboardFocusManager.getCurrentKeyboardFocusManager().getFocusedWindow();
+            boolean shellFocused = focused == frame
+                    || (focused != null && java.util.Objects.equals(focused.getOwner(), frame));
+            if (!shellFocused) return false;
+            if (event.getKeyCode() == KeyEvent.VK_ESCAPE && settings.fullscreen) {
+                setFullscreen(false);
+                return true;
+            }
+            if (event.getKeyCode() == KeyEvent.VK_ENTER && event.isAltDown()) {
+                setFullscreen(!settings.fullscreen);
+                return true;
+            }
+            return false;
+        });
+    }
+
+    /** Flips fullscreen and persists it, used by the escape hatch and Alt+Enter. */
+    void setFullscreen(boolean on) {
+        if (settings.fullscreen == on) return;
+        settings.fullscreen = on;
+        settings.save();
+        applySettings();
     }
 
     // ---- Navigation -------------------------------------------------------
