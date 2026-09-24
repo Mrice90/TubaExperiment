@@ -72,6 +72,18 @@ class EmbeddedServerTest {
             assertTrue(guest.nextOfType("error", 3000).contains("Only the host"));
 
             host.send(new Protocol.StartMatch());
+            // Real networked mulligans: both players are prompted, decide, and
+            // only then does the match start.
+            host.nextOfType("mulligan_prompt", 5000);
+            guest.nextOfType("mulligan_prompt", 5000);
+            host.send(new Protocol.MulliganDecision(List.of()));
+            JsonNode update1 = host.nextJson("mulligan_update", 3000);
+            assertTrue(update1.get("decided0").asBoolean());
+            assertFalse(update1.get("decided1").asBoolean());
+            guest.send(new Protocol.MulliganDecision(List.of()));
+            JsonNode update2 = host.nextJson("mulligan_update", 3000);
+            assertTrue(update2.get("decided0").asBoolean());
+            assertTrue(update2.get("decided1").asBoolean());
             JsonNode hostSnap = host.nextJson("snapshot", 5000);
             JsonNode guestSnap = guest.nextJson("snapshot", 5000);
             assertEquals(0, hostSnap.get("snapshot").get("viewingPlayer").asInt());

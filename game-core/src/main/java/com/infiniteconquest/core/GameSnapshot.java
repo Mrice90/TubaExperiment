@@ -50,12 +50,17 @@ public record GameSnapshot(
         int[] structuresPlayed,
         /**
          * Every visible card: all battlefield and discard cards, plus the viewing
-         * player's own hand and deck. Battlefield cards are listed bottom-to-top
+         * player's own hand. Battlefield cards are listed bottom-to-top
          * per stack so the board rebuilds exactly.
          */
         List<CardView> cards,
         /** Redacted recent events, oldest first. */
-        List<GameEvent> events
+        List<GameEvent> events,
+        /**
+         * True while either player may still submit a mulligan decision.
+         * Clients use this to tell a pre-mulligan snapshot from a live one.
+         */
+        boolean mulliganOpen
 ) {
     /** Full detail for one visible card. */
     public record CardView(

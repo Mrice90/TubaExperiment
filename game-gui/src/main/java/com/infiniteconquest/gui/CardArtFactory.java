@@ -68,8 +68,14 @@ final class CardArtFactory {
         return CACHE.computeIfAbsent(card.id()+":"+width+"x"+height, key -> render(card,width,height));
     }
 
-    static ImageIcon boardIconFor(CardDefinition card) {
-        return CACHE.computeIfAbsent(card.id()+":board-compact", key -> render(card,78,56));
+    /**
+     * Crisp high-resolution token art for battlefield hexes. Rendered at 2x
+     * the typical hex size so downscaling on paint stays sharp on large or
+     * high-DPI boards; callers should draw it with bicubic interpolation.
+     */
+    static ImageIcon boardTokenIcon(CardDefinition card) {
+        return CACHE.computeIfAbsent(card.id() + ":board-token",
+                key -> render(card, 320, 280));
     }
 
     private static ImageIcon render(CardDefinition card, int w, int h) {

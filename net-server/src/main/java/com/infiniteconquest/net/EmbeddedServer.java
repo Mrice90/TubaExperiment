@@ -1,5 +1,6 @@
 package com.infiniteconquest.net;
 
+import com.infiniteconquest.cli.ActionHints;
 import com.infiniteconquest.cli.CommandProcessor;
 import com.infiniteconquest.cli.DemoMatchFactory;
 import com.infiniteconquest.core.BoardGeometry;
@@ -25,8 +26,12 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 
 /**
  * Host-authoritative game server embedded in the hosting player's game process.
@@ -37,14 +42,20 @@ import java.util.concurrent.Executors;
  * always-on host is required; the production transport is plain TCP on localhost
  * (the same framing works for later direct-IP play).
  *
- * <p>Session lifecycle: {@code LOBBY} (hello/start) → {@code PLAYING} (commands) →
+ * <p>Session lifecycle: {@code LOBBY} (hello/start) → {@code MULLIGAN} (both
+ * players submit a real mulligan decision) → {@code PLAYING} (commands, with
+ * reaction windows for the inactive player after eligible actions) →
  * {@code GAME_OVER}. All session state is confined to one single-threaded executor;
  * transports only hand lines to {@link #receive} and are told about disconnects via
  * {@link #peerClosed}. The {@link Peer} interface keeps the session independent of
  * its transport (TCP today, in-process or direct-IP later).
  *
- * <p>Mulligans are auto-kept and reactions auto-pass in net alpha: the server opens
- * no mulligan window and offers no reaction window.
+ * <p>Reaction windows: after an eligible active-player action the server inspects
+ * the inactive player's legal {@code react ...} options and, when any exist,
+ * pauses normal play and prompts only the reacting player. The prompt lists the
+ * exact legal command strings; the server honors an answer only by exact match,
+ * auto-passes after a generous timeout with a visible notice, and blocks the
+ * active player until the window closes.
  */
 public final class EmbeddedServer implements AutoCloseable {
     /** Game commands the server accepts; read-only queries are rejected (see SECURITY.md). */
@@ -52,12 +63,17 @@ public final class EmbeddedServer implements AutoCloseable {
             Set.of("play", "burrow", "move", "blink", "attack", "activate", "cast", "end");
     private static final int MAX_LINE = 1_000_000;
     /**
+     * How long a reaction window stays open before the server auto-passes.
+     * Generous on purpose: the reactor may be reading several spell options.
+     */
+    static final int REACTION_WINDOW_SECONDS = 60;
+    /**
      * Default loopback port for same-machine play. If it is taken the host
      * falls back to an ephemeral port and shows it in the lobby.
      */
     public static final int DEFAULT_PORT = 17431;
 
-    private enum SessionPhase { LOBBY, PLAYING, GAME_OVER }
+    private enum SessionPhase { LOBBY, MULLIGAN, PLAYING, GAME_OVER }
 
     /**
      * A connected endpoint. The session calls {@link #send} on its game thread;
@@ -79,6 +95,7 @@ public final class EmbeddedServer implements AutoCloseable {
             Executors.newSingleThreadExecutor(r -> { Thread t = new Thread(r, "ic-net-game"); t.setDaemon(true); return t; });
 
     private volatile boolean running;
+    private volatile boolean closed;
     private ServerSocket serverSocket;
     private Thread acceptThread;
 
@@ -91,7 +108,31 @@ public final class EmbeddedServer implements AutoCloseable {
     /** Rating-service match id, generated when a match starts. */
     private String matchId;
     private CommandProcessor commands;
+    private final ActionHints hints = new ActionHints();
     private long seq;
+    /** Mulligan decisions received, in seat order; the match starts when both are true. */
+    private final boolean[] mulliganDecided = new boolean[2];
+    /** Non-null while a reaction window is open for the inactive player. */
+    private PendingReaction reaction;
+    /** Fires reaction timeouts back onto the game thread; daemon, shut down on close. */
+    private final ScheduledExecutorService reactionTimers =
+            Executors.newSingleThreadScheduledExecutor(r -> {
+                Thread t = new Thread(r, "ic-net-reaction-timer");
+                t.setDaemon(true);
+                return t;
+            });
+
+    /** One open reaction window: who must answer and which exact commands are legal. */
+    private static final class PendingReaction {
+        final int reactingPlayer;
+        final List<String> commands;
+        ScheduledFuture<?> timeout;
+
+        PendingReaction(int reactingPlayer, List<String> commands) {
+            this.reactingPlayer = reactingPlayer;
+            this.commands = List.copyOf(commands);
+        }
+    }
 
     private static final class Seat {
         final Peer peer;
@@ -222,6 +263,8 @@ public final class EmbeddedServer implements AutoCloseable {
                 case "hello" -> handleHello(seat, Protocol.decode(line, Protocol.Hello.class));
                 case "start" -> handleStart(seat);
                 case "command" -> handleCommand(seat, Protocol.decode(line, Protocol.PlayerCommand.class).text());
+                case "mulligan" -> handleMulligan(seat, Protocol.decode(line, Protocol.MulliganDecision.class));
+                case "reaction" -> handleReaction(seat, Protocol.decode(line, Protocol.ReactionDecision.class));
                 default -> sendError(peer, "Unexpected message: " + type);
             }
         } catch (IllegalArgumentException e) {
@@ -297,23 +340,68 @@ public final class EmbeddedServer implements AutoCloseable {
             sendError(seat.peer, "Could not start match: " + e.getMessage());
             return;
         }
-        // Net alpha: mulligans are auto-kept, no mulligan window is offered.
-        state.mulligan(0, List.of());
-        state.mulligan(1, List.of());
+        // Real networked mulligans: each player decides keep vs. redraw on their
+        // own opening hand. The match starts only after both decisions arrive.
         commands = new CommandProcessor(state);
         matchId = java.util.UUID.randomUUID().toString();
-        phase = SessionPhase.PLAYING;
+        phase = SessionPhase.MULLIGAN;
+        mulliganDecided[0] = false;
+        mulliganDecided[1] = false;
         seq = 0;
-        broadcastSnapshot();
+        seq++;
+        for (int viewer = 0; viewer < 2; viewer++)
+            if (slots[viewer] != null)
+                send(slots[viewer].peer, Protocol.encode(
+                        new Protocol.MulliganPrompt(seq, matchId, Redactor.redact(state, viewer))));
+    }
+
+    private void handleMulligan(Seat seat, Protocol.MulliganDecision decision) {
+        if (phase != SessionPhase.MULLIGAN || state == null) {
+            sendError(seat.peer, "No mulligan window is open");
+            return;
+        }
+        int player = seat.playerIndex;
+        if (player < 0 || player > 1) { sendError(seat.peer, "You are not seated"); return; }
+        if (mulliganDecided[player]) { sendError(seat.peer, "Mulligan already submitted"); return; }
+        List<UUID> discarded = decision.discardedCardIds() == null ? List.of() : decision.discardedCardIds();
+        try {
+            // GameState validates: at most 3 IDs, every ID in this player's
+            // opening hand, and no duplicate decisions.
+            state.mulligan(player, discarded);
+        } catch (RuntimeException e) {
+            sendError(seat.peer, "Mulligan rejected: " + e.getMessage());
+            return;
+        }
+        mulliganDecided[player] = true;
+        seq++;
+        broadcast(new Protocol.MulliganUpdate(mulliganDecided[0], mulliganDecided[1]));
+        if (mulliganDecided[0] && mulliganDecided[1]) {
+            phase = SessionPhase.PLAYING;
+            seq++;
+            broadcastSnapshot();
+        }
     }
 
     private void handleCommand(Seat seat, String text) {
-        if (phase != SessionPhase.PLAYING || state == null) { sendError(seat.peer, "No match in progress"); return; }
+        if (phase != SessionPhase.PLAYING || state == null) {
+            sendError(seat.peer, phase == SessionPhase.MULLIGAN
+                    ? "Mulligans are not complete yet" : "No match in progress");
+            return;
+        }
         String trimmed = text == null ? "" : text.trim();
         if (trimmed.isEmpty()) return;
         String head = trimmed.split("\\s+")[0].toLowerCase(Locale.ROOT);
         if (!COMMANDS.contains(head)) { sendError(seat.peer, "Unsupported command in online play: " + head); return; }
+        PendingReaction pending = reaction;
+        if (pending != null) {
+            // A reaction window pauses normal play: the reactor answers through
+            // the window, and the active player waits for it to close.
+            sendError(seat.peer, seat.playerIndex == pending.reactingPlayer
+                    ? "Answer your reaction window first" : "Waiting for the opponent's reaction");
+            return;
+        }
         if (seat.playerIndex != state.activePlayer()) { sendError(seat.peer, "Not your turn"); return; }
+        int activeBefore = state.activePlayer();
         String result;
         try {
             result = commands.execute(trimmed);
@@ -325,7 +413,102 @@ public final class EmbeddedServer implements AutoCloseable {
         if (state.winner().isPresent()) {
             phase = SessionPhase.GAME_OVER;
             broadcastGameOver();
+            return;
         }
+        // After an eligible active-player action, the inactive player may react.
+        // No window opens across a turn boundary ("end") or after a rejected command.
+        if (result.startsWith("OK") && state.activePlayer() == activeBefore) maybeOpenReactionWindow();
+    }
+
+    /**
+     * Opens a reaction window for the inactive player when they have at least
+     * one legal {@code react ...} option. The prompt goes only to the reacting
+     * player; normal play stays paused until they answer or the window times out.
+     */
+    private void maybeOpenReactionWindow() {
+        if (reaction != null || state.winner().isPresent()) return;
+        int reactor = 1 - state.activePlayer();
+        List<String> options = hints.spellActionsForPlayer(state, reactor);
+        if (options.isEmpty()) return;
+        reaction = new PendingReaction(reactor, options);
+        seq++;
+        Seat seat = slots[reactor];
+        if (seat != null)
+            send(seat.peer, Protocol.encode(new Protocol.ReactionPrompt(
+                    seq, matchId, reactor, options, REACTION_WINDOW_SECONDS)));
+        reaction.timeout = reactionTimers.schedule(
+                () -> {
+                    try {
+                        gameThread.submit(this::expireReactionWindow);
+                    } catch (java.util.concurrent.RejectedExecutionException ignored) {
+                        // Server closed while the timer was in flight; nothing to expire.
+                    }
+                },
+                REACTION_WINDOW_SECONDS, TimeUnit.SECONDS);
+    }
+
+    private void handleReaction(Seat seat, Protocol.ReactionDecision decision) {
+        PendingReaction pending = reaction;
+        if (pending == null || phase != SessionPhase.PLAYING) {
+            sendError(seat.peer, "No reaction window is open");
+            return;
+        }
+        if (seat.playerIndex != pending.reactingPlayer) {
+            sendError(seat.peer, "That reaction window is not yours");
+            return;
+        }
+        String command = decision.command() == null ? "" : decision.command().trim();
+        if (!command.isEmpty() && !pending.commands.contains(command)) {
+            // Exact-match only: a forged or stale command string is rejected.
+            sendError(seat.peer, "Unknown reaction choice");
+            return;
+        }
+        closeReactionWindow();
+        String result;
+        if (command.isEmpty()) {
+            result = "OK: Reaction passed.";
+        } else {
+            try {
+                result = commands.execute(command);
+            } catch (RuntimeException e) {
+                result = "Invalid command: " + e.getMessage();
+            }
+        }
+        seq++;
+        broadcastStateUpdate(command.isEmpty() ? "pass" : command, result, pending.reactingPlayer);
+        if (state.winner().isPresent()) {
+            phase = SessionPhase.GAME_OVER;
+            broadcastGameOver();
+        }
+        // Deliberately no chained window: one reaction per trigger, like local play.
+    }
+
+    /** A reaction window expired with no answer: auto-pass with a visible notice. */
+    private void expireReactionWindow() {
+        PendingReaction pending = reaction;
+        if (pending == null || phase != SessionPhase.PLAYING) return;
+        closeReactionWindow();
+        seq++;
+        broadcast(new Protocol.ReactionTimeout(pending.reactingPlayer));
+        seq++;
+        broadcastStateUpdate("pass", "OK: Reaction window expired \u2014 auto-passed.", pending.reactingPlayer);
+        if (state.winner().isPresent()) {
+            phase = SessionPhase.GAME_OVER;
+            broadcastGameOver();
+        }
+    }
+
+    /** Closes the open reaction window, cancelling its timeout. Runs on the game thread. */
+    private void closeReactionWindow() {
+        PendingReaction pending = reaction;
+        reaction = null;
+        if (pending != null && pending.timeout != null) pending.timeout.cancel(false);
+    }
+
+    private void broadcast(Object envelope) {
+        String line = Protocol.encode(envelope);
+        for (int viewer = 0; viewer < 2; viewer++)
+            if (slots[viewer] != null) send(slots[viewer].peer, line);
     }
 
     private void handleDisconnect(Peer peer) {
@@ -334,7 +517,8 @@ public final class EmbeddedServer implements AutoCloseable {
             slots[seat.playerIndex] = null;
             if (seat.playerIndex == 1) guestDeck = null;
         }
-        if (phase == SessionPhase.PLAYING) {
+        if (phase == SessionPhase.PLAYING || phase == SessionPhase.MULLIGAN) {
+            closeReactionWindow();
             phase = SessionPhase.GAME_OVER;
             int other = seat != null && seat.playerIndex == 0 ? 1 : 0;
             if (slots[other] != null)
@@ -386,8 +570,19 @@ public final class EmbeddedServer implements AutoCloseable {
 
     @Override
     public synchronized void close() {
+        if (closed) return; // idempotent: tests and the shell may both close
+        closed = true;
         running = false;
         try { if (serverSocket != null) serverSocket.close(); } catch (IOException ignored) {}
+        reactionTimers.shutdownNow();
+        try {
+            // Serialize the reaction cleanup behind any in-flight game work.
+            gameThread.submit(this::closeReactionWindow).get(10, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.RejectedExecutionException
+                | java.util.concurrent.TimeoutException ignored) {
+        }
         gameThread.shutdownNow();
         for (Peer peer : seats.keySet().stream().toList()) {
             try { peer.close(); } catch (RuntimeException ignored) {}

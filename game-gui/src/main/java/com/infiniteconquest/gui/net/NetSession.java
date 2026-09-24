@@ -30,6 +30,8 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
     public interface Listener {
         void onLobby(List<Protocol.LobbyPlayer> players);
         void onMatchStarted(GameSnapshot snapshot);
+        /** The server is asking the local player for a mulligan decision. */
+        default void onMulliganPrompt(GameSnapshot snapshot) {}
         void onError(String message);
         void onDisconnected(String reason);
     }
@@ -43,6 +45,7 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
     private final List<NetClient.Listener> battleListeners = new CopyOnWriteArrayList<>();
     private volatile List<Protocol.LobbyPlayer> lobbyPlayers = List.of();
     private volatile GameSnapshot initialSnapshot;
+    private volatile GameSnapshot mulliganSnapshot;
     private volatile String matchId;
     // Tunnel hosting resources (hostWithTunnel only).
     private volatile WsBridge bridge;
@@ -252,14 +255,30 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
         client.startMatch();
     }
 
+    /** Submits this player's mulligan decision: up to 3 of their own opening-hand IDs. */
+    public void sendMulligan(java.util.List<java.util.UUID> discardedCardIds) {
+        client.sendMulligan(discardedCardIds);
+    }
+
+    /** Answers a reaction window: one of the offered commands, or null to pass. */
+    public void sendReaction(String command) {
+        client.sendReaction(command);
+    }
+
     /**
      * Hands live server events to the battle frame. If the initial snapshot
-     * already arrived, it is replayed immediately.
+     * already arrived, it is replayed immediately; otherwise a pending mulligan
+     * prompt is replayed so a late-opening battle can still decide.
      */
     public void addBattleListener(NetClient.Listener battle) {
         battleListeners.add(battle);
         GameSnapshot snapshot = initialSnapshot;
-        if (snapshot != null) battle.onSnapshot(0, matchId, snapshot);
+        if (snapshot != null) {
+            battle.onSnapshot(0, matchId, snapshot);
+            return;
+        }
+        GameSnapshot mulligan = mulliganSnapshot;
+        if (mulligan != null) battle.onMulliganPrompt(0, matchId, mulligan);
     }
 
     // --- NetClient.Listener (already on the EDT) ---
@@ -273,6 +292,28 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
         initialSnapshot = snapshot;
         this.matchId = matchId;
         listener.onMatchStarted(snapshot);
+    }
+
+    @Override public void onMulliganPrompt(long seq, String matchId, GameSnapshot snapshot) {
+        mulliganSnapshot = snapshot;
+        if (matchId != null) this.matchId = matchId;
+        listener.onMulliganPrompt(snapshot);
+    }
+
+    @Override public void onMulliganUpdate(boolean decided0, boolean decided1) {
+        for (NetClient.Listener battle : battleListeners)
+            battle.onMulliganUpdate(decided0, decided1);
+    }
+
+    @Override public void onReactionPrompt(long seq, String matchId, int reactingPlayer,
+                                           List<String> commands, int expiresInSeconds) {
+        for (NetClient.Listener battle : battleListeners)
+            battle.onReactionPrompt(seq, matchId, reactingPlayer, commands, expiresInSeconds);
+    }
+
+    @Override public void onReactionTimeout(int player) {
+        for (NetClient.Listener battle : battleListeners)
+            battle.onReactionTimeout(player);
     }
 
     @Override public void onStateUpdate(long seq, String command, String result, int actor,

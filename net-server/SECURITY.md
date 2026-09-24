@@ -66,8 +66,15 @@ The wire protocol may contain only: player UUIDs, display names, deck lists
 - A command is executed only if the sender is the active player. `CommandProcessor`
   derives the acting player from `state.activePlayer()`, so the check happens
   before execution.
-- `react` is rejected: net alpha resolves spells immediately with no reaction
-  window. Mulligans are auto-kept for the same reason.
+- `react` is never accepted as a free-form command. Reactions travel in the
+  dedicated `reaction` envelope, are honored only by exact match against the
+  server-offered legal options, and only from the reacting player while their
+  window is open. A reaction window pauses normal play; the active player is
+  blocked until the reactor answers or the window times out (auto-pass).
+- Mulligans travel in the dedicated `mulligan` envelope. `GameState.mulligan`
+  validates each decision (at most 3 discards, every ID in the sender's own
+  opening hand, one decision per player); the match starts only after both
+  players decide.
 
 ## Deck disclosure
 

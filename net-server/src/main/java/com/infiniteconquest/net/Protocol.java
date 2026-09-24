@@ -11,8 +11,11 @@ import java.util.List;
  * Line-delimited JSON wire protocol for loopback online play.
  *
  * <p>Every message is one JSON object per line with a {@code "type"} tag.
- * Envelope types: {@code hello}, {@code start}, {@code command}, {@code lobby},
- * {@code state_update}, {@code snapshot}, {@code game_over}, {@code error}.
+ * Envelope types: {@code hello}, {@code start}, {@code command},
+ * {@code mulligan}, {@code reaction}, {@code lobby}, {@code snapshot},
+ * {@code state_update}, {@code game_over}, {@code error},
+ * {@code mulligan_prompt}, {@code mulligan_update}, {@code reaction_prompt},
+ * {@code reaction_timeout}.
  * There is no chat in alpha, and no chat envelope exists.
  *
  * <p>The wire carries only: player UUIDs, display names, deck lists (to the host
@@ -26,7 +29,7 @@ public final class Protocol {
      * snapshot format changes incompatibly; the lobby service records it so
      * mismatched clients can be warned instead of silently desyncing.
      */
-    public static final String DATA_VERSION = "ic-net-1";
+    public static final String DATA_VERSION = "ic-net-2";
 
     private Protocol() {}
 
@@ -94,6 +97,67 @@ public final class Protocol {
     public record ErrorMessage(String type, String message) {
         public ErrorMessage(String message) { this("error", message); }
         public ErrorMessage { requireType(type, "error"); }
+    }
+
+    /**
+     * Server -> one player: your opening hand is ready for a mulligan decision.
+     * The snapshot is redacted for exactly this viewer; it carries the viewer's
+     * own hand (full detail) so the client can render the choice UI.
+     */
+    public record MulliganPrompt(String type, long seq, String matchId, GameSnapshot snapshot) {
+        public MulliganPrompt(long seq, String matchId, GameSnapshot snapshot) {
+            this("mulligan_prompt", seq, matchId, snapshot);
+        }
+        public MulliganPrompt { requireType(type, "mulligan_prompt"); }
+    }
+
+    /**
+     * Client -> server: this player's mulligan decision. {@code discardedCardIds}
+     * holds up to 3 instance IDs from the player's own opening hand; empty
+     * keeps the hand. The server validates every ID against the sender's hand.
+     */
+    public record MulliganDecision(String type, java.util.List<java.util.UUID> discardedCardIds) {
+        public MulliganDecision(java.util.List<java.util.UUID> discardedCardIds) {
+            this("mulligan", discardedCardIds == null ? List.of() : List.copyOf(discardedCardIds));
+        }
+        public MulliganDecision { requireType(type, "mulligan"); }
+    }
+
+    /** Server -> all: mulligan progress, in seat order. The match starts when both are true. */
+    public record MulliganUpdate(String type, boolean decided0, boolean decided1) {
+        public MulliganUpdate(boolean decided0, boolean decided1) { this("mulligan_update", decided0, decided1); }
+        public MulliganUpdate { requireType(type, "mulligan_update"); }
+    }
+
+    /**
+     * Server -> the reacting player only: a reaction window is open.
+     * {@code commands} are the exact legal {@code "react ..."} command strings
+     * the reactor may answer with (validated by exact match server-side);
+     * the client should offer them and let the player pass. The reactor's own
+     * hand is already visible in their latest snapshot.
+     */
+    public record ReactionPrompt(String type, long seq, String matchId, int reactingPlayer,
+                                 List<String> commands, int expiresInSeconds) {
+        public ReactionPrompt(long seq, String matchId, int reactingPlayer,
+                              List<String> commands, int expiresInSeconds) {
+            this("reaction_prompt", seq, matchId, reactingPlayer, List.copyOf(commands), expiresInSeconds);
+        }
+        public ReactionPrompt { requireType(type, "reaction_prompt"); }
+    }
+
+    /**
+     * Client -> server: the reactor's answer. {@code command} must be one of the
+     * strings from the matching {@link ReactionPrompt}; null or blank passes.
+     */
+    public record ReactionDecision(String type, String command) {
+        public ReactionDecision(String command) { this("reaction", command); }
+        public ReactionDecision { requireType(type, "reaction"); }
+    }
+
+    /** Server -> all: a reaction window expired without an answer and was auto-passed. */
+    public record ReactionTimeout(String type, int player) {
+        public ReactionTimeout(int player) { this("reaction_timeout", player); }
+        public ReactionTimeout { requireType(type, "reaction_timeout"); }
     }
 
     private static void requireType(String actual, String expected) {

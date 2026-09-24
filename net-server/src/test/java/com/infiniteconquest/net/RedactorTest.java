@@ -104,6 +104,40 @@ class RedactorTest {
         checkViewerHandAndNoDeck(state, 1);
     }
 
+    /**
+     * The mulligan prompt carries a pre-decision snapshot to each player. Player
+     * B's copy must contain none of player A's opening-hand IDs (it needs only
+     * B's own hand to render the choice), and must be marked as a mulligan
+     * snapshot so clients can tell it apart from the live match start.
+     */
+    @Test void mulliganSnapshotForPlayerBContainsNoPlayerAHandIds() throws Exception {
+        GameState state = factory.create(20260924L, deck("ZEUS"), deck("POSEIDON"),
+                new BoardPosition(1, 0), new BoardPosition(2, 5), BoardGeometry.HEX);
+        assertTrue(state.isMulliganWindowOpen(), "fresh match must be inside the mulligan window");
+
+        GameSnapshot bView = Redactor.redact(state, 1);
+        assertTrue(bView.mulliganOpen(), "mulligan prompt snapshot must be flagged");
+
+        Set<UUID> aHand = new HashSet<>(state.player(0).hand());
+        assertFalse(aHand.isEmpty(), "player A should hold an opening hand");
+        for (GameSnapshot.CardView card : bView.cards())
+            assertFalse(aHand.contains(card.instanceId()),
+                    "player A hand id leaked into player B mulligan snapshot: " + card.instanceId());
+        String encoded = Protocol.MAPPER.writeValueAsString(bView);
+        for (UUID id : aHand)
+            assertFalse(encoded.contains(id.toString()),
+                    "player A hand UUID leaked into player B mulligan JSON: " + id);
+
+        // Player B still sees their own full hand: the mulligan UI needs it.
+        Set<UUID> bHand = new HashSet<>(state.player(1).hand());
+        assertFalse(bHand.isEmpty(), "player B should hold an opening hand");
+        for (UUID id : bHand)
+            assertTrue(encoded.contains(id.toString()),
+                    "player B should see their own hand id: " + id);
+        assertEquals(bHand.size(), bView.handCounts()[1]);
+        assertEquals(aHand.size(), bView.handCounts()[0], "player A hand visible as count only");
+    }
+
     private void checkViewerHandAndNoDeck(GameState state, int viewer) throws Exception {
         GameSnapshot snapshot = Redactor.redact(state, viewer);
         List<UUID> handIds = snapshot.cards().stream()

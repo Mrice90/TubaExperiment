@@ -101,9 +101,9 @@ class CardArtFactoryTest {
         assertEquals(78, first.getIconHeight());
         assertNotEquals(pixelHash(first), pixelHash(second));
         assertSame(first, CardArtFactory.iconFor(storm, 190, 78), "rendered art should be cached");
-        ImageIcon board = CardArtFactory.boardIconFor(storm);
-        assertEquals(78, board.getIconWidth());
-        assertEquals(56, board.getIconHeight());
+        ImageIcon board = CardArtFactory.boardTokenIcon(storm);
+        assertEquals(320, board.getIconWidth());
+        assertEquals(280, board.getIconHeight());
     }
 
     @Test void packagesAUniquePaintedIllustrationForEveryCapital() {
@@ -114,11 +114,11 @@ class CardArtFactoryTest {
                 CardType.CAPITAL, "ZEUS", 0, 0, 0, 0, 0, 20);
         assertTrue(CardArtFactory.hasPaintedArt(capital));
         ImageIcon wide = CardArtFactory.iconFor(capital, 300, 120);
-        ImageIcon compact = CardArtFactory.boardIconFor(capital);
+        ImageIcon compact = CardArtFactory.boardTokenIcon(capital);
         assertEquals(300, wide.getIconWidth());
         assertEquals(120, wide.getIconHeight());
-        assertEquals(78, compact.getIconWidth());
-        assertEquals(56, compact.getIconHeight());
+        assertEquals(320, compact.getIconWidth());
+        assertEquals(280, compact.getIconHeight());
     }
 
     @Test void packagesThePaintedZeusCharacterRollout() {
@@ -132,7 +132,7 @@ class CardArtFactoryTest {
         assertTrue(CardArtFactory.hasPaintedArt(courier));
         assertFalse(CardArtFactory.hasPaintedArt(awaitingArt));
         assertEquals(190, CardArtFactory.iconFor(courier, 190, 78).getIconWidth());
-        assertEquals(56, CardArtFactory.boardIconFor(courier).getIconHeight());
+        assertEquals(280, CardArtFactory.boardTokenIcon(courier).getIconHeight());
     }
 
     @Test void packagesThePaintedZeusSpellRollout() {
@@ -146,7 +146,7 @@ class CardArtFactoryTest {
         assertTrue(CardArtFactory.hasPaintedArt(chainLightning));
         assertFalse(CardArtFactory.hasPaintedArt(awaitingArt));
         assertEquals(190, CardArtFactory.iconFor(chainLightning, 190, 78).getIconWidth());
-        assertEquals(56, CardArtFactory.boardIconFor(chainLightning).getIconHeight());
+        assertEquals(280, CardArtFactory.boardTokenIcon(chainLightning).getIconHeight());
     }
 
     @Test void packagesThePaintedZeusLandRollout() {
@@ -160,7 +160,7 @@ class CardArtFactoryTest {
         assertTrue(CardArtFactory.hasPaintedArt(cloudbank));
         assertFalse(CardArtFactory.hasPaintedArt(awaitingArt));
         assertEquals(190, CardArtFactory.iconFor(cloudbank, 190, 78).getIconWidth());
-        assertEquals(56, CardArtFactory.boardIconFor(cloudbank).getIconHeight());
+        assertEquals(280, CardArtFactory.boardTokenIcon(cloudbank).getIconHeight());
     }
 
     @Test void packagesThePaintedZeusStructureRollout() {
@@ -174,7 +174,7 @@ class CardArtFactoryTest {
         assertTrue(CardArtFactory.hasPaintedArt(pylon));
         assertFalse(CardArtFactory.hasPaintedArt(awaitingArt));
         assertEquals(190, CardArtFactory.iconFor(pylon, 190, 78).getIconWidth());
-        assertEquals(56, CardArtFactory.boardIconFor(pylon).getIconHeight());
+        assertEquals(280, CardArtFactory.boardTokenIcon(pylon).getIconHeight());
     }
 
     @Test void everyPlayablePoseidonSpellHasPaintedArt() {
@@ -206,7 +206,7 @@ class CardArtFactoryTest {
                 CardType.LAND, "POSEIDON", tidelands.cost(), 0, 0, 0, 0, tidelands.hitPoints());
         assertFalse(CardArtFactory.hasPaintedArt(awaitingArt));
         assertEquals(190, CardArtFactory.iconFor(tidelands, 190, 78).getIconWidth());
-        assertEquals(56, CardArtFactory.boardIconFor(tidelands).getIconHeight());
+        assertEquals(280, CardArtFactory.boardTokenIcon(tidelands).getIconHeight());
     }
 
     @TestFactory Stream<DynamicTest> decodesEachPoseidonLandPainting() {
@@ -243,7 +243,7 @@ class CardArtFactoryTest {
                 CardType.CHARACTER, "POSEIDON", 1, 1, 1, 1, 1);
         assertFalse(CardArtFactory.hasPaintedArt(awaitingArt));
         assertEquals(190, CardArtFactory.iconFor(surveyor, 190, 78).getIconWidth());
-        assertEquals(56, CardArtFactory.boardIconFor(surveyor).getIconHeight());
+        assertEquals(280, CardArtFactory.boardTokenIcon(surveyor).getIconHeight());
     }
 
     private int pixelHash(ImageIcon icon) {

@@ -760,6 +760,14 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         session = null; // the battle owns it now
     }
 
+    @Override public void onMulliganPrompt(GameSnapshot snapshot) {
+        // Online mulligans are real decisions: open the battle on the prompt so
+        // the player decides on their opening hand; the live snapshot follows.
+        inMatch = true;
+        shell.openNetBattle(session);
+        session = null; // the battle owns it now
+    }
+
     @Override public void onError(String message) {
         if (inMatch) return;
         JOptionPane.showMessageDialog(this, message, "Multiplayer", JOptionPane.WARNING_MESSAGE);

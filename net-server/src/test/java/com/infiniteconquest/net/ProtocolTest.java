@@ -17,6 +17,14 @@ class ProtocolTest {
         assertRoundTrip(new Protocol.Lobby(
                 List.of(new Protocol.LobbyPlayer("uuid-1", "Mathew")), "uuid-1"), Protocol.Lobby.class);
         assertRoundTrip(new Protocol.ErrorMessage("Not your turn"), Protocol.ErrorMessage.class);
+        assertRoundTrip(new Protocol.MulliganPrompt(3L, "match-1", null), Protocol.MulliganPrompt.class);
+        assertRoundTrip(new Protocol.MulliganDecision(List.of(UUID.randomUUID())), Protocol.MulliganDecision.class);
+        assertRoundTrip(new Protocol.MulliganUpdate(true, false), Protocol.MulliganUpdate.class);
+        assertRoundTrip(new Protocol.ReactionPrompt(4L, "match-1", 1,
+                List.of("react 2 3 4", "react 5 3 4"), 60), Protocol.ReactionPrompt.class);
+        assertRoundTrip(new Protocol.ReactionDecision("react 2 3 4"), Protocol.ReactionDecision.class);
+        assertRoundTrip(new Protocol.ReactionDecision(null), Protocol.ReactionDecision.class);
+        assertRoundTrip(new Protocol.ReactionTimeout(1), Protocol.ReactionTimeout.class);
     }
 
     private <T> void assertRoundTrip(T message, Class<T> type) {
@@ -32,6 +40,12 @@ class ProtocolTest {
         if (message instanceof Protocol.PlayerCommand c) return c.type();
         if (message instanceof Protocol.Lobby l) return l.type();
         if (message instanceof Protocol.ErrorMessage e) return e.type();
+        if (message instanceof Protocol.MulliganPrompt m) return m.type();
+        if (message instanceof Protocol.MulliganDecision m) return m.type();
+        if (message instanceof Protocol.MulliganUpdate m) return m.type();
+        if (message instanceof Protocol.ReactionPrompt r) return r.type();
+        if (message instanceof Protocol.ReactionDecision r) return r.type();
+        if (message instanceof Protocol.ReactionTimeout r) return r.type();
         throw new IllegalArgumentException("unexpected");
     }
 
@@ -40,7 +54,7 @@ class ProtocolTest {
                 new int[]{1, 0}, "PLAY", null,
                 new int[]{3, 3}, new int[]{3, 3}, new int[]{4, 4}, new int[]{36, 36},
                 new int[]{0, 0}, new int[]{0, 0},
-                List.of(), List.of());
+                List.of(), List.of(), false);
         String matchId = UUID.randomUUID().toString();
         Protocol.FullSnapshot out = new Protocol.FullSnapshot(7L, matchId, snapshot);
         Protocol.FullSnapshot back = Protocol.decode(Protocol.encode(out), Protocol.FullSnapshot.class);

@@ -55,6 +55,8 @@ public final class GameState {
     /** Structures played this turn, for client-side legality hints in net snapshots. */
     public int structuresPlayedThisTurn(int playerId) { return structuresPlayedThisTurn[playerId]; }
     public Phase phase() { return phase; }
+    /** True while either player may still submit a mulligan decision. */
+    public boolean isMulliganWindowOpen() { return mulliganWindowOpen; }
     public OptionalInt winner() { return winner == null ? OptionalInt.empty() : OptionalInt.of(winner); }
     public List<GameEvent> events() { return Collections.unmodifiableList(events); }
     public Optional<CardInstance> card(UUID id) { return Optional.ofNullable(cards.get(id)); }
@@ -88,6 +90,7 @@ public final class GameState {
         }
         for (int i = 0; i < replaced; i++) drawCard(playerId);
         mulliganCompleted[playerId] = true;
+        if (mulliganCompleted[0] && mulliganCompleted[1]) mulliganWindowOpen = false;
         emit(GameEvent.Type.MULLIGAN_COMPLETED, playerId,
                 "Discarded and redrew " + replaced);
     }
@@ -359,7 +362,7 @@ public final class GameState {
      * Rebuilds a client-side {@code GameState} from a redacted {@link GameSnapshot}.
      *
      * <p>The result is a faithful copy of everything the viewing player may see:
-     * public zones in full, the viewer's own hand and deck in full, and opponent
+     * public zones in full, the viewer's own hand in full, and opponent
      * hidden zones as counts only. It is used to render confirmed server state;
      * commands are never applied to it locally. Unknown definition IDs fail fast.
      *

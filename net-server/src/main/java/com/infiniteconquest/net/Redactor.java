@@ -21,7 +21,7 @@ import java.util.UUID;
  * <p>Visibility contract (see {@code net-server/SECURITY.md}):
  * <ul>
  *   <li>Battlefield and both discard piles: full card detail for both viewers (public zones).</li>
- *   <li>Viewing player's own hand and deck: full card detail, deck order preserved.</li>
+ *   <li>Viewing player's own hand: full card detail.</li>
  *   <li>Opponent's hand and deck: counts only. No card IDs and no deck order appear
  *       anywhere in the snapshot, including event details.</li>
  *   <li>Events: recent tail with {@code CARD_DRAWN} and {@code MULLIGAN_COMPLETED}
@@ -84,7 +84,8 @@ public final class Redactor {
                 new int[]{state.landsPlayedThisTurn(0), state.landsPlayedThisTurn(1)},
                 new int[]{state.structuresPlayedThisTurn(0), state.structuresPlayedThisTurn(1)},
                 List.copyOf(cards),
-                List.copyOf(events));
+                List.copyOf(events),
+                state.isMulliganWindowOpen());
     }
 
     private static GameSnapshot.CardView view(CardInstance card, BoardPosition position) {

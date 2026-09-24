@@ -14,6 +14,7 @@ import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.FocusAdapter;
 import java.awt.event.FocusEvent;
+import java.awt.event.KeyEvent;
 import java.awt.event.MouseEvent;
 import java.awt.geom.*;
 import java.awt.image.BufferedImage;
@@ -84,6 +85,14 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private boolean netRatingReady;
     private String opponentName = "Opponent";
     private String netPendingCommand;
+    /** A mulligan prompt arrived and the local decision has not been sent yet. */
+    private boolean netMulliganOpen;
+    /** The local mulligan decision was sent; waiting on the opponent. */
+    private boolean netMulliganWaiting;
+    /** Generation counter for reaction windows; stale dialogs must not answer. */
+    private int netReactionGen;
+    /** The currently open network reaction dialog, if any (for timeout dismissal). */
+    private VisualReactionDialog activeReactionDialog;
     private boolean victoryDialogShown;
     private boolean fullScreen;
     private boolean boardFullScreen;
@@ -213,6 +222,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private void applyNetSnapshot(GameSnapshot snapshot) {
         state = GameState.fromSnapshot(snapshot, netDefinitions);
         netLastFrame = PresentationSnapshot.capture(state);
+        netMulliganWaiting = false; // a live snapshot means both mulligans are in
         if (!netStarted) {
             netStarted = true;
             initNetMatchMeta();
@@ -309,6 +319,75 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 "Disconnected", JOptionPane.WARNING_MESSAGE);
         onQuitToTitle.run();
         dispose();
+    }
+
+    /**
+     * The server asks for a real mulligan decision. Builds the opening-hand
+     * view from the redacted snapshot and shows the shared mulligan dialog.
+     */
+    @Override public void onMulliganPrompt(long seq, String matchId, GameSnapshot snapshot) {
+        if (netGameOver || !netMode()) return;
+        state = GameState.fromSnapshot(snapshot, netDefinitions);
+        netLastFrame = PresentationSnapshot.capture(state);
+        netMulliganOpen = true;
+        initNetMatchMeta();
+        refresh();
+        message("Mulligan — choose up to 3 cards to discard and redraw.");
+        SwingUtilities.invokeLater(this::showNetMulliganDialog);
+    }
+
+    private void showNetMulliganDialog() {
+        if (!netMulliganOpen || netSession == null || netGameOver) return;
+        List<MulliganChoice> choices = state.player(localPlayer()).hand().stream()
+                .map(id -> new MulliganChoice(id, state.card(id).orElseThrow().definition()))
+                .toList();
+        Set<UUID> discarded = new VisualMulliganDialog(choices).choose();
+        if (!netMulliganOpen || netSession == null || netGameOver) return; // resolved meanwhile
+        netMulliganOpen = false;
+        netMulliganWaiting = true;
+        netSession.sendMulligan(new ArrayList<>(discarded));
+        addHistory("You", "Mulligan — discarded and redrew " + discarded.size());
+        message("Mulligan submitted — waiting for " + opponentName + "…");
+        refresh();
+    }
+
+    @Override public void onMulliganUpdate(boolean decided0, boolean decided1) {
+        if (netGameOver || !netMode()) return;
+        boolean opponentDecided = localPlayer() == 0 ? decided1 : decided0;
+        if (opponentDecided && netMulliganWaiting) {
+            message(opponentName + " decided — the match starts when both players are ready.");
+            refresh();
+        }
+    }
+
+    /**
+     * A reaction window opened for the local player. Shows the reaction
+     * dialog with the server's exact legal commands; sends the chosen command
+     * verbatim, or a pass when the dialog closes unanswered.
+     */
+    @Override public void onReactionPrompt(long seq, String matchId, int reactingPlayer,
+                                           List<String> commands, int expiresInSeconds) {
+        if (netGameOver || !netMode() || reactingPlayer != localPlayer()) return;
+        message("Reaction window — answer before the timer runs out!");
+        int generation = ++netReactionGen;
+        activeReactionDialog = new VisualReactionDialog(reactingPlayer, commands, expiresInSeconds);
+        String chosen = activeReactionDialog.choose();
+        activeReactionDialog = null;
+        if (generation != netReactionGen || netSession == null || netGameOver) return; // timed out/disconnected
+        netSession.sendReaction(chosen);
+        addHistory("You", chosen == null || chosen.isBlank() ? "Reaction — pass" : "Reaction — " + describe(chosen));
+        refresh();
+    }
+
+    @Override public void onReactionTimeout(int player) {
+        if (netGameOver || !netMode()) return;
+        netReactionGen++; // any open dialog must not answer a dead window
+        VisualReactionDialog dialog = activeReactionDialog;
+        activeReactionDialog = null;
+        if (dialog != null && player == localPlayer()) dialog.dispose();
+        message(player == localPlayer() ? "Your reaction window expired — auto-passed."
+                : opponentName + "'s reaction window expired — auto-passed.");
+        refresh();
     }
 
     /** Net game-over dialog, shown once the final presentation finishes. */
@@ -1331,6 +1410,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
 
     private boolean canAcceptHumanInput() {
         if (netMode() && netPendingCommand != null) return false; // awaiting server confirmation
+        if (netMode() && (netMulliganOpen || netMulliganWaiting)) return false; // mulligan not resolved
         return state != null && !playerOneBot && !botRunning && state.activePlayer() == localPlayer()
                 && state.phase() != Phase.GAME_OVER && interaction.acceptsHumanInput();
     }
@@ -1537,29 +1617,53 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         @Override protected void paintComponent(Graphics graphics) {
             Graphics2D g=(Graphics2D)graphics.create();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING,RenderingHints.VALUE_TEXT_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             Polygon hex=shape();g.clip(hex);
             g.setPaint(new GradientPaint(0,0,getBackground().brighter(),getWidth(),getHeight(),getBackground()));g.fill(hex);
             CardDefinition card=(CardDefinition)getClientProperty("card");
+            int width=getWidth(),height=getHeight();
             if(card!=null){
-                Image image=CardArtFactory.iconFor(card,160,140).getImage();g.drawImage(image,0,0,getWidth(),getHeight(),null);
-                g.setColor(new Color(5,12,20,210));g.fillRect(0,(int)(getHeight()*.43),getWidth(),getHeight());
-                int fontSize = Math.max(10, Math.min(14, getHeight() / 8));
-                g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, fontSize));
-                g.setColor(Color.WHITE);
-                centered(g, card.name(), (int)(getHeight() * .56));
-                g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, fontSize));
-                centered(g, (String)getClientProperty("stats"), (int)(getHeight() * .71));
-                g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, Math.max(9, fontSize - 1)));
-                g.setColor(new Color(5, 12, 20, 205));g.fillRect(0, (int)(getHeight()*.19), getWidth(), fontSize + 7);
+                // High-resolution token art, downscaled bicubically so tokens stay
+                // crisp on large hexes and high-DPI displays.
+                Image image=CardArtFactory.boardTokenIcon(card).getImage();
+                g.drawImage(image,0,0,width,height,null);
+                int fontSize = Math.max(10, Math.min(14, height / 8));
+                // Owner chip: dark band with high-contrast owner coloring.
+                g.setColor(new Color(5, 12, 20, 205));g.fillRect(0, (int)(height*.19), width, fontSize + 7);
                 int viewer=((Number)Objects.requireNonNullElse(getClientProperty("viewer"),0)).intValue();
                 boolean own=((Integer)getClientProperty("owner"))==viewer;
+                g.setFont(new Font(Font.SANS_SERIF,Font.BOLD,fontSize));
                 g.setColor(own?new Color(130,231,255):new Color(255,157,160));
-                centered(g,"P"+(own?1:2)+" · H"+Objects.toString(getClientProperty("height"),"0"),(int)(getHeight()*.19)+fontSize + 2);
+                centered(g,"P"+(own?1:2)+" · H"+Objects.toString(getClientProperty("height"),"0"),(int)(height*.19)+fontSize + 2);
+                // Bottom scrim: a gradient that keeps the upper art fully visible
+                // and fades to a near-opaque band behind the name and stats.
+                int scrimTop=(int)(height*.58);
+                g.setPaint(new GradientPaint(0,scrimTop,new Color(4,10,18,0),0,height,new Color(4,10,18,228)));
+                g.fillRect(0,scrimTop,width,height-scrimTop);
+                // Name and stats with drop shadows for contrast over bright art.
+                g.setFont(new Font(Font.SANS_SERIF, Font.BOLD, Math.min(16, Math.max(12, width/11))));
+                shadowed(g,card.name(),(int)(height*.74));
+                g.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, Math.min(14, Math.max(11, width/13))));
+                shadowed(g,Objects.toString(getClientProperty("stats"),""),(int)(height*.88));
             }else{
                 g.setColor(new Color(182,209,218,100));BoardPosition p=(BoardPosition)getClientProperty("position");
-                g.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,11));centered(g,p.x()+","+p.y(),getHeight()/2);
+                g.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,11));centered(g,p.x()+","+p.y(),height/2);
             }
-            String badge=(String)getClientProperty("badge");if(badge!=null&&!badge.isEmpty()){g.setFont(new Font(Font.SANS_SERIF,Font.BOLD,Math.max(9,Math.min(11,getHeight()/10))));g.setColor(new Color(252,226,137));centered(g,HexText.status(badge),(int)(getHeight()*.85));}
+            String badge=(String)getClientProperty("badge");
+            if(badge!=null&&!badge.isEmpty()){
+                // Status pill below the owner chip, clear of the name/stats band.
+                int pillH=Math.max(16,(int)(height*.11));
+                g.setFont(new Font(Font.SANS_SERIF,Font.BOLD,Math.max(9,Math.min(11,height/10))));
+                String text=HexText.status(badge);
+                FontMetrics metrics=g.getFontMetrics();
+                int pillW=metrics.stringWidth(text)+18;
+                int pillX=(width-pillW)/2,pillY=(int)(height*.30);
+                g.setColor(new Color(120,30,36,225));
+                g.fillRoundRect(pillX,pillY,pillW,pillH,pillH/2,pillH/2);
+                g.setColor(new Color(252,226,137));
+                g.drawString(text,pillX+9,pillY+pillH-metrics.getDescent()-3);
+            }
             g.setClip(null);g.setStroke(new BasicStroke(isFocusOwner()?3:((Number)getClientProperty("outlineWidth")).floatValue()));
             g.setColor(isFocusOwner()?Color.WHITE:(Color)getClientProperty("outline"));g.draw(hex);g.dispose();
         }
@@ -1567,6 +1671,13 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             FontMetrics metrics = g.getFontMetrics();
             String fitted = HexText.fit(text, metrics, HexText.lineWidth(getWidth(),getHeight(),y-metrics.getAscent(),y+metrics.getDescent()));
             g.drawString(fitted,(getWidth()-metrics.stringWidth(fitted))/2,y);
+        }
+        private void shadowed(Graphics2D g,String text,int y){
+            FontMetrics metrics = g.getFontMetrics();
+            String fitted = HexText.fit(text, metrics, HexText.lineWidth(getWidth(),getHeight(),y-metrics.getAscent(),y+metrics.getDescent()));
+            int x=(getWidth()-metrics.stringWidth(fitted))/2;
+            g.setColor(new Color(0,0,0,200));g.drawString(fitted,x+1,y+1);
+            g.setColor(Color.WHITE);g.drawString(fitted,x,y);
         }
     }
 
@@ -2746,7 +2857,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     }
 
     private JButton visualChoiceCard(CardDefinition card, int width, int height) {
-        JButton result = new JButton(cardHtml(card), CardArtFactory.iconFor(card, width - 16, 78));
+        return visualChoiceCard(card, width, height, 78);
+    }
+
+    private JButton visualChoiceCard(CardDefinition card, int width, int height, int artHeight) {
+        JButton result = new JButton(cardHtml(card), CardArtFactory.iconFor(card, width - 16, artHeight));
         Dimension size = new Dimension(width, height);
         result.setPreferredSize(size); result.setMinimumSize(size); result.setMaximumSize(size);
         result.setVerticalAlignment(SwingConstants.TOP);
@@ -2768,10 +2883,21 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         private final JPanel spellTray = new JPanel();
         private final Map<BoardPosition, JButton> targets = new LinkedHashMap<>();
         private final JLabel instruction = new JLabel("Choose a spell, then click or drag it to a glowing target.");
+        private final JLabel countdown = new JLabel();
+        private javax.swing.Timer countdownTimer;
         private Integer selectedHandIndex;
         private String result;
 
+        /** Local games: no server timeout, so no countdown. */
         VisualReactionDialog(int reacting, List<String> commands) {
+            this(reacting, commands, 0);
+        }
+
+        /**
+         * Network games: shows a visible countdown of the server's auto-pass
+         * timeout ({@code expiresInSeconds} &gt; 0) and closes when it elapses.
+         */
+        VisualReactionDialog(int reacting, List<String> commands, int expiresInSeconds) {
             super(InfiniteConquestGui.this, "Reaction Window", true);
             this.reacting = reacting;
             this.commands = commands;
@@ -2821,6 +2947,32 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             instruction.setText("<html><b>Between opponent actions · You have "+state.player(reacting).currentGp()+" gold.</b><br>Read a spell, choose it, then choose a target. Passing spends nothing.</html>");
             JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false);header.setPreferredSize(new Dimension(800,74));
             header.add(instruction, BorderLayout.CENTER); header.add(pass, BorderLayout.EAST);
+            if (expiresInSeconds > 0) {
+                countdown.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
+                countdown.setForeground(new Color(240, 191, 73));
+                countdown.setHorizontalAlignment(SwingConstants.CENTER);
+                JPanel timerWrap = new JPanel(new BorderLayout());
+                timerWrap.setOpaque(false);
+                timerWrap.add(countdown, BorderLayout.CENTER);
+                timerWrap.setPreferredSize(new Dimension(150, 74));
+                header.add(timerWrap, BorderLayout.WEST);
+                int[] remaining = {expiresInSeconds};
+                Runnable tick = () -> {
+                    if (remaining[0] <= 0) {
+                        if (countdownTimer != null) countdownTimer.stop();
+                        instruction.setText("<html><b>Time's up — the server auto-passes.</b></html>");
+                        dispose();
+                        return;
+                    }
+                    countdown.setText("⏱ " + remaining[0] + "s");
+                    countdown.getAccessibleContext().setAccessibleDescription(
+                            "Reaction window closes in " + remaining[0] + " seconds");
+                    remaining[0]--;
+                };
+                tick.run();
+                countdownTimer = new javax.swing.Timer(1000, e -> tick.run());
+                countdownTimer.start();
+            }
             JPanel content = panel(new BorderLayout(8, 8)); content.setBorder(new EmptyBorder(12, 12, 12, 12));
             content.add(header, BorderLayout.NORTH);
             content.add(board, BorderLayout.CENTER);
@@ -2835,6 +2987,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         }
 
         String choose() { setVisible(true); return result; }
+
+        @Override public void dispose() {
+            if (countdownTimer != null) countdownTimer.stop();
+            super.dispose();
+        }
 
         private int handIndex(String command) { return Integer.parseInt(command.split("\\s+")[2]); }
         private BoardPosition target(String command) {
@@ -2907,67 +3064,154 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         }
     }
 
+    /**
+     * Shared mulligan dialog for local and online games. Shows the player's
+     * redacted opening hand at readable size; selected cards move to the
+     * discard tray and are replaced from the deck. KEEP HAND keeps everything,
+     * REDRAW SELECTED discards exactly the selected cards.
+     */
     private final class VisualMulliganDialog extends JDialog {
+        private static final Color KEEP_GREEN = new Color(104, 211, 139);
+        private static final Color REDRAW_RED = new Color(239, 106, 122);
+        private static final Color REDRAW_AMBER = new Color(240, 191, 73);
+
         private final List<MulliganChoice> choices;
         private final Set<UUID> discarded = new LinkedHashSet<>();
         private final JPanel handTray = new JPanel();
         private final JPanel discardTray = new JPanel();
-        private final JLabel count = new JLabel();
+        private final JLabel handTitle = new JLabel();
+        private final JLabel discardTitle = new JLabel();
+        private final JLabel statusLine = new JLabel();
+        private final JButton keepButton;
+        private final JButton redrawButton;
         private UUID dragging;
+        private Point pressPoint;
 
         VisualMulliganDialog(List<MulliganChoice> choices) {
-            super(InfiniteConquestGui.this, "Opening Mulligan", true);
+            super(InfiniteConquestGui.this, "Mulligan — Choose Your Opening Hand", true);
             this.choices = choices;
             handTray.setLayout(new BoxLayout(handTray, BoxLayout.X_AXIS));
             discardTray.setLayout(new BoxLayout(discardTray, BoxLayout.X_AXIS));
             handTray.setBackground(new Color(24, 72, 58));
             discardTray.setBackground(new Color(78, 42, 50));
-            count.setForeground(Color.WHITE);
-            JButton confirm = button("Confirm Mulligan", e -> dispose());
-            JPanel content = panel(new BorderLayout(8, 8));
-            content.setBorder(new EmptyBorder(12, 12, 12, 12));
-            JLabel directions = new JLabel("<html><b>Choose up to 3 cards to discard and redraw.</b> Click a card or drag it between trays. Unselected cards stay in your hand.</html>");
+
+            JLabel title = new JLabel("MULLIGAN");
+            title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 30));
+            title.setForeground(REDRAW_AMBER);
+            JLabel directions = new JLabel("<html>Review your opening hand. <b>Select up to 3 cards</b> you don't want — "
+                    + "click a card (or press <b>Space</b> on it), or drag it between trays. "
+                    + "Each discarded card is <b>replaced with a fresh card from your deck</b>; "
+                    + "cards you don't select stay in your hand.</html>");
             directions.setForeground(Color.WHITE);
+            directions.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+            JPanel header = new JPanel(new BorderLayout(0, 6));
+            header.setOpaque(false);
+            header.setBorder(new EmptyBorder(4, 4, 8, 4));
+            header.add(title, BorderLayout.NORTH);
+            header.add(directions, BorderLayout.CENTER);
+
             JPanel trays = new JPanel(new GridLayout(2, 1, 0, 10)); trays.setOpaque(false);
-            trays.add(tray("OPENING HAND — THESE CARDS STAY", handTray, new Color(104, 211, 139)));
-            trays.add(tray("DISCARD & REDRAW — UP TO 3", discardTray, new Color(239, 106, 122)));
-            JPanel footer = new JPanel(new BorderLayout()); footer.setOpaque(false);
-            footer.add(count, BorderLayout.WEST); footer.add(confirm, BorderLayout.EAST);
-            content.add(directions, BorderLayout.NORTH); content.add(trays, BorderLayout.CENTER); content.add(footer, BorderLayout.SOUTH);
-            setContentPane(content); setSize(1150, 610); setLocationRelativeTo(InfiniteConquestGui.this);
+            trays.add(tray(handTitle, "OPENING HAND — KEEPING", handTray, KEEP_GREEN));
+            trays.add(tray(discardTitle, "DISCARD & REDRAW", discardTray, REDRAW_RED));
+
+            keepButton = button("KEEP HAND", e -> { discarded.clear(); dispose(); });
+            keepButton.setMnemonic(KeyEvent.VK_K);
+            keepButton.setToolTipText("Keep your entire opening hand (Alt+K, or Enter)");
+            keepButton.getAccessibleContext().setAccessibleDescription(
+                    "Keep your entire opening hand and start the game");
+            redrawButton = button("REDRAW SELECTED", e -> dispose());
+            redrawButton.setMnemonic(KeyEvent.VK_R);
+            redrawButton.setToolTipText("Discard the selected cards and draw replacements (Alt+R)");
+            redrawButton.getAccessibleContext().setAccessibleDescription(
+                    "Discard the selected cards and draw one replacement for each");
+            getRootPane().setDefaultButton(keepButton);
+            getRootPane().registerKeyboardAction(e -> { discarded.clear(); dispose(); },
+                    KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
+
+            statusLine.setForeground(Color.WHITE);
+            statusLine.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+            JPanel footer = new JPanel(new BorderLayout(10, 0)); footer.setOpaque(false);
+            footer.setBorder(new EmptyBorder(8, 4, 0, 4));
+            footer.add(statusLine, BorderLayout.WEST);
+            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            buttons.setOpaque(false);
+            buttons.add(redrawButton); buttons.add(keepButton);
+            footer.add(buttons, BorderLayout.EAST);
+
+            JPanel content = panel(new BorderLayout(8, 8));
+            content.setBorder(new EmptyBorder(12, 14, 12, 14));
+            content.add(header, BorderLayout.NORTH); content.add(trays, BorderLayout.CENTER); content.add(footer, BorderLayout.SOUTH);
+            setContentPane(content); setSize(1300, 760); setLocationRelativeTo(InfiniteConquestGui.this);
             setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
             rebuild();
         }
 
         Set<UUID> choose() { setVisible(true); return Set.copyOf(discarded); }
 
-        private JPanel tray(String title, JPanel cards, Color color) {
+        private JPanel tray(JLabel titleLabel, String name, JPanel cards, Color color) {
+            titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+            titleLabel.setForeground(color);
+            JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false);
+            header.add(titleLabel, BorderLayout.WEST);
             JPanel result = new JPanel(new BorderLayout(5, 5)); result.setOpaque(false);
-            result.add(section(title, color), BorderLayout.NORTH);
+            result.add(header, BorderLayout.NORTH);
             JScrollPane scroll = new JScrollPane(cards, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
                     ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            scroll.setBorder(new LineBorder(color, 2, true)); result.add(scroll, BorderLayout.CENTER); return result;
+            scroll.setBorder(new LineBorder(color, 2, true)); result.add(scroll, BorderLayout.CENTER);
+            result.getAccessibleContext().setAccessibleName(name);
+            return result;
         }
 
         private void rebuild() {
             handTray.removeAll(); discardTray.removeAll();
             for (MulliganChoice choice : choices) {
-                JPanel destination = discarded.contains(choice.id()) ? discardTray : handTray;
-                JButton card = visualChoiceCard(choice.card(), 180, 185);
+                boolean selected = discarded.contains(choice.id());
+                JPanel destination = selected ? discardTray : handTray;
+                JButton card = visualChoiceCard(choice.card(), 200, 240, 108);
+                card.setFocusPainted(true); // keyboard users must see the focused card
+                if (selected) {
+                    card.setBorder(new CompoundBorder(new LineBorder(REDRAW_RED, 4, true), card.getBorder()));
+                }
+                String state = selected ? "selected for redraw" : "in your opening hand";
+                card.getAccessibleContext().setAccessibleDescription(html(choice.card().name()) + ", "
+                        + choice.card().goldCost() + " gold, currently " + state
+                        + ". Press Space to " + (selected ? "keep it" : "select it for redraw") + ".");
+                // Mouse: click toggles, drag moves between trays. Keyboard: Space/Enter
+                // toggle via an explicit binding (no ActionListener, so a mouse click
+                // can never double-toggle through button activation).
                 card.addMouseListener(new MouseAdapter() {
-                    @Override public void mousePressed(MouseEvent e) { dragging = choice.id(); }
+                    @Override public void mousePressed(MouseEvent e) {
+                        dragging = choice.id();
+                        pressPoint = e.getPoint();
+                    }
                     @Override public void mouseReleased(MouseEvent e) {
+                        boolean fromDiscard = discarded.contains(choice.id());
                         Point handPoint = SwingUtilities.convertPoint(card, e.getPoint(), handTray);
                         Point discardPoint = SwingUtilities.convertPoint(card, e.getPoint(), discardTray);
-                        if (discardTray.contains(discardPoint)) moveToDiscard(choice.id());
-                        else if (handTray.contains(handPoint)) discarded.remove(choice.id());
-                        else toggle(choice.id());
-                        dragging = null; rebuild();
+                        if (!fromDiscard && discardTray.contains(discardPoint)) moveToDiscard(choice.id());
+                        else if (fromDiscard && handTray.contains(handPoint)) discarded.remove(choice.id());
+                        else if (pressPoint != null && pressPoint.distance(e.getPoint()) < 8) toggle(choice.id());
+                        dragging = null; pressPoint = null; rebuild();
                     }
                 });
-                destination.add(card); destination.add(Box.createHorizontalStrut(7));
+                AbstractAction toggleSelection = new AbstractAction() {
+                    @Override public void actionPerformed(java.awt.event.ActionEvent e) {
+                        toggle(choice.id()); rebuild();
+                    }
+                };
+                card.getInputMap(JComponent.WHEN_FOCUSED)
+                        .put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "mulligan-toggle");
+                card.getInputMap(JComponent.WHEN_FOCUSED)
+                        .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "mulligan-toggle");
+                card.getActionMap().put("mulligan-toggle", toggleSelection);
+                destination.add(card); destination.add(Box.createHorizontalStrut(8));
             }
-            count.setText("DISCARDING " + discarded.size() + "/3 • KEEPING " + (choices.size() - discarded.size()));
+            int keeping = choices.size() - discarded.size();
+            handTitle.setText("🛡  OPENING HAND — KEEPING (" + keeping + ")");
+            discardTitle.setText("↻  DISCARD & REDRAW (" + discarded.size() + "/3)");
+            statusLine.setText("Discarding " + discarded.size() + " of up to 3  •  Keeping " + keeping);
+            redrawButton.setText("REDRAW SELECTED" + (discarded.isEmpty() ? "" : " (" + discarded.size() + ")"));
+            redrawButton.setEnabled(!discarded.isEmpty());
             handTray.revalidate(); discardTray.revalidate(); handTray.repaint(); discardTray.repaint();
         }
 

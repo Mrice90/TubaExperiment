@@ -23,7 +23,8 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /**
  * End-to-end protocol test without TCP: two NetClients talk to an embedded
- * server through in-memory transports. Covers hello/lobby, start/snapshot,
+ * server through in-memory transports. Covers hello/lobby, the networked
+ * mulligan flow (prompts, decisions, redaction), start/snapshot,
  * command/state_update, the command allowlist, per-recipient redaction, and
  * game-over/disconnect decoding.
  */
@@ -53,6 +54,11 @@ class NetClientTest {
         record GameOver(Integer winner, String matchId, GameSnapshot snapshot) {}
         record Error(String message) {}
         record Disconnected(String reason) {}
+        record MulliganPrompt(long seq, String matchId, GameSnapshot snapshot) {}
+        record MulliganUpdate(boolean decided0, boolean decided1) {}
+        record ReactionPrompt(long seq, String matchId, int reactingPlayer,
+                              List<String> commands, int expiresInSeconds) {}
+        record ReactionTimeout(int player) {}
 
         @Override public void onLobby(List<Protocol.LobbyPlayer> players, String hostUuid) {
             events.add(new Lobby(players));
@@ -77,6 +83,23 @@ class NetClientTest {
 
         @Override public void onDisconnected(String reason) {
             events.add(new Disconnected(reason));
+        }
+
+        @Override public void onMulliganPrompt(long seq, String matchId, GameSnapshot snapshot) {
+            events.add(new MulliganPrompt(seq, matchId, snapshot));
+        }
+
+        @Override public void onMulliganUpdate(boolean decided0, boolean decided1) {
+            events.add(new MulliganUpdate(decided0, decided1));
+        }
+
+        @Override public void onReactionPrompt(long seq, String matchId, int reactingPlayer,
+                                               List<String> commands, int expiresInSeconds) {
+            events.add(new ReactionPrompt(seq, matchId, reactingPlayer, commands, expiresInSeconds));
+        }
+
+        @Override public void onReactionTimeout(int player) {
+            events.add(new ReactionTimeout(player));
         }
 
         @SuppressWarnings("unchecked")
@@ -123,6 +146,16 @@ class NetClientTest {
         assertEquals(2, guestEvents.next(Recorder.Lobby.class).players().size());
 
         hostClient.startMatch();
+        // Real networked mulligans: each side gets a prompt carrying only
+        // their own redacted opening hand, then decides for real.
+        Recorder.MulliganPrompt hostPrompt = hostEvents.next(Recorder.MulliganPrompt.class);
+        Recorder.MulliganPrompt guestPrompt = guestEvents.next(Recorder.MulliganPrompt.class);
+        assertMulliganRedaction(hostPrompt.snapshot(), guestPrompt.snapshot());
+        hostClient.sendMulligan(List.of());
+        Recorder.MulliganUpdate firstUpdate = hostEvents.next(Recorder.MulliganUpdate.class);
+        assertTrue(firstUpdate.decided0() ^ firstUpdate.decided1(),
+                "exactly one decision recorded after the first mulligan");
+        guestClient.sendMulligan(List.of());
         Recorder.Snapshot hostSnapshot = hostEvents.next(Recorder.Snapshot.class);
         Recorder.Snapshot guestSnapshot = guestEvents.next(Recorder.Snapshot.class);
         assertEquals(1, hostSnapshot.snapshot().turnNumber());
@@ -190,5 +223,36 @@ class NetClientTest {
                 "snapshot must not contain deck-zone cards");
         assertTrue(snapshot.deckCounts()[0] > 0 && snapshot.deckCounts()[1] > 0,
                 "deck counts must still be present");
+    }
+
+    /**
+     * End-to-end mulligan privacy: each prompt carries that player's own
+     * opening hand and none of the opponent's hand card IDs.
+     */
+    private static void assertMulliganRedaction(GameSnapshot hostPrompt, GameSnapshot guestPrompt) {
+        assertTrue(hostPrompt.mulliganOpen() && guestPrompt.mulliganOpen());
+        java.util.Set<UUID> hostHand = hostPrompt.cards().stream()
+                .filter(c -> c.owner() == 0 && c.zone() == Zone.HAND)
+                .map(GameSnapshot.CardView::instanceId)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<UUID> guestHand = guestPrompt.cards().stream()
+                .filter(c -> c.owner() == 1 && c.zone() == Zone.HAND)
+                .map(GameSnapshot.CardView::instanceId)
+                .collect(java.util.stream.Collectors.toSet());
+        assertEquals(hostPrompt.handCounts()[0], hostHand.size(),
+                "host prompt must carry the host's full opening hand");
+        assertEquals(guestPrompt.handCounts()[1], guestHand.size(),
+                "guest prompt must carry the guest's full opening hand");
+        assertFalse(hostHand.isEmpty() && guestHand.isEmpty(), "opening hands must not be empty");
+        java.util.Set<UUID> guestCardIds = guestPrompt.cards().stream()
+                .map(GameSnapshot.CardView::instanceId)
+                .collect(java.util.stream.Collectors.toSet());
+        java.util.Set<UUID> hostCardIds = hostPrompt.cards().stream()
+                .map(GameSnapshot.CardView::instanceId)
+                .collect(java.util.stream.Collectors.toSet());
+        assertTrue(java.util.Collections.disjoint(hostHand, guestCardIds),
+                "guest's mulligan prompt must contain none of the host's hand IDs");
+        assertTrue(java.util.Collections.disjoint(guestHand, hostCardIds),
+                "host's mulligan prompt must contain none of the guest's hand IDs");
     }
 }

@@ -74,7 +74,8 @@ class GameSnapshotTest {
         GameSnapshot bad = new GameSnapshot(snapshot.seed(), snapshot.rulesId(), snapshot.viewingPlayer(),
                 snapshot.activePlayer(), snapshot.startingPlayer(), snapshot.turnNumber(), snapshot.personalTurns(),
                 snapshot.phase(), snapshot.winner(), snapshot.gp(), snapshot.maxGp(), snapshot.handCounts(),
-                snapshot.deckCounts(), snapshot.landsPlayed(), snapshot.structuresPlayed(), poisoned, snapshot.events());
+                snapshot.deckCounts(), snapshot.landsPlayed(), snapshot.structuresPlayed(), poisoned, snapshot.events(),
+                snapshot.mulliganOpen());
         assertThrows(IllegalArgumentException.class, () -> GameState.fromSnapshot(bad, definitions::get));
     }
 
@@ -109,7 +110,7 @@ class GameSnapshotTest {
                 new int[]{state.player(0).hand().size(), state.player(1).hand().size()},
                 new int[]{state.player(0).deck().size(), state.player(1).deck().size()},
                 new int[]{0, 0}, new int[]{0, 0},
-                cards, List.copyOf(state.events()));
+                cards, List.copyOf(state.events()), state.isMulliganWindowOpen());
     }
 
     private GameSnapshot.CardView view(CardInstance card, BoardPosition position) {
