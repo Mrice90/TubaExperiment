@@ -90,6 +90,7 @@ final class ShellUi {
     static final class MenuButton extends JButton {
         private float hover = 0f;
         private final Timer hoverTimer;
+        private long lastHoverCue;
 
         MenuButton(String text) {
             super(text);
@@ -101,6 +102,17 @@ final class ShellUi {
             setOpaque(false);
             setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
             setBorder(new EmptyBorder(12, 34, 12, 34));
+            addActionListener(e -> SoundEffects.play(SoundEffects.Cue.CLICK));
+            // Subtle tick on hover; throttled so sweeping across the menu stays quiet.
+            addChangeListener(e -> {
+                if (getModel().isRollover()) {
+                    long now = System.currentTimeMillis();
+                    if (now - lastHoverCue > 150) {
+                        lastHoverCue = now;
+                        SoundEffects.play(SoundEffects.Cue.HOVER);
+                    }
+                }
+            });
             hoverTimer = new Timer(16, null);
             hoverTimer.addActionListener(e -> {
                 float target = getModel().isRollover() || isFocusOwner() ? 1f : 0f;

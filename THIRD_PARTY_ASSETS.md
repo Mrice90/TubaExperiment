@@ -13,6 +13,21 @@ Infinite Conquest prefers CC0 and public-domain visual assets so the game can be
 
 These transparent sprites are dynamically scaled, tinted, rotated, and composited into battle animations, victory/defeat presentation, and card illustrations. Credit is not required by CC0, but is retained here in appreciation and to preserve provenance.
 
+## Kenney audio packs (CC0)
+
+- Creator: Kenney Vleugels (Kenney.nl)
+- License: Creative Commons Zero 1.0 Universal (CC0-1.0)
+- Packs used, with official pages:
+  - RPG Audio — https://kenney.nl/assets/rpg-audio (footsteps, melee)
+  - Interface Sounds — https://kenney.nl/assets/interface-sounds (ranged, victory/defeat originals)
+  - Sci-Fi Sounds — https://kenney.nl/assets/sci-fi-sounds (spell, destroy)
+  - Impact Sounds — https://kenney.nl/assets/impact-sounds (damage, penalty)
+  - UI Audio — https://kenney.nl/assets/ui-audio (button clicks, hover ticks)
+  - Digital Audio — https://kenney.nl/assets/digital-audio (turn banners, reaction prompt, notifications)
+  - Casino Audio — https://kenney.nl/assets/casino-audio (card placement, shuffling, coin chips for GP)
+  - Music Jingles — https://kenney.nl/assets/music-jingles (victory/defeat stingers, capital-hit impact)
+- Source OGGs were converted to mono 44.1kHz 16-bit WAV, silence-trimmed, and loudness-normalized. Full cue-by-cue provenance: `game-gui/src/main/resources/audio/ATTRIBUTION.md`.
+
 ## Original project artwork
 
 The six-faction environment atlas, 18 painterly Capital illustrations, painted Character illustrations, and Java-drawn card subjects are original Infinite Conquest project assets. The painted art was generated specifically for the project with OpenAI image generation and contains no downloaded third-party material. See `docs/card-art-system.md` for details.

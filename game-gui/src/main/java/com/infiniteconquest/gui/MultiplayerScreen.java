@@ -598,6 +598,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                 if ("ready".equals(status)) {
                     SwingUtilities.invokeLater(() -> {
                         queueStatus.setText("Match found — joining " + poll.opponentName() + "…");
+                        SoundEffects.play(SoundEffects.Cue.NOTIFY);
                         joinTunnel(poll.wssUrl());
                     });
                     return;
@@ -607,6 +608,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                     String opponentName = poll.opponentName();
                     SwingUtilities.invokeLater(() ->
                             queueStatus.setText("Match found — opening tunnel for " + opponentName + "…"));
+                    SoundEffects.play(SoundEffects.Cue.NOTIFY);
                     NetSession hosted = NetSession.hostWithTunnel(settings, chosenDeck(),
                             context.matchFactory, null, false, MultiplayerScreen.this);
                     hosted.publishQuickMatchPairing(lobby, opponentUuid);
@@ -680,11 +682,14 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     }
 
     private void refreshPlayers(List<Protocol.LobbyPlayer> players) {
+        int before = playerListModel.size();
         playerListModel.clear();
         for (Protocol.LobbyPlayer player : players) {
             String marker = player.uuid().equals(settings.playerUuid) ? " (you)" : "";
             playerListModel.addElement(player.name() + marker);
         }
+        if (before < 2 && players.size() == 2)
+            SoundEffects.play(SoundEffects.Cue.NOTIFY); // opponent just joined the lobby
         if (session != null && session.isHost()) {
             boolean ready = players.size() == 2;
             startButton.setEnabled(ready && !autoStart);

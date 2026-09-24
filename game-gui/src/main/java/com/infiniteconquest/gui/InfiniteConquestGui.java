@@ -703,7 +703,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
 
         JButton deckBuilder = button("Deck Builder", e -> openDeckEditor());
         JButton newMatch = button("New Match", e -> newMatch());
-        muteButton = button("Mute", e -> toggleMute());
+        muteButton = button("Mute", e -> toggleMute(), true);
         muteButton.setToolTipText("Mute sound effects");
         JPanel left = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 2));
         left.setOpaque(false);
@@ -1503,6 +1503,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                     ? (playerOneBot && !netMode() ? "BOT 1'S TURN" : "YOUR TURN")
                     : "ENEMY TURN";
             combatOverlay.showBanner(banner, new Color(240, 191, 73));
+            SoundEffects.play(currentPlayer == localPlayer() ? SoundEffects.Cue.YOUR_TURN : SoundEffects.Cue.ENEMY_TURN);
         }
         PlayerState human = state.player(localPlayer());
         PlayerState enemy = state.player(remotePlayer());
@@ -2212,6 +2213,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             default -> { }
         }
         for (GameEvent event : resolution.events()) {
+            if (event.type() == GameEvent.Type.GP_GENERATED && event.playerId() == localPlayer())
+                SoundEffects.play(SoundEffects.Cue.COIN_GAIN);
+            if (event.type() == GameEvent.Type.GP_SPENT && event.playerId() == localPlayer())
+                delayedCue(SoundEffects.Cue.COIN_SPEND, 140);
             if (event.type() == GameEvent.Type.OPPORTUNITY_ATTACK) {
                 String[] detail = event.detail().split("\\s+");
                 try {
@@ -2301,8 +2306,9 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private void damageFeedback(BoardPosition target, PresentationSnapshot.Frame before,
                                 int damage, int impactDelayMs) {
         combatOverlay.animateDamage(target, damage);
-        delayedCue(SoundEffects.Cue.DAMAGE, impactDelayMs);
-        if (isCapitalAt(target, before)) combatOverlay.shake(0.8f);
+        boolean capital = isCapitalAt(target, before);
+        delayedCue(capital ? SoundEffects.Cue.CAPITAL_HIT : SoundEffects.Cue.DAMAGE, impactDelayMs);
+        if (capital) combatOverlay.shake(0.8f);
     }
 
     private void delayedCue(SoundEffects.Cue cue, int delayMs) {
@@ -2758,12 +2764,18 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     }
 
     private JButton button(String text, java.awt.event.ActionListener listener) {
+        return button(text, listener, false);
+    }
+
+    /** @param silentClick true when the caller plays its own cue (e.g. mulligan keep/redraw). */
+    private JButton button(String text, java.awt.event.ActionListener listener, boolean silentClick) {
         JButton button = new JButton(text);
         button.setBackground(new Color(48, 83, 108));
         button.setForeground(Color.WHITE);
         button.setFocusPainted(false);
         button.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.RAISED), new EmptyBorder(6, 12, 6, 12)));
         button.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 13));
+        if (!silentClick) button.addActionListener(e -> SoundEffects.play(SoundEffects.Cue.CLICK));
         button.addActionListener(listener);
         return button;
     }
@@ -2901,6 +2913,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             super(InfiniteConquestGui.this, "Reaction Window", true);
             this.reacting = reacting;
             this.commands = commands;
+            SoundEffects.play(SoundEffects.Cue.REACTION);
             spellTray.setLayout(new BoxLayout(spellTray, BoxLayout.Y_AXIS));
             spellTray.setBackground(PANEL);
             HexBoardPanel board = new HexBoardPanel();
@@ -3114,18 +3127,18 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             trays.add(tray(handTitle, "OPENING HAND — KEEPING", handTray, KEEP_GREEN));
             trays.add(tray(discardTitle, "DISCARD & REDRAW", discardTray, REDRAW_RED));
 
-            keepButton = button("KEEP HAND", e -> { discarded.clear(); dispose(); });
+            keepButton = button("KEEP HAND", e -> { SoundEffects.play(SoundEffects.Cue.KEEP); discarded.clear(); dispose(); }, true);
             keepButton.setMnemonic(KeyEvent.VK_K);
             keepButton.setToolTipText("Keep your entire opening hand (Alt+K, or Enter)");
             keepButton.getAccessibleContext().setAccessibleDescription(
                     "Keep your entire opening hand and start the game");
-            redrawButton = button("REDRAW SELECTED", e -> dispose());
+            redrawButton = button("REDRAW SELECTED", e -> { SoundEffects.play(SoundEffects.Cue.SHUFFLE); dispose(); }, true);
             redrawButton.setMnemonic(KeyEvent.VK_R);
             redrawButton.setToolTipText("Discard the selected cards and draw replacements (Alt+R)");
             redrawButton.getAccessibleContext().setAccessibleDescription(
                     "Discard the selected cards and draw one replacement for each");
             getRootPane().setDefaultButton(keepButton);
-            getRootPane().registerKeyboardAction(e -> { discarded.clear(); dispose(); },
+            getRootPane().registerKeyboardAction(e -> { SoundEffects.play(SoundEffects.Cue.KEEP); discarded.clear(); dispose(); },
                     KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
 
             statusLine.setForeground(Color.WHITE);

@@ -8,7 +8,11 @@ import java.util.concurrent.ConcurrentHashMap;
 
 /** Plays curated CC0 cues bundled in game-gui resources. */
 final class SoundEffects {
-    enum Cue { MOVE, DEPLOY, MELEE, RANGED, SPELL, DAMAGE, PENALTY, DESTROY, VICTORY, DEFEAT }
+    enum Cue {
+        MOVE, DEPLOY, MELEE, RANGED, SPELL, DAMAGE, PENALTY, DESTROY, VICTORY, DEFEAT,
+        CLICK, HOVER, YOUR_TURN, ENEMY_TURN, KEEP, SHUFFLE,
+        COIN_GAIN, COIN_SPEND, REACTION, NOTIFY, CAPITAL_HIT
+    }
     private static final Set<Clip> activeClips = ConcurrentHashMap.newKeySet();
     private static volatile boolean muted;
     private static volatile double volume = 1.0; // 0.0..1.0, applied to newly started clips
