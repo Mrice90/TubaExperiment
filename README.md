@@ -133,3 +133,7 @@ Ten repetitions produce 3,240 matches. Reports include faction and Capital win r
 - executable active-turn and enemy-turn reaction Spells
 - validated JSON deck files and interactive deck editor
 - automated JUnit rules and interface tests
+
+## License
+
+Grumpy Goose Studio releases this project openly: **MIT** for all source code, **CC BY 4.0** for original creative assets — all we ask is attribution. If you build on this code or its concepts, that's a win too. See [LICENSE](LICENSE) for details. Third-party material keeps its own licenses (see [THIRD_PARTY_ASSETS.md](THIRD_PARTY_ASSETS.md)).
