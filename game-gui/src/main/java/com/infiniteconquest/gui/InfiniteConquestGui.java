@@ -41,6 +41,9 @@ public final class InfiniteConquestGui extends JFrame {
     private final CombatOverlay combatOverlay = new CombatOverlay();
     private final PresentationQueue presentationQueue;
     private final List<JButton> handButtons = new ArrayList<>();
+    private final GameSettings gameSettings;
+    private int lastBannerTurn = -1;
+    private int lastBannerPlayer = -1;
 
     private GameState state;
     private CommandProcessor commands;
@@ -95,6 +98,7 @@ public final class InfiniteConquestGui extends JFrame {
         super("Infinite Conquest — Hex & Allies " + GameVersion.VERSION);
         captureMode = screenshotMode;
         onQuitToTitle = null;
+        gameSettings = GameSettings.load();
         matchFactory = new DemoMatchFactory();
         factionDecks = new FactionDecks(matchFactory.pool());
         passiveRules = new CapitalPassiveRules();
@@ -111,6 +115,7 @@ public final class InfiniteConquestGui extends JFrame {
         super("Infinite Conquest — Hex & Allies " + GameVersion.VERSION);
         captureMode = false;
         this.onQuitToTitle = onQuitToTitle;
+        gameSettings = context.settings;
         matchFactory = context.matchFactory;
         factionDecks = context.factionDecks;
         passiveRules = context.passiveRules;
@@ -1088,6 +1093,16 @@ public final class InfiniteConquestGui extends JFrame {
     private void refresh() {
         syncSystemEvents();
         turnLabel.setText("Turn " + state.turnNumber() + " • " + phaseText());
+        int currentTurn = state.turnNumber();
+        int currentPlayer = state.activePlayer();
+        if (currentTurn != lastBannerTurn || currentPlayer != lastBannerPlayer) {
+            lastBannerTurn = currentTurn;
+            lastBannerPlayer = currentPlayer;
+            String banner = currentPlayer == 0
+                    ? (playerOneBot ? "BOT 1'S TURN" : "YOUR TURN")
+                    : "ENEMY TURN";
+            combatOverlay.showBanner(banner, new Color(240, 191, 73));
+        }
         PlayerState human = state.player(0);
         PlayerState enemy = state.player(1);
         humanLabel.setText("<html><b>" + (playerOneBot ? "BOT 1" : "YOU") + " • " + humanFaction
@@ -1467,6 +1482,7 @@ public final class InfiniteConquestGui extends JFrame {
         });
         try {
             combatOverlay.animateDestroyed(definition, destroyed.owner(), position);
+            combatOverlay.shake(definition.type() == CardType.CAPITAL ? 1.0f : 0.35f);
         } finally {
             combatOverlay.finishSequence();
         }
@@ -1712,17 +1728,22 @@ public final class InfiniteConquestGui extends JFrame {
                 BoardPosition from = position(p, 1);
                 BoardPosition target = position(p, 3);
                 boolean ranged = state.rules().geometry().distance(from,target) > 1;
-                showTargetResult(target, resolution, ranged ? "RANGED" : "MELEE", ranged ? "#ffb45b" : "#ff7373");
+                TargetOutcome outcome = showTargetResult(target, resolution, ranged ? "RANGED" : "MELEE", ranged ? "#ffb45b" : "#ff7373");
                 PresentationSnapshot.CardVisual originalAttacker = before.cards().values().stream()
                         .filter(value -> Objects.equals(value.position(), from) && value.top())
                         .findFirst().orElse(null);
                 CardDefinition attackerDefinition = originalAttacker == null ? null
                         : state.card(originalAttacker.id()).map(CardInstance::definition).orElse(null);
-                if (!ranged && attackerDefinition != null) {
+                boolean cardLunge = !ranged && attackerDefinition != null;
+                if (cardLunge) {
                     combatOverlay.animateMeleeCard(attackerDefinition, originalAttacker.owner(), from, target);
                 } else {
                     combatOverlay.animate(from, target, ranged ? new Color(255, 180, 91) : ATTACK, false,
                             ranged ? AnimationStyle.RANGED : AnimationStyle.MELEE);
+                }
+                if (outcome.damage() > 0 && !outcome.destroyed()) {
+                    damageFeedback(target, resolution.before(), outcome.damage(),
+                            cardLunge ? Fx.MELEE_MS : Fx.GENERIC_MS);
                 }
                 if (originalAttacker != null) {
                     PresentationSnapshot.CardVisual surviving = resolution.after().card(originalAttacker.id());
@@ -1736,8 +1757,20 @@ public final class InfiniteConquestGui extends JFrame {
             case "cast", "react" -> {
                 int targetIndex = p[0].equals("react") ? 3 : 2;
                 BoardPosition target = position(p, targetIndex);
-                showTargetResult(target, resolution, "SPELL", "#df92ff");
+                TargetOutcome outcome = showTargetResult(target, resolution, "SPELL", "#df92ff");
                 combatOverlay.animate(null, target, new Color(223, 146, 255), false, AnimationStyle.SPELL);
+                if (outcome.damage() > 0 && !outcome.destroyed()) {
+                    damageFeedback(target, resolution.before(), outcome.damage(), Fx.GENERIC_MS);
+                }
+                SoundEffects.play(SoundEffects.Cue.SPELL);
+            }
+            case "activate" -> {
+                BoardPosition at = null;
+                try { at = position(p, 1); } catch (RuntimeException ignored) { }
+                if (at != null) {
+                    badge(at, "ACTIVATED", "#ffd75c");
+                    combatOverlay.animate(at, at, new Color(255, 215, 92), false, AnimationStyle.SPELL);
+                }
                 SoundEffects.play(SoundEffects.Cue.SPELL);
             }
             default -> { }
@@ -1767,8 +1800,13 @@ public final class InfiniteConquestGui extends JFrame {
                     String[] xy=parts[4].split(",");BoardPosition target=new BoardPosition(Integer.parseInt(xy[0]),Integer.parseInt(xy[1]));
                     var source=before.card(UUID.fromString(parts[0]));
                     boolean attack=parts[2].equals("TURRET");
-                    badge(target,(attack?parts[3]+" DMG":parts[2].replace('_',' ')),attack?"#ff7373":"#78e29a");
+                    if (!attack) badge(target,parts[2].replace('_',' '),"#78e29a");
                     combatOverlay.animate(source==null?null:source.position(),target,attack?ATTACK:DEPLOY,false,attack?AnimationStyle.RANGED:AnimationStyle.SPELL);
+                    if (attack) {
+                        try {
+                            damageFeedback(target, before, Integer.parseInt(parts[3]), Fx.GENERIC_MS);
+                        } catch (NumberFormatException ignored) { }
+                    }
                 } catch(IllegalArgumentException ignored) { }
             }
             if (event.type() != GameEvent.Type.EXHAUSTION_DAMAGE) continue;
@@ -1780,8 +1818,9 @@ public final class InfiniteConquestGui extends JFrame {
                 int damage = current == null ? old.hitPoints() - old.damage()
                         : Math.max(1, current.damage() - old.damage());
                 String cause = "EXHAUSTION";
-                badge(old.position(), cause + " • " + damage + " DMG", "#ffcf5c");
+                badge(old.position(), cause, "#ffcf5c");
                 combatOverlay.animate(null, old.position(), new Color(255, 207, 92), true, AnimationStyle.RULES);
+                damageFeedback(old.position(), before, damage, Fx.GENERIC_MS);
                 SoundEffects.play(SoundEffects.Cue.PENALTY);
             } catch (IllegalArgumentException ignored) { }
         }
@@ -1792,26 +1831,64 @@ public final class InfiniteConquestGui extends JFrame {
                 .map(e->UUID.fromString(e.detail())).forEach(deaths::add);
         for(UUID id:deaths) {
             CardInstance card=state.card(id).orElse(null);BoardPosition position=resolution.destructionPosition(id);
-            if(card!=null && position!=null)combatOverlay.animateDestroyed(card.definition(),card.owner(),position);
+            if(card!=null && position!=null) {
+                combatOverlay.animateDestroyed(card.definition(),card.owner(),position);
+                combatOverlay.shake(card.definition().type() == CardType.CAPITAL ? 1.0f : 0.35f);
+            }
         }
     }
 
-    private void showTargetResult(BoardPosition target, PresentationSnapshot resolution,
+    private record TargetOutcome(int damage, boolean destroyed) { }
+
+    private TargetOutcome showTargetResult(BoardPosition target, PresentationSnapshot resolution,
                                   String cause, String color) {
         PresentationSnapshot.CardVisual old = resolution.before().topAt(target);
-        if (old == null) { badge(target, cause, color); return; }
+        if (old == null) { badge(target, cause, color); return new TargetOutcome(0, false); }
         PresentationSnapshot.CardVisual current = resolution.after().card(old.id());
         if (current == null || current.zone() != Zone.BATTLEFIELD) {
             String outcome = cause.equals("SPELL") && current != null && current.zone() == Zone.HAND
                     ? "RETURNED TO HAND" : "DESTROYED";
             badge(target, cause + " • " + outcome, color);
             if (outcome.equals("DESTROYED")) SoundEffects.play(SoundEffects.Cue.DESTROY);
-            return;
+            return new TargetOutcome(0, true);
         }
         int damage = current.damage() - old.damage();
-        String outcome = damage > 0 ? damage + " DMG" : cause.equals("SPELL") ? "RESOLVED" : "BLOCKED";
-        badge(target, cause + " • " + outcome, color);
-        if (damage > 0) SoundEffects.play(SoundEffects.Cue.DAMAGE);
+        if (damage <= 0) {
+            badge(target, cause + " • " + (cause.equals("SPELL") ? "RESOLVED" : "BLOCKED"), color);
+        }
+        // damage > 0: the caller queues a floating damage number after the strike
+        // animation, which replaces the old static "N DMG" badge.
+        return new TargetOutcome(damage, false);
+    }
+
+    /** Queues floating damage feedback after a strike animation, with an impact-timed cue. */
+    private void damageFeedback(BoardPosition target, PresentationSnapshot.Frame before,
+                                int damage, int impactDelayMs) {
+        combatOverlay.animateDamage(target, damage);
+        delayedCue(SoundEffects.Cue.DAMAGE, impactDelayMs);
+        if (isCapitalAt(target, before)) combatOverlay.shake(0.8f);
+    }
+
+    private void delayedCue(SoundEffects.Cue cue, int delayMs) {
+        if (Fx.reduced(gameSettings) || delayMs <= 0) {
+            SoundEffects.play(cue);
+            return;
+        }
+        javax.swing.Timer timer = new javax.swing.Timer(delayMs, e -> SoundEffects.play(cue));
+        timer.setRepeats(false);
+        timer.start();
+    }
+
+    private boolean isCapitalAt(BoardPosition target, PresentationSnapshot.Frame before) {
+        try {
+            PresentationSnapshot.CardVisual top = before.topAt(target);
+            if (top == null) return false;
+            return state.card(top.id())
+                    .map(card -> card.definition().type() == CardType.CAPITAL)
+                    .orElse(false);
+        } catch (RuntimeException e) {
+            return false;
+        }
     }
 
     private BoardPosition position(String[] parts, int index) {
@@ -1819,14 +1896,49 @@ public final class InfiniteConquestGui extends JFrame {
     }
 
     private void badge(BoardPosition position, String text, String color) {
-        EffectBadge badge = new EffectBadge(text, color);
-        effectBadges.put(position, badge);
-        javax.swing.Timer clear = new javax.swing.Timer(1600, e -> {
-            if (effectBadges.get(position) == badge) effectBadges.remove(position);
+        EffectBadge full = new EffectBadge(text, color);
+        EffectBadge dim = new EffectBadge(text, dimColor(color));
+        effectBadges.put(position, dim);
+        refreshBoard();
+        javax.swing.Timer fadeIn = new javax.swing.Timer(Fx.BADGE_FADE_MS, e -> {
+            if (effectBadges.get(position) == dim) {
+                effectBadges.put(position, full);
+                refreshBoard();
+            }
+        });
+        fadeIn.setRepeats(false);
+        fadeIn.start();
+        javax.swing.Timer fadeOut = new javax.swing.Timer(Fx.BADGE_MS - Fx.BADGE_FADE_MS, e -> {
+            EffectBadge current = effectBadges.get(position);
+            if (current == full || current == dim) {
+                effectBadges.put(position, dim);
+                refreshBoard();
+            }
+        });
+        fadeOut.setRepeats(false);
+        fadeOut.start();
+        javax.swing.Timer clear = new javax.swing.Timer(Fx.BADGE_MS, e -> {
+            EffectBadge current = effectBadges.get(position);
+            if (current == full || current == dim) effectBadges.remove(position);
             refreshBoard();
         });
         clear.setRepeats(false);
         clear.start();
+    }
+
+    /** Dimmed variant of a "#rrggbb" badge color for the fade in/out envelope. */
+    private static String dimColor(String color) {
+        try {
+            Color parsed = Color.decode(color);
+            float factor = 0.45f;
+            Color dimmed = new Color(
+                    Math.round(parsed.getRed() * factor),
+                    Math.round(parsed.getGreen() * factor),
+                    Math.round(parsed.getBlue() * factor));
+            return String.format("#%02x%02x%02x", dimmed.getRed(), dimmed.getGreen(), dimmed.getBlue());
+        } catch (RuntimeException e) {
+            return "#5a6068";
+        }
     }
 
     private void syncSystemEvents() {
@@ -2660,7 +2772,7 @@ public final class InfiniteConquestGui extends JFrame {
         }
     }
 
-    private enum AnimationStyle { MOVE, BLINK, MELEE, RANGED, SPELL, DEPLOY, SNAP_BACK, DESTROY, RULES }
+    private enum AnimationStyle { MOVE, BLINK, MELEE, RANGED, SPELL, DEPLOY, SNAP_BACK, DESTROY, RULES, DAMAGE }
 
     private final class CombatOverlay extends JComponent {
         private Animation animation;
@@ -2668,6 +2780,13 @@ public final class InfiniteConquestGui extends JFrame {
         private javax.swing.Timer timer;
         private Runnable sequenceCompletion;
         private boolean sequenceOpen;
+        private long shakeStartedAt = -1L;
+        private float shakeIntensity;
+        private javax.swing.Timer shakeTimer;
+        private String bannerText;
+        private Color bannerColor;
+        private long bannerStartedAt;
+        private javax.swing.Timer bannerTimer;
 
         @Override public boolean contains(int x, int y) { return false; }
 
@@ -2689,7 +2808,7 @@ public final class InfiniteConquestGui extends JFrame {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Image image = CardArtFactory.iconFor(card, 160, 140).getImage();
             Animation requested = new Animation(null, to, color, false, AnimationStyle.DEPLOY, 0L,
-                    image, owner == 1, 300_000_000L, false, false);
+                    image, owner == 1, Fx.durationNanos(Fx.DEPLOY_MS, gameSettings), false, false, null);
             if (animation != null) queued.addLast(requested);
             else start(requested);
         }
@@ -2698,8 +2817,8 @@ public final class InfiniteConquestGui extends JFrame {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Image image = CardArtFactory.iconFor(card, 160, 140).getImage();
             Animation requested = new Animation(attempted, returnBoard, ATTACK, false,
-                    AnimationStyle.SNAP_BACK, 0L, image, false, 180_000_000L,
-                    returnBoard == null, true);
+                    AnimationStyle.SNAP_BACK, 0L, image, false, Fx.durationNanos(Fx.SNAP_BACK_MS, gameSettings),
+                    returnBoard == null, true, null);
             if (animation != null) queued.addLast(requested);
             else start(requested);
         }
@@ -2708,7 +2827,8 @@ public final class InfiniteConquestGui extends JFrame {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Image image = CardArtFactory.iconFor(card, 160, 140).getImage();
             Animation requested = new Animation(position, position, ATTACK, false,
-                    AnimationStyle.DESTROY, 0L, image, owner == 1, 320_000_000L, false, false);
+                    AnimationStyle.DESTROY, 0L, image, owner == 1,
+                    Fx.durationNanos(Fx.DESTROY_MS, gameSettings), false, false, null);
             if (animation != null) queued.addLast(requested);
             else start(requested);
         }
@@ -2717,7 +2837,7 @@ public final class InfiniteConquestGui extends JFrame {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Image image = CardArtFactory.iconFor(card, 160, 140).getImage();
             Animation requested = new Animation(from, target, ATTACK, false, AnimationStyle.MELEE, 0L,
-                    image, owner == 1, 360_000_000L, false, false);
+                    image, owner == 1, Fx.durationNanos(Fx.MELEE_MS, gameSettings), false, false, null);
             if (animation != null) queued.addLast(requested);
             else start(requested);
         }
@@ -2727,7 +2847,7 @@ public final class InfiniteConquestGui extends JFrame {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Image image = CardArtFactory.iconFor(card, 160, 140).getImage();
             Animation requested = new Animation(from, to, color, false, style, 0L,
-                    image, owner == 1, 320_000_000L, false, false);
+                    image, owner == 1, Fx.durationNanos(Fx.MOVE_MS, gameSettings), false, false, null);
             if (animation != null) queued.addLast(requested);
             else start(requested);
         }
@@ -2740,7 +2860,7 @@ public final class InfiniteConquestGui extends JFrame {
         void animate(BoardPosition from, BoardPosition to, Color color, boolean fromRules, AnimationStyle style) {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Animation requested = new Animation(from, to, color, fromRules, style, 0L,
-                    null, false, 800_000_000L, false, false);
+                    null, false, Fx.durationNanos(Fx.GENERIC_MS, gameSettings), false, false, null);
             if (animation != null) {
                 queued.addLast(requested);
                 return;
@@ -2748,11 +2868,124 @@ public final class InfiniteConquestGui extends JFrame {
             start(requested);
         }
 
+        /** Floating damage number with a tile hit-flash. Queued after the strike animation. */
+        void animateDamage(BoardPosition target, int amount) {
+            if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
+            Animation requested = new Animation(target, target, new Color(255, 110, 95), false,
+                    AnimationStyle.DAMAGE, 0L, null, false,
+                    Fx.durationNanos(Fx.DAMAGE_FLOAT_MS, gameSettings), false, false, "-" + amount);
+            if (animation != null) queued.addLast(requested);
+            else start(requested);
+        }
+
+        /** Screen shake; intensity ~1 for capital hits, lower for ordinary destruction. */
+        void shake(float intensity) {
+            if (Fx.reduced(gameSettings)) return;
+            if (!SwingUtilities.isEventDispatchThread()) {
+                SwingUtilities.invokeLater(() -> shake(intensity));
+                return;
+            }
+            shakeIntensity = intensity;
+            shakeStartedAt = System.nanoTime();
+            if (shakeTimer == null) {
+                shakeTimer = new javax.swing.Timer(16, event -> {
+                    boolean done = System.nanoTime() - shakeStartedAt >= Fx.nanos(Fx.SHAKE_MS);
+                    if (done) {
+                        ((javax.swing.Timer) event.getSource()).stop();
+                        shakeTimer = null;
+                        shakeStartedAt = -1L;
+                    }
+                    repaint();
+                });
+                shakeTimer.setCoalesce(true);
+                shakeTimer.start();
+            }
+            repaint();
+        }
+
+        /** Full-board turn banner ("YOUR TURN" etc.). Independent of the animation queue. */
+        void showBanner(String text, Color color) {
+            if (Fx.reduced(gameSettings)) return;
+            if (!SwingUtilities.isEventDispatchThread()) {
+                SwingUtilities.invokeLater(() -> showBanner(text, color));
+                return;
+            }
+            bannerText = text;
+            bannerColor = color;
+            bannerStartedAt = System.nanoTime();
+            if (bannerTimer == null) {
+                bannerTimer = new javax.swing.Timer(16, event -> {
+                    boolean done = bannerText == null
+                            || System.nanoTime() - bannerStartedAt >= Fx.nanos(Fx.TURN_BANNER_MS);
+                    if (done) {
+                        ((javax.swing.Timer) event.getSource()).stop();
+                        bannerTimer = null;
+                        bannerText = null;
+                    }
+                    repaint();
+                });
+                bannerTimer.setCoalesce(true);
+                bannerTimer.start();
+            }
+            repaint();
+        }
+
+        /** Floating damage number with a tile hit-flash. */
+        private void drawDamage(Graphics2D g, JButton targetButton, Point target, float progress) {
+            String text = animation.overlayText() == null ? "" : animation.overlayText();
+            // Hit-flash: warm wash over the struck tile during the first ~150ms.
+            float flashWindow = Fx.HIT_FLASH_MS / (float) Fx.DAMAGE_FLOAT_MS;
+            if (progress < flashWindow && targetButton != null) {
+                float flashAlpha = 1f - progress / flashWindow;
+                Rectangle tile = SwingUtilities.convertRectangle(
+                        targetButton, targetButton.getBounds(), this);
+                g.setComposite(AlphaComposite.SrcOver.derive(0.55f * flashAlpha));
+                g.setColor(animation.color());
+                g.fillRoundRect(tile.x + 4, tile.y + 4,
+                        Math.max(8, tile.width - 8), Math.max(8, tile.height - 8), 18, 18);
+            }
+            // Rising number: pops in, drifts up, fades out.
+            float rise = Fx.easeOutCubic(Math.min(1f, progress * 1.15f));
+            float pop = 1f + 0.35f * Math.max(0f, 1f - progress * 5f);
+            float alpha = progress < 0.7f ? 1f : Math.max(0f, 1f - (progress - 0.7f) / 0.3f);
+            Font font = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(12, Math.round(30 * pop)));
+            g.setFont(font);
+            FontMetrics metrics = g.getFontMetrics();
+            int width = metrics.stringWidth(text);
+            int x = target.x - width / 2;
+            int y = Math.round(target.y - 46 * rise);
+            g.setComposite(AlphaComposite.SrcOver.derive(0.75f * alpha));
+            g.setColor(Color.BLACK);
+            g.drawString(text, x + 2, y + 2);
+            g.setComposite(AlphaComposite.SrcOver.derive(alpha));
+            g.setColor(new Color(255, 122, 105));
+            g.drawString(text, x, y);
+        }
+
+        /** "YOUR TURN" style banner sweeping across the board. */
+        private void drawBanner(Graphics2D g, long now) {
+            float total = Fx.nanos(Fx.TURN_BANNER_MS);
+            float bp = Math.min(1f, (now - bannerStartedAt) / total);
+            Font font = new Font(Font.SANS_SERIF, Font.BOLD, 46);
+            g.setFont(font);
+            FontMetrics metrics = g.getFontMetrics();
+            int textWidth = metrics.stringWidth(bannerText);
+            float sweep = Fx.easeInOutQuad(Math.min(1f, bp / 0.55f));
+            int x = Math.round(-textWidth + (getWidth() / 2f - textWidth / 2f + textWidth) * sweep);
+            int y = getHeight() / 2;
+            float alpha = bp < 0.8f ? 1f : Math.max(0f, 1f - (bp - 0.8f) / 0.2f);
+            g.setComposite(AlphaComposite.SrcOver.derive(alpha));
+            g.setColor(new Color(0, 0, 0, 170));
+            g.drawString(bannerText, x + 3, y + 3);
+            g.setColor(bannerColor);
+            g.drawString(bannerText, x, y);
+        }
+
         private void start(Animation requested) {
             animation = new Animation(requested.from(), requested.to(), requested.color(),
                     requested.fromRules(), requested.style(), System.nanoTime(),
                     requested.cardImage(), requested.opponentSource(), requested.durationNanos(),
-                    requested.returnToHand(), requested.spring());
+                    requested.returnToHand(), requested.spring(), requested.overlayText());
             timer = new javax.swing.Timer(16, event -> {
                 repaint();
                 if (animation != null && animation.progress() >= 1f) {
@@ -2766,7 +2999,7 @@ public final class InfiniteConquestGui extends JFrame {
                         animation = new Animation(next.from(), next.to(), next.color(),
                                 next.fromRules(), next.style(), System.nanoTime(),
                                 next.cardImage(), next.opponentSource(), next.durationNanos(),
-                                next.returnToHand(), next.spring());
+                                next.returnToHand(), next.spring(), next.overlayText());
                     }
                 }
             });
@@ -2782,9 +3015,30 @@ public final class InfiniteConquestGui extends JFrame {
         }
 
         @Override protected void paintComponent(Graphics graphics) {
-            if (animation == null) return;
+            long now = System.nanoTime();
+            boolean shaking = shakeStartedAt >= 0
+                    && now - shakeStartedAt < Fx.nanos(Fx.SHAKE_MS)
+                    && !Fx.reduced(gameSettings);
+            boolean banner = bannerText != null
+                    && now - bannerStartedAt < Fx.nanos(Fx.TURN_BANNER_MS);
+            if (animation == null && !shaking && !banner) return;
+            Graphics2D g = (Graphics2D) graphics.create();
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            if (shaking) {
+                float shakeProgress = (now - shakeStartedAt) / (float) Fx.nanos(Fx.SHAKE_MS);
+                float decay = 1f - shakeProgress;
+                int dx = Math.round((float) (Math.sin(shakeProgress * 38.0) * 6.0 * decay * shakeIntensity));
+                int dy = Math.round((float) (Math.cos(shakeProgress * 31.0) * 6.0 * decay * shakeIntensity));
+                g.translate(dx, dy);
+            }
+            if (banner) drawBanner(g, now);
+            if (animation == null) { g.dispose(); return; }
             JButton targetButton = animation.returnToHand() ? null : boardButtons.get(animation.to());
-            if (!animation.returnToHand() && (targetButton == null || !targetButton.isShowing())) return;
+            if (!animation.returnToHand() && (targetButton == null || !targetButton.isShowing())) {
+                g.dispose();
+                return;
+            }
             Point target = animation.returnToHand()
                     ? SwingUtilities.convertPoint(handPanel, Math.max(20, handPanel.getWidth() / 2), 0, this)
                     : SwingUtilities.convertPoint(targetButton,
@@ -2799,7 +3053,7 @@ public final class InfiniteConquestGui extends JFrame {
                                 Math.max(20, handPanel.getWidth() / 2), 0, this);
             } else {
                 JButton sourceButton = boardButtons.get(animation.from());
-                if (sourceButton == null || !sourceButton.isShowing()) return;
+                if (sourceButton == null || !sourceButton.isShowing()) { g.dispose(); return; }
                 source = SwingUtilities.convertPoint(sourceButton,
                         sourceButton.getWidth() / 2, sourceButton.getHeight() / 2, this);
             }
@@ -2809,15 +3063,12 @@ public final class InfiniteConquestGui extends JFrame {
             boolean cardDestroy = animation.cardImage() != null && animation.style() == AnimationStyle.DESTROY;
             float fade = cardDestroy ? 1f - progress : animation.cardImage()!=null ? 1f
                     : progress < .72f ? 1f : Math.max(0f, (1f - progress) / .28f);
-            Graphics2D g = (Graphics2D) graphics.create();
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
             g.setComposite(AlphaComposite.SrcOver.derive(.88f * fade));
             g.setColor(animation.color());
             float travel = cardDestroy ? 0f
                     : cardLunge ? (float) Math.sin(Math.PI * progress) * .72f
-                    : animation.spring() ? ease(progress)
-                    : ease(animation.cardImage() == null ? Math.min(1f, progress / .72f) : progress);
+                    : animation.spring() ? Fx.spring(progress)
+                    : Fx.easeOutCubic(animation.cardImage() == null ? Math.min(1f, progress / .72f) : progress);
             int orbX = Math.round(source.x + (target.x - source.x) * travel);
             int orbY = Math.round(source.y + (target.y - source.y) * travel);
             if (animation.cardImage() != null) {
@@ -2829,7 +3080,7 @@ public final class InfiniteConquestGui extends JFrame {
                 orbY = Math.round(inverse * inverse * source.y
                         + 2 * inverse * travel * (Math.min(source.y, target.y) - arc)
                         + travel * travel * target.y);
-                float collapse = cardDestroy ? ease(progress) : 0f;
+                float collapse = cardDestroy ? Fx.easeOutCubic(progress) : 0f;
                 JButton footprint=targetButton!=null?targetButton:boardButtons.values().iterator().next();
                 int tileWidth=Math.max(44,footprint.getWidth()),tileHeight=Math.max(38,footprint.getHeight());
                 int width=Math.max(16,Math.round(tileWidth*(cardDestroy?1f-.68f*collapse:1f)));
@@ -2852,7 +3103,7 @@ public final class InfiniteConquestGui extends JFrame {
                     VisualEffects.draw(g, VisualEffects.Sprite.SLASH, target.x, target.y, 104,
                             Color.WHITE, Math.max(0f, strikeAlpha), Math.atan2(target.y - source.y, target.x - source.x));
                 }
-                if (cardDestroy) {
+                if (cardDestroy && Fx.particles(gameSettings)) {
                     g.setComposite(AlphaComposite.SrcOver.derive(Math.max(0f, .82f * (1f - progress))));
                     g.setColor(new Color(255, 111, 103));
                     for (int index = 0; index < 12; index++) {
@@ -2869,6 +3120,11 @@ public final class InfiniteConquestGui extends JFrame {
                 g.dispose();
                 return;
             }
+            if (animation.style() == AnimationStyle.DAMAGE) {
+                drawDamage(g, targetButton, target, progress);
+                g.dispose();
+                return;
+            }
             VisualEffects.Sprite traveling = switch (animation.style()) {
                 case MOVE -> VisualEffects.Sprite.TRACE;
                 case BLINK, SPELL -> VisualEffects.Sprite.MAGIC;
@@ -2878,6 +3134,7 @@ public final class InfiniteConquestGui extends JFrame {
                 case SNAP_BACK -> VisualEffects.Sprite.TRACE;
                 case DESTROY -> VisualEffects.Sprite.SPARK;
                 case RULES -> VisualEffects.Sprite.FLAME;
+                case DAMAGE -> VisualEffects.Sprite.SPARK;
             };
             VisualEffects.draw(g, traveling, orbX, orbY,
                     animation.style()==AnimationStyle.SPELL ? 72 : 48,
@@ -2942,17 +3199,12 @@ public final class InfiniteConquestGui extends JFrame {
             g.dispose();
         }
 
-        private float ease(float value) { return 1f-(1f-value)*(1f-value)*(1f-value); }
-
-        private float spring(float value) {
-            return (float) (1.0 - Math.exp(-5.0 * value) * Math.cos(9.0 * value));
-        }
     }
 
     private record Animation(BoardPosition from, BoardPosition to, Color color,
                              boolean fromRules, AnimationStyle style, long startedAt,
                              Image cardImage, boolean opponentSource, long durationNanos,
-                             boolean returnToHand, boolean spring) {
+                             boolean returnToHand, boolean spring, String overlayText) {
         float progress() {
             return Math.min(1f, (System.nanoTime() - startedAt) / (float) durationNanos);
         }
