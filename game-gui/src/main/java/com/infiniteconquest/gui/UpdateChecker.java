@@ -29,7 +29,6 @@ final class UpdateChecker {
                       String setupUrl) { }
 
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
-    private final ObjectMapper json = new ObjectMapper();
 
     /** Fetches the latest release and returns its info, or null when it isn't newer. */
     UpdateInfo checkForUpdates() throws IOException, InterruptedException {
@@ -43,7 +42,12 @@ final class UpdateChecker {
         if (response.statusCode() != 200) {
             throw new IOException("Update server returned HTTP " + response.statusCode());
         }
-        JsonNode release = json.readTree(response.body());
+        return parseRelease(response.body());
+    }
+
+    /** Parses a GitHub release JSON body; null when it isn't newer than this build. */
+    static UpdateInfo parseRelease(String body) throws IOException {
+        JsonNode release = new ObjectMapper().readTree(body);
         String version = parseTagVersion(release.path("tag_name").asText(""));
         if (version.isEmpty() || !GameVersion.isNewerThan(GameVersion.VERSION, version)) {
             return null;
