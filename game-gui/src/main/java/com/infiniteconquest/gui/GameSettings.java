@@ -22,6 +22,10 @@ final class GameSettings {
     private static final String KEY_VOLUME = "sound.volume";
     private static final String KEY_ANIMATION = "animation.mode";
     private static final String KEY_TIPS = "tips.enabled";
+    private static final String KEY_CHECK_UPDATES = "updates.checkOnStartup";
+    private static final String KEY_LAST_CHECK = "updates.lastCheck";
+    private static final String KEY_SKIPPED = "updates.skippedVersion";
+    private static final String KEY_SETTINGS_VERSION = "settings.version";
 
     boolean fullscreen;
     int windowWidth;
@@ -30,19 +34,25 @@ final class GameSettings {
     int volume; // 0..100
     AnimationMode animationMode;
     boolean tipsEnabled;
+    boolean checkUpdatesOnStartup;
+    long lastUpdateCheck; // epoch millis of the last check
+    String skippedVersion; // update version the player asked not to be reminded about
 
     private GameSettings() {
         resetToDefaults();
     }
 
     void resetToDefaults() {
-        fullscreen = false;
+        fullscreen = true;
         windowWidth = 1500;
         windowHeight = 980;
         soundEnabled = true;
         volume = 80;
         animationMode = AnimationMode.FULL;
         tipsEnabled = true;
+        checkUpdatesOnStartup = true;
+        lastUpdateCheck = 0;
+        skippedVersion = "";
     }
 
     Dimension windowSize() {
@@ -79,6 +89,14 @@ final class GameSettings {
             settings.animationMode = AnimationMode.FULL;
         }
         settings.tipsEnabled = Boolean.parseBoolean(props.getProperty(KEY_TIPS, "true"));
+        settings.checkUpdatesOnStartup =
+                Boolean.parseBoolean(props.getProperty(KEY_CHECK_UPDATES, "true"));
+        settings.lastUpdateCheck = parseLong(props.getProperty(KEY_LAST_CHECK), 0);
+        settings.skippedVersion = props.getProperty(KEY_SKIPPED, "");
+        // 0.6.0 changed the display default: pre-0.6.0 settings files adopt fullscreen once.
+        if (!props.containsKey(KEY_SETTINGS_VERSION)) {
+            settings.fullscreen = true;
+        }
         return settings;
     }
 
@@ -91,6 +109,10 @@ final class GameSettings {
         props.setProperty(KEY_VOLUME, Integer.toString(volume));
         props.setProperty(KEY_ANIMATION, animationMode.name());
         props.setProperty(KEY_TIPS, Boolean.toString(tipsEnabled));
+        props.setProperty(KEY_CHECK_UPDATES, Boolean.toString(checkUpdatesOnStartup));
+        props.setProperty(KEY_LAST_CHECK, Long.toString(lastUpdateCheck));
+        props.setProperty(KEY_SKIPPED, skippedVersion);
+        props.setProperty(KEY_SETTINGS_VERSION, GameVersion.VERSION);
         try {
             Files.createDirectories(settingsFile().getParent());
             try (OutputStream out = Files.newOutputStream(settingsFile())) {
@@ -104,6 +126,14 @@ final class GameSettings {
     private static int parseInt(String value, int fallback) {
         try {
             return Integer.parseInt(value.trim());
+        } catch (Exception ignored) {
+            return fallback;
+        }
+    }
+
+    private static long parseLong(String value, long fallback) {
+        try {
+            return Long.parseLong(value.trim());
         } catch (Exception ignored) {
             return fallback;
         }

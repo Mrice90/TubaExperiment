@@ -14,7 +14,7 @@ final class CreditsScreen extends SubScreen {
     protected JComponent buildContent() {
         JTextArea text = new JTextArea("""
                 INFINITE CONQUEST — HEX & ALLIES
-                Alpha 0.5.0
+                """ + GameVersion.displayName() + """
 
                 Created by Mathew Rice
 

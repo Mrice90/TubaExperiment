@@ -1,10 +1,14 @@
-; Infinite Conquest Alpha 0.5.0 — Windows installer
+; Infinite Conquest — Windows installer (version via -DVERSION)
 ; Built with NSIS on Linux. Bundles a trimmed Temurin 17 JRE; no Java install needed.
+
+!ifndef VERSION
+!define VERSION "0.6.0"
+!endif
 
 !include "MUI2.nsh"
 
 Name "Infinite Conquest"
-OutFile "InfiniteConquest-Alpha-0.5.0-Setup.exe"
+OutFile "InfiniteConquest-Alpha-${VERSION}-Setup.exe"
 InstallDir "$PROGRAMFILES64\InfiniteConquest"
 InstallDirRegKey HKLM "Software\InfiniteConquest" "InstallDir"
 RequestExecutionLevel admin
@@ -39,7 +43,7 @@ Section "Game" SecGame
   WriteUninstaller "$INSTDIR\Uninstall.exe"
   WriteRegStr HKLM "Software\InfiniteConquest" "InstallDir" "$INSTDIR"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
-                   "DisplayName" "Infinite Conquest (Alpha 0.5.0)"
+                   "DisplayName" "Infinite Conquest (Alpha ${VERSION})"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \
                    "UninstallString" "$INSTDIR\Uninstall.exe"
   WriteRegStr HKLM "Software\Microsoft\Windows\CurrentVersion\Uninstall\InfiniteConquest" \

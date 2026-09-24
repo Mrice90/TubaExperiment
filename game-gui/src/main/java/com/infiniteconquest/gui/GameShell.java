@@ -30,6 +30,11 @@ public final class GameShell {
         this.settings = settings;
     }
 
+    /** The shell window, for owning modal dialogs. */
+    JFrame window() {
+        return frame;
+    }
+
     void start() {
         frame = new JFrame("Infinite Conquest");
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
@@ -44,7 +49,10 @@ public final class GameShell {
         LoadingScreen loading = new LoadingScreen();
         screens.show(loading, false);
         frame.setVisible(true);
-        loading.run(initTasks(), settings, () -> screens.show(new TitleScreen(this, settings)));
+        loading.run(initTasks(), settings, () -> {
+            screens.show(new TitleScreen(this, settings));
+            UpdateDialog.maybeAutoCheck(this, settings, frame);
+        });
     }
 
     private List<LoadingScreen.InitTask> initTasks() {

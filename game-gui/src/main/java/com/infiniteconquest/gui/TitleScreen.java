@@ -49,7 +49,7 @@ final class TitleScreen extends JPanel implements ShellScreen {
         addMenuButton(column, "Exit", e -> shell.requestExit());
 
         column.add(Box.createVerticalStrut(30));
-        JLabel footer = ShellUi.caption("Alpha 0.5.0  ·  Zeus vs Poseidon  ·  F1 for help, Esc to exit");
+        JLabel footer = ShellUi.caption(GameVersion.displayName() + "  ·  Zeus vs Poseidon  ·  F1 for help, Esc to exit");
         footer.setAlignmentX(CENTER_ALIGNMENT);
         column.add(footer);
         add(column);

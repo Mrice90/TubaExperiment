@@ -16,6 +16,8 @@ final class SettingsScreen extends SubScreen {
     private JSlider volume;
     private JComboBox<String> animationMode;
     private JCheckBox tipsEnabled;
+    private JCheckBox checkUpdatesOnStartup;
+    private JLabel updateStatus;
 
     SettingsScreen(GameShell shell, GameSettings settings) {
         super(shell, "Settings");
@@ -46,6 +48,19 @@ final class SettingsScreen extends SubScreen {
         tipsEnabled = styledCheck("Gameplay tips on the loading screen");
         tipsEnabled.setSelected(settings.tipsEnabled);
 
+        checkUpdatesOnStartup = styledCheck("Check for updates when the game starts");
+        checkUpdatesOnStartup.setSelected(settings.checkUpdatesOnStartup);
+
+        JPanel updateRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        updateRow.setOpaque(false);
+        updateStatus = new JLabel(GameVersion.displayName());
+        updateStatus.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+        updateStatus.setForeground(new Color(170, 178, 190));
+        ShellUi.MenuButton checkNow = new ShellUi.MenuButton("Check for updates");
+        checkNow.addActionListener(e -> openUpdateDialog());
+        updateRow.add(updateStatus);
+        updateRow.add(checkNow);
+
         card.add(SubScreen.row("Display", displayMode));
         card.add(Box.createVerticalStrut(8));
         card.add(SubScreen.row("Window size", windowSize));
@@ -57,6 +72,10 @@ final class SettingsScreen extends SubScreen {
         card.add(SubScreen.row("Animations", animationMode));
         card.add(Box.createVerticalStrut(8));
         card.add(SubScreen.row("Tips", tipsEnabled));
+        card.add(Box.createVerticalStrut(8));
+        card.add(SubScreen.row("Updates", updateRow));
+        card.add(Box.createVerticalStrut(8));
+        card.add(SubScreen.row("", checkUpdatesOnStartup));
         card.add(Box.createVerticalStrut(26));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
@@ -94,9 +113,16 @@ final class SettingsScreen extends SubScreen {
         settings.animationMode = "Full".equals(animationMode.getSelectedItem())
                 ? GameSettings.AnimationMode.FULL : GameSettings.AnimationMode.REDUCED;
         settings.tipsEnabled = tipsEnabled.isSelected();
+        settings.checkUpdatesOnStartup = checkUpdatesOnStartup.isSelected();
         settings.save();
         shell.applySettings();
         shell.showTitle();
+    }
+
+    private void openUpdateDialog() {
+        UpdateDialog dialog = new UpdateDialog(shell.window(), settings);
+        dialog.checkNow();
+        dialog.setVisible(true);
     }
 
     private void restoreDefaults() {

@@ -92,7 +92,7 @@ public final class InfiniteConquestGui extends JFrame {
     }
 
     InfiniteConquestGui(boolean screenshotMode) {
-        super("Infinite Conquest — Hex & Allies 0.5.0");
+        super("Infinite Conquest — Hex & Allies " + GameVersion.VERSION);
         captureMode = screenshotMode;
         onQuitToTitle = null;
         matchFactory = new DemoMatchFactory();
@@ -108,7 +108,7 @@ public final class InfiniteConquestGui extends JFrame {
      * instant, and returns to the title menu when the player quits.
      */
     InfiniteConquestGui(GameContext context, Runnable onQuitToTitle) {
-        super("Infinite Conquest — Hex & Allies 0.5.0");
+        super("Infinite Conquest — Hex & Allies " + GameVersion.VERSION);
         captureMode = false;
         this.onQuitToTitle = onQuitToTitle;
         matchFactory = context.matchFactory;

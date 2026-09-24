@@ -18,11 +18,14 @@ class GameSettingsTest {
         try {
             GameSettings settings = GameSettings.load();
             assertEquals(new Dimension(1500, 980), settings.windowSize());
-            assertFalse(settings.fullscreen);
+            assertTrue(settings.fullscreen);
             assertTrue(settings.soundEnabled);
             assertEquals(80, settings.volume);
             assertEquals(GameSettings.AnimationMode.FULL, settings.animationMode);
             assertTrue(settings.tipsEnabled);
+            assertTrue(settings.checkUpdatesOnStartup);
+            assertEquals(0, settings.lastUpdateCheck);
+            assertEquals("", settings.skippedVersion);
             assertTrue(settings.transitionMillis() > 0);
         } finally {
             System.setProperty("user.home", originalHome);
