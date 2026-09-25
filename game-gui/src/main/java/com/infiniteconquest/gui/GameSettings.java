@@ -43,7 +43,7 @@ public final class GameSettings {
      * Settings field overrides this when non-blank (empty field = use this).
      * Set to the studio's deployed Worker origin once it exists.
      */
-    public static final String DEFAULT_LOBBY_WORKER_URL = "";
+    public static final String DEFAULT_LOBBY_WORKER_URL = "https://infinite-conquest-lobby.infinite-conquest-lobby.workers.dev";
 
     public boolean fullscreen;
     int windowWidth;
