@@ -43,6 +43,7 @@ class TerrainRulesTest {
     }
     @Test void paidDevelopmentRequiresGoldAndRejectedPlayIsAtomic() {
         var s=state();var c=hand(s,definition(CardType.LAND,Keyword.HIGH_GROUND,0,1,2),0);var destination=new BoardPosition(0,0);
+        put(s,new BoardPosition(1,0),CardType.CAPITAL,0);
         assertFalse(engine.apply(s,new GameAction.PlayLand(0,c.instanceId(),destination)).accepted());
         assertEquals(Zone.HAND,c.zone());assertTrue(s.board().isEmpty(destination));assertTrue(s.canPlayDevelopment(0,CardType.LAND));
         s.player(0).restoreGp(3);assertTrue(engine.apply(s,new GameAction.PlayLand(0,c.instanceId(),destination)).accepted());assertEquals(1,s.player(0).currentGp());

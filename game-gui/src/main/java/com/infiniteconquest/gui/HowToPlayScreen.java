@@ -146,9 +146,12 @@ final class HowToPlayScreen extends SubScreen {
                   for a reaction (see Abilities & Reactions).
 
                 PLAYING LANDS
-                Lands enter on empty hexes near your territory. One per turn, so
-                every placement is a commitment: economy now, or position for
-                the push later?""");
+                Territory grows outward: a land must enter on an empty hex
+                within one space of a land you control or your Capital. One
+                per turn, so every placement is a commitment: economy now,
+                or position for the push later? Chain your lands toward the
+                enemy to project power — but Characters standing deep in
+                enemy territory move at half speed.""");
         return text;
     }
 
@@ -168,6 +171,8 @@ final class HowToPlayScreen extends SubScreen {
                 MOVEMENT & ATTACKING
                 • A Character may move up to its Movement in hexes, then attack —
                   or attack without moving. It cannot do either twice.
+                • Invading is slow: a Character standing on the enemy's home
+                  rows moves at half its Movement (minimum 1).
                 • Attacks target a hex in Range. Melee fighters (Range 1) must
                   stand adjacent; archers and siege engines reach farther.
                 • Striking a Character provokes retaliation if the defender can

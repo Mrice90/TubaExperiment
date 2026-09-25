@@ -397,13 +397,27 @@ public final class GameEngine {
         }
         CardInstance card = developableFromHand(state, action.playerId(), action.cardId(), CardType.LAND);
         if (card == null) return ActionResult.rejected("Land must be in hand and its turn value must be reached and its gold cost affordable");
-        if (!action.destination().isOnPlayerSide(action.playerId()) || !state.board().isEmpty(action.destination()))
-            return ActionResult.rejected("Land requires an empty space on owner's plot");
+        if (!legalLandDestination(state, action.playerId(), action.destination()))
+            return ActionResult.rejected("Land requires an empty hex within one space of a land you control or your Capital");
         removeDevelopmentFromHand(state, card);
         card.moveTo(Zone.BATTLEFIELD);
         state.board().push(action.destination(), card.instanceId());
         state.recordCardPlayed(card);
         return ActionResult.accepted("Land played");
+    }
+
+    /**
+     * Territory grows outward: a land may only be played on an empty hex
+     * adjacent to a land its owner controls or its owner's Capital.
+     */
+    public static boolean legalLandDestination(GameState state, int playerId, BoardPosition destination) {
+        if (!state.board().isEmpty(destination)) return false;
+        return state.board().positions().stream()
+                .filter(p -> state.rules().geometry().adjacent(destination, p))
+                .flatMap(p -> state.board().stackAt(p).stream())
+                .map(id -> state.card(id).orElseThrow())
+                .anyMatch(c -> c.owner() == playerId
+                        && (c.definition().type() == CardType.LAND || c.definition().type() == CardType.CAPITAL));
     }
 
     private CardInstance playableFromHand(GameState state, int playerId, UUID id, CardType type) {

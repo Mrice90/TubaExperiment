@@ -22,7 +22,7 @@ public final class ActionHints {
                     || card.definition().goldCost() > state.player(player).currentGp()) continue;
             for (BoardPosition position : state.board().positions()) {
                 if (card.definition().type() == CardType.LAND
-                        && position.isOnPlayerSide(player) && state.board().isEmpty(position)) {
+                        && GameEngine.legalLandDestination(state, player, position)) {
                     hints.add("play " + index + " " + position.x() + " " + position.y());
                 } else if (card.definition().type() == CardType.STRUCTURE && isControlledTopLand(state, player, position)) {
                     hints.add("play " + index + " " + position.x() + " " + position.y());

@@ -34,6 +34,9 @@ class GameSnapshotTest {
         original.player(1).addToHand(foe.instanceId());
 
         GameEngine engine = new GameEngine();
+        CardInstance anchor = new CardInstance(UUID.randomUUID(), def("cap_a", CardType.CAPITAL), 0, Zone.BATTLEFIELD);
+        original.register(anchor);
+        original.board().push(new BoardPosition(0, 0), anchor.instanceId());
         assertTrue(engine.apply(original, new GameAction.PlayLand(0, land.instanceId(), new BoardPosition(1, 0))).accepted());
         knight.addDamage(1);
         knight.markAttacked();
