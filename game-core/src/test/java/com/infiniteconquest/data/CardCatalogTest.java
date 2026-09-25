@@ -18,8 +18,10 @@ class CardCatalogTest {
      * Locks the land/structure philosophy in docs/faction-themes.md: every
      * LAND or STRUCTURE must carry a decision point or trigger — an
      * ACTIVATED/triggered ability, an aura keyword, or a deploy passive
-     * (the two "Deploy:" cards, whose spec locks them against redesign).
-     * Every card with abilities must also have rules text.
+     * (the two "Deploy:" cards, whose spec locks them against redesign) —
+     * EXCEPT the designated free-play basics: each faction keeps one 0-cost
+     * vanilla land and one 0-cost vanilla structure as its no-frills
+     * foundation. Every card with abilities must also have rules text.
      */
     private static final Set<Keyword> AURA_KEYWORDS = EnumSet.of(
             Keyword.WAYSTATION, Keyword.HIGH_GROUND, Keyword.BULWARK, Keyword.MEDIC_TENT);
@@ -34,8 +36,13 @@ class CardCatalogTest {
             boolean hasAura = card.keywords().stream().anyMatch(AURA_KEYWORDS::contains);
             boolean hasDeploy = card.developmentPassive() != null
                     && card.developmentPassive() != DevelopmentPassive.NONE;
-            assertTrue(hasAbility || hasAura || hasDeploy,
+            boolean isFreeBasic = card.cost() == 0 && !hasAbility && !hasAura && !hasDeploy;
+            assertTrue(hasAbility || hasAura || hasDeploy || isFreeBasic,
                     "Vanilla land/structure: " + card.id());
+            if (isFreeBasic) {
+                // Free-play basics are exactly that: 0 cost, no abilities, no aura.
+                assertEquals(0, card.cost(), "Free basic must cost 0: " + card.id());
+            }
             if (hasAbility) {
                 assertFalse(card.rulesText().isBlank(),
                         "Card with abilities has no rulesText: " + card.id());

@@ -19,8 +19,8 @@ class FactionCardSetTest {
     void everyFactionHasAnExpandedUniquePlayablePool() {
         PrototypeCardPool pool = new PrototypeCardPool();
 
-        assertEquals(155, pool.cards().size());
-        Map<String, Integer> expectedPerFaction = Map.of("ZEUS", 65, "POSEIDON", 66);
+        assertEquals(157, pool.cards().size());
+        Map<String, Integer> expectedPerFaction = Map.of("ZEUS", 66, "POSEIDON", 67);
         for (String faction : FactionDecks.FACTIONS) {
             List<CardDefinition> cards = pool.cardsForFaction(faction);
             assertEquals(expectedPerFaction.get(faction).intValue(), cards.size(), faction);
@@ -31,6 +31,20 @@ class FactionCardSetTest {
             Map<CardType, Long> types = cards.stream()
                     .collect(Collectors.groupingBy(CardDefinition::type, Collectors.counting()));
             assertEquals((long) expected, types.values().stream().mapToLong(Long::longValue).sum(), faction);
+        }
+    }
+
+    @Test
+    void everyFactionKeepsAFreeVanillaLandAndStructure() {
+        PrototypeCardPool pool = new PrototypeCardPool();
+        for (String faction : FactionDecks.FACTIONS) {
+            List<CardDefinition> free = pool.cardsForFaction(faction).stream()
+                    .filter(card -> card.cost() == 0 && card.abilities().isEmpty())
+                    .toList();
+            assertTrue(free.stream().anyMatch(card -> card.type() == CardType.LAND),
+                    faction + " needs a free-play vanilla land");
+            assertTrue(free.stream().anyMatch(card -> card.type() == CardType.STRUCTURE),
+                    faction + " needs a free-play vanilla structure");
         }
     }
 

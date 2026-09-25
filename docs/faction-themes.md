@@ -82,7 +82,9 @@ Talos Foundry Citadel.)
 
 ## Land / structure philosophy
 Every land and structure must have at least one decision point or trigger —
-never vanilla cardboard:
+never vanilla cardboard — EXCEPT the free-play basics: each faction keeps
+exactly one 0-cost vanilla land and one 0-cost vanilla structure as its
+no-frills foundation (locked by `everyFactionKeepsAFreeVanillaLandAndStructure`).
 - An ACTIVATED ability (GP-costed, once per turn): the repeatable decision.
 - A triggered ability: ENTERS_PLAY (arrives with impact), DESTROYED (volatile
   or dying value), PASSIVE (start-of-turn engine).
@@ -95,3 +97,22 @@ never vanilla cardboard:
 - Theme ownership for future engine vocabulary: displacement → Poseidon,
   recursion → Hades, formation auras → Athena, sacrifice → Ares,
   conversion → Hephaestus, chain lightning → Zeus.
+
+## Cost / income / ability balance rubric
+Gold income follows the engine curve (cost 0→+1/t, 1→+1/t, 2→+1/t, 3→+2/t,
+4→+2/t, 5→+3/t, …): a permanent's price buys tempo AND its income tier.
+Abilities must be weighed against BOTH, using these bands:
+- 0 cost: vanilla ONLY (+1/t, 5–6 HP). The free-play floor; no abilities, no
+  aura. Best gold ROI in the game, paid for with a card slot, a board slot,
+  and removability.
+- 1 cost (+1/t): cantrip on entry (draw 1), a fragile repeatable engine
+  (2–3 GP per activation), or a small death trigger. HP 5–8.
+- 2 cost (+1/t): the workhorse band — sturdy bodies (8–10 HP), real engines
+  with meaningful GP costs, or keyword auras with self-sustain.
+- 3 cost (+2/t): the income breakpoint. Power here must carry a fragility tax
+  (HP 6–8) or volatility (value on destruction, not while alive).
+- 4+ cost (+2/t and up): premium bodies (11+ HP) or game-shaping passives;
+  deploy effects must not also be repeatable engines.
+Watch list for playtesting (bots never use ACTIVATED abilities, so headless
+sims cannot validate these): Zeus's repeatable Capital pingers under the
+capital-win rule, and Tidal Pump Station's self-repair durability at 1 cost.

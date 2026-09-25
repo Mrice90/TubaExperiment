@@ -6,7 +6,7 @@ package com.infiniteconquest.gui;
  */
 public final class GameVersion {
     /** Semantic version of this build, e.g. "0.6.0". */
-    public static final String VERSION = "0.7.7";
+    public static final String VERSION = "0.7.8";
 
     /** Release tag this version publishes under, e.g. "v0.6.0-alpha". */
     public static final String TAG = "v" + VERSION + "-alpha";

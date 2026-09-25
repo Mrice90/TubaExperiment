@@ -83,7 +83,7 @@ class CardArtFactoryTest {
 
     @Test void everyPlayableZeusCardHasPaintedArt() {
         List<CardDefinition> cards = new PrototypeCardPool().cardsForFaction("ZEUS");
-        assertEquals(65, cards.size());
+        assertEquals(66, cards.size());
         cards.forEach(card -> assertTrue(CardArtFactory.hasPaintedArt(card), card.id()));
     }
 
@@ -219,7 +219,7 @@ class CardArtFactoryTest {
     @Test void everyPlayablePoseidonStructureIsPackaged() {
         List<CardDefinition> structures = new PrototypeCardPool().cardsForFaction("POSEIDON").stream()
                 .filter(card -> card.type() == CardType.STRUCTURE).toList();
-        assertEquals(16, structures.size());
+        assertEquals(17, structures.size());
         for (CardDefinition structure : structures) {
             assertNotNull(CardArtFactory.class.getResource("/art/structures/" + structure.id() + ".jpg"),
                     structure.id());

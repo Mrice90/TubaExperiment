@@ -52,14 +52,19 @@ class NetPresentationTest {
         authoritative.mulligan(0, List.of());
         authoritative.mulligan(1, List.of());
 
-        // The client only ever sees redacted snapshots.
-        GameState before = GameState.fromSnapshot(Redactor.redact(authoritative, 0), definitions());
+        // The client is the active player: only then does the redacted hand
+        // contain the real cards the hints (and the command) refer to.
+        // Redacting for the idle player fills their hand with hidden
+        // placeholders, so a hint-derived command may name a different real
+        // card and silently fail to play.
+        int viewer = authoritative.activePlayer();
+        GameState before = GameState.fromSnapshot(Redactor.redact(authoritative, viewer), definitions());
         String command = new ActionHints().forActivePlayer(before, new GameEngine()).stream()
                 .filter(h -> h.startsWith("play ") || h.startsWith("burrow "))
                 .findFirst()
                 .orElseThrow(() -> new AssertionError("no playable card in opening hand"));
         new CommandProcessor(authoritative).execute(command);
-        GameState after = GameState.fromSnapshot(Redactor.redact(authoritative, 0), definitions());
+        GameState after = GameState.fromSnapshot(Redactor.redact(authoritative, viewer), definitions());
 
         PresentationSnapshot.Frame frame = PresentationSnapshot.capture(before);
         PresentationSnapshot resolution = PresentationSnapshot.between(command, frame, after);

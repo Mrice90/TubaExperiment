@@ -246,25 +246,18 @@
       "name": "Olympian Cloudbank",
       "type": "LAND",
       "faction": "ZEUS",
-      "cost": 1,
+      "cost": 0,
       "attack": 0,
       "defense": 0,
       "range": 0,
       "movement": 0,
       "hitPoints": 5,
       "keywords": [],
-      "rulesText": "When this enters play, gain 1 GP.",
+      "rulesText": "",
       "description": "A floating district wrapped in conductive mist.",
       "rarity": 1,
       "contentStatus": "PROTOTYPE",
-      "abilities": [
-        {
-          "trigger": "ENTERS_PLAY",
-          "effect": "GAIN_GP",
-          "amount": 1,
-          "gpCost": 0
-        }
-      ]
+      "abilities": null
     },
     {
       "id": "zeus_ionized_skyway",
@@ -731,21 +724,14 @@
       "movement": 0,
       "hitPoints": 6,
       "keywords": [],
-      "rulesText": "Start of your turn: heal this 1.",
+      "rulesText": "",
       "description": "Shallow luminous water surrounding the sea districts.",
       "rarity": 1,
       "contentStatus": "PROTOTYPE",
       "archetypes": [
         "COAST"
       ],
-      "abilities": [
-        {
-          "trigger": "PASSIVE",
-          "effect": "HEAL_SELF",
-          "amount": 1,
-          "gpCost": 0
-        }
-      ]
+      "abilities": null
     },
     {
       "id": "poseidon_coral_data_reef",
@@ -1026,6 +1012,42 @@
       "description": "Sunken records surfacing only when disturbed.",
       "rarity": 1,
       "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "zeus_zephyr_mooring_mast",
+      "name": "Zephyr Mooring Mast",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 0,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 5,
+      "keywords": [],
+      "rulesText": "",
+      "description": "A simple docking spire where skycraft tie off against the wind.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "abilities": null
+    },
+    {
+      "id": "poseidon_driftwood_breakwater",
+      "name": "Driftwood Breakwater",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 0,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 5,
+      "keywords": [],
+      "rulesText": "",
+      "description": "Lashed timbers that break the surf before it reaches the shore.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE",
+      "abilities": null
     }
   ]
 }

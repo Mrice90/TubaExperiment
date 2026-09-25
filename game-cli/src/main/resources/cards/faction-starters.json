@@ -26,7 +26,7 @@
     },
     {
       "id": "zeus_storm_relay_pylon",
-      "copies": 4
+      "copies": 2
     },
     {
       "id": "zeus_keraunos_charging_spire",
@@ -95,6 +95,10 @@
     {
       "id": "zeus_skybreaker_bolt",
       "copies": 2
+    },
+    {
+      "id": "zeus_zephyr_mooring_mast",
+      "copies": 2
     }
   ],
   "POSEIDON": [
@@ -124,7 +128,7 @@
     },
     {
       "id": "poseidon_sonar_beacon",
-      "copies": 4
+      "copies": 2
     },
     {
       "id": "poseidon_structure_tidevault",
@@ -192,6 +196,10 @@
     },
     {
       "id": "poseidon_erode_foundation",
+      "copies": 2
+    },
+    {
+      "id": "poseidon_driftwood_breakwater",
       "copies": 2
     }
   ]
