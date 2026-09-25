@@ -18,6 +18,17 @@ public final class InfiniteConquestCli {
         BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
         DemoMatchFactory matches = new DemoMatchFactory();
 
+        BotDifficulty difficulty = BotDifficulty.HERO;
+        List<String> positional = new java.util.ArrayList<>();
+        for (String arg : args) {
+            if (arg.toLowerCase(java.util.Locale.ROOT).startsWith("--difficulty=")) {
+                difficulty = parseDifficulty(arg.substring("--difficulty=".length()));
+            } else {
+                positional.add(arg);
+            }
+        }
+        args = positional.toArray(String[]::new);
+
         if (args.length > 0 && args[0].equalsIgnoreCase("simulate")) {
             if (args.length > 4) throw new IllegalArgumentException("Use: simulate [matches-per-capital-pair] [seed] [report.json]");
             int repetitions = args.length >= 2 ? parsePositiveInt(args[1]) : BalanceSimulator.DEFAULT_MATCHES_PER_CAPITAL_PAIR;
@@ -51,6 +62,14 @@ public final class InfiniteConquestCli {
             return;
         }
 
+        if (args.length > 0 && args[0].equalsIgnoreCase("difficulties")) {
+            System.out.println("Bot difficulties (use --difficulty=<name>):");
+            for (BotDifficulty level : BotDifficulty.values()) {
+                System.out.println("  " + level.name() + " — " + level.description());
+            }
+            return;
+        }
+
         long seed;
         List<CardDefinition> humanDeck;
         List<CardDefinition> botDeck;
@@ -67,7 +86,7 @@ public final class InfiniteConquestCli {
             if (args.length >= 5) humanBuild = new com.infiniteconquest.core.DeckBuild(humanBuild.name(), humanBuild.primaryFaction(), humanBuild.allyFaction(), matches.capitals().require(args[4]), humanBuild.cards());
             if (args.length >= 6) botBuild = new com.infiniteconquest.core.DeckBuild(botBuild.name(), botBuild.primaryFaction(), botBuild.allyFaction(), matches.capitals().require(args[5]), botBuild.cards());
             runMatch(matches.create(seed, humanBuild, botBuild, new com.infiniteconquest.core.BoardPosition(1,0),
-                    new com.infiniteconquest.core.BoardPosition(2,5), com.infiniteconquest.core.BoardGeometry.HEX), seed, input);
+                    new com.infiniteconquest.core.BoardPosition(2,5), com.infiniteconquest.core.BoardGeometry.HEX), seed, input, difficulty);
             return;
         } else {
             seed = args.length == 0 ? 1L : parseSeed(args[0]);
@@ -75,16 +94,17 @@ public final class InfiniteConquestCli {
             botDeck = matches.demoDeck();
         }
 
-        runMatch(matches.create(seed, humanDeck, botDeck, humanCapital, botCapital), seed, input);
+        runMatch(matches.create(seed, humanDeck, botDeck, humanCapital, botCapital), seed, input, difficulty);
     }
 
-    private static void runMatch(GameState state, long seed, BufferedReader input) throws IOException {
+    private static void runMatch(GameState state, long seed, BufferedReader input, BotDifficulty difficulty) throws IOException {
         BattlefieldRenderer renderer = new BattlefieldRenderer();
         CommandProcessor commands = new CommandProcessor(state);
         ActionHints hints = new ActionHints();
-        BotPlayer bot = new BotPlayer();
+        BotPlayer bot = new BotPlayer(difficulty);
 
-        System.out.println("Infinite Conquest — Player 1 vs Bot");
+        System.out.println("Infinite Conquest — Player 1 vs Bot (" + difficulty.title() + ")");
+        System.out.println(difficulty.description());
         System.out.println("You are Player 1. The bot is Player 2.");
         System.out.println("Seed: " + seed);
         System.out.println(CommandProcessor.help());
@@ -158,5 +178,12 @@ public final class InfiniteConquestCli {
         } catch (NumberFormatException exception) {
             throw new IllegalArgumentException("Match repetitions must be a whole number", exception);
         }
+    }
+
+    private static BotDifficulty parseDifficulty(String value) {
+        for (BotDifficulty difficulty : BotDifficulty.values()) {
+            if (difficulty.name().equalsIgnoreCase(value) || difficulty.title().equalsIgnoreCase(value)) return difficulty;
+        }
+        throw new IllegalArgumentException("Unknown difficulty '" + value + "'. Choose MORTAL, HERO, or DEMIGOD.");
     }
 }

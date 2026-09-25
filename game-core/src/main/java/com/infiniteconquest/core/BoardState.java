@@ -9,6 +9,12 @@ public final class BoardState {
         for (int y = 0; y < BoardPosition.HEIGHT; y++) for (int x = 0; x < BoardPosition.WIDTH; x++)
             cells.put(new BoardPosition(x, y), new ArrayList<>());
     }
+
+    /** Deep copy: positions are immutable records, stacks are duplicated. */
+    BoardState(BoardState source) {
+        for (Map.Entry<BoardPosition, List<UUID>> entry : source.cells.entrySet())
+            cells.put(entry.getKey(), new ArrayList<>(entry.getValue()));
+    }
     public Set<BoardPosition> positions() { return Collections.unmodifiableSet(cells.keySet()); }
     public List<UUID> stackAt(BoardPosition position) { return Collections.unmodifiableList(cells.get(Objects.requireNonNull(position))); }
     public Optional<UUID> topAt(BoardPosition position) {

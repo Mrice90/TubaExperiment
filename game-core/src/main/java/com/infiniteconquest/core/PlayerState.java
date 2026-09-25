@@ -15,6 +15,16 @@ public final class PlayerState {
         this.id = id;
     }
 
+    /** Deep copy: zone lists and GP counters are duplicated, card UUIDs are immutable. */
+    PlayerState(PlayerState source) {
+        this(source.id);
+        this.deck.addAll(source.deck);
+        this.hand.addAll(source.hand);
+        this.discard.addAll(source.discard);
+        this.currentGp = source.currentGp;
+        this.maximumGp = source.maximumGp;
+    }
+
     public int id() { return id; }
     public List<UUID> deck() { return Collections.unmodifiableList(deck); }
     public List<UUID> hand() { return Collections.unmodifiableList(hand); }

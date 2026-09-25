@@ -51,7 +51,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private GameState state;
     private CommandProcessor commands;
     private final ActionHints hints = new ActionHints();
-    private final BotPlayer bot = new BotPlayer();
+    private BotPlayer bot = new BotPlayer();
     private DemoMatchFactory matchFactory;
     private FactionDecks factionDecks;
     private CapitalPassiveRules passiveRules;
@@ -638,7 +638,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         }
     }
 
-    void beginAutomatedCapture() { playerOneBot = true; runBotTurn(); }
+    void beginAutomatedCapture() {
+        bot = new BotPlayer(BotDifficulty.HERO); // demo capture: both seats play the classic challenge
+        playerOneBot = true;
+        runBotTurn();
+    }
     PresentationSnapshot captureActivePresentation() { return presentationQueue.active(); }
     String captureStateFingerprint() {
         return state.turnNumber()+":"+state.activePlayer()+":"+state.events().size()+":"+PresentationSnapshot.capture(state).cards();
@@ -1060,6 +1064,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         commands = new CommandProcessor(state);
         interaction.reset();
         botRunning = false;
+        bot = new BotPlayer(choice.botDifficulty());
         winnerSoundPlayed = false;
         victoryDialogShown = false;
         playerOneBot = choice.playerOneBot();
@@ -1129,7 +1134,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private MatchChoice defaultChoice() {
         return new MatchChoice("ZEUS", matchFactory.capitals().forFaction("ZEUS").get(0),
                 "POSEIDON", matchFactory.capitals().forFaction("POSEIDON").get(0), false,
-                new BoardPosition(1, 0));
+                new BoardPosition(1, 0), BotDifficulty.HERO);
     }
 
     private DeckBuild buildForFaction(String faction) {
@@ -1182,6 +1187,15 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         JComboBox<CapitalChoice> humanCapitalBox = new JComboBox<>();
         JComboBox<CapitalChoice> botCapitalBox = new JComboBox<>();
         JComboBox<String> playerOneControl = new JComboBox<>(new String[]{"Human", "Bot (watch match)"});
+        JComboBox<BotDifficulty> difficultyBox = new JComboBox<>(BotDifficulty.values());
+        difficultyBox.setSelectedItem(gameSettings.botDifficulty == null ? BotDifficulty.HERO : gameSettings.botDifficulty);
+        JLabel difficultyDescription = setupDescription();
+        Runnable updateDifficulty = () -> {
+            BotDifficulty selected = (BotDifficulty) difficultyBox.getSelectedItem();
+            difficultyDescription.setText("<html>" + html(selected == null ? "" : selected.description()) + "</html>");
+        };
+        difficultyBox.addActionListener(e -> updateDifficulty.run());
+        updateDifficulty.run();
         JLabel humanStrategy = setupDescription();
         JLabel botStrategy = setupDescription();
         JLabel humanPassive = setupDescription();
@@ -1215,7 +1229,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         c.insets = new Insets(4, 8, 4, 8);
         c.fill = GridBagConstraints.HORIZONTAL;
         c.weightx = 1;
-        for(JComboBox<?> box : new JComboBox<?>[]{humanFactionBox,botFactionBox,humanCapitalBox,botCapitalBox,playerOneControl}){
+        for(JComboBox<?> box : new JComboBox<?>[]{humanFactionBox,botFactionBox,humanCapitalBox,botCapitalBox,playerOneControl,difficultyBox}){
             box.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,16));box.setPreferredSize(new Dimension(380,36));
         }
         JPanel humanIdentity=new JPanel(new BorderLayout(0,6));humanIdentity.setOpaque(false);humanIdentity.add(humanFactionBox,BorderLayout.NORTH);humanIdentity.add(humanStrategy);
@@ -1229,6 +1243,8 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         coinChoice.setSelectedItem(coinSkin);coinChoice.setPreferredSize(new Dimension(380,36));coinChoice.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,16));
         coinChoice.addActionListener(e->coinSkin=(InitiativeCoinPanel.Skin)coinChoice.getSelectedItem());
         addSetupRow(setup,c,3,"PLAY AS",playerOneControl,"INITIATIVE COIN",coinChoice);
+        difficultyDescription.setPreferredSize(new Dimension(380,36));
+        addSetupRow(setup,c,4,"BOT DIFFICULTY",difficultyBox,"",difficultyDescription);
         JButton editDecks = button("Deck Builder", e -> { openDeckEditor((String) humanFactionBox.getSelectedItem()); previousFaction[0]=null; update.run(); });
         JPanel pages=new JPanel(new CardLayout());pages.setBackground(PANEL);
         JScrollPane settings=new JScrollPane(setup);settings.setBorder(null);settings.getVerticalScrollBar().setUnitIncrement(24);
@@ -1261,9 +1277,13 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         if(!accepted[0])return null;
         CapitalChoice selectedHuman = (CapitalChoice) humanCapitalBox.getSelectedItem();
         CapitalChoice selectedBot = (CapitalChoice) botCapitalBox.getSelectedItem();
+        BotDifficulty selectedDifficulty = (BotDifficulty) difficultyBox.getSelectedItem();
+        if (selectedDifficulty == null) selectedDifficulty = BotDifficulty.HERO;
+        gameSettings.botDifficulty = selectedDifficulty;
+        gameSettings.save();
         return new MatchChoice((String) humanFactionBox.getSelectedItem(), selectedHuman.card(),
                 (String) botFactionBox.getSelectedItem(), selectedBot.card(),
-                playerOneControl.getSelectedIndex() == 1, capitalPlacement.selected());
+                playerOneControl.getSelectedIndex() == 1, capitalPlacement.selected(), selectedDifficulty);
     }
 
     void prepareReactionReview(Path directory) {
@@ -3292,7 +3312,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
 
     private record MatchChoice(String humanFaction, CardDefinition humanCapital,
                                String botFaction, CardDefinition botCapital, boolean playerOneBot,
-                               BoardPosition humanCapitalPosition) { }
+                               BoardPosition humanCapitalPosition, BotDifficulty botDifficulty) { }
 
     private final class CapitalPlacementPicker extends JPanel {
         private BoardPosition selected = new BoardPosition(1, 0);

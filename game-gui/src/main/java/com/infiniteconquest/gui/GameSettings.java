@@ -1,5 +1,7 @@
 package com.infiniteconquest.gui;
 
+import com.infiniteconquest.cli.BotDifficulty;
+
 import java.awt.Dimension;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -30,6 +32,7 @@ public final class GameSettings {
     private static final String KEY_PLAYER_NAME = "player.name";
     private static final String KEY_LOBBY_WORKER_URL = "lobby.worker.url";
     private static final String KEY_PLAYER_RATING = "player.rating";
+    private static final String KEY_BOT_DIFFICULTY = "bot.difficulty";
     /** Rating assigned by the lobby service (Elo, starts at 1000). */
     public static final int DEFAULT_RATING = 1000;
     /** Maximum display-name length, matching the netcode design. */
@@ -66,6 +69,11 @@ public final class GameSettings {
     public String lobbyWorkerUrl;
     /** Last known Elo rating from the lobby service; 1000 until the first report. */
     public int playerRating;
+    /**
+     * Bot skill level for single-player battles. HERO is the classic
+     * challenge and the default for fresh installs.
+     */
+    public BotDifficulty botDifficulty;
 
     /**
      * The lobby Worker URL actually in effect: the player's Settings override
@@ -94,6 +102,7 @@ public final class GameSettings {
         playerUuid = java.util.UUID.randomUUID().toString();
         playerName = "Player";
         playerRating = DEFAULT_RATING;
+        botDifficulty = BotDifficulty.HERO;
         lobbyWorkerUrl = "";
     }
 
@@ -167,6 +176,11 @@ public final class GameSettings {
         } catch (NumberFormatException e) {
             settings.playerRating = DEFAULT_RATING;
         }
+        try {
+            settings.botDifficulty = BotDifficulty.valueOf(props.getProperty(KEY_BOT_DIFFICULTY, "HERO"));
+        } catch (IllegalArgumentException e) {
+            settings.botDifficulty = BotDifficulty.HERO;
+        }
         settings.lobbyWorkerUrl = props.getProperty(KEY_LOBBY_WORKER_URL, "").trim();
         // 0.6.0 changed the display default: pre-0.6.0 settings files adopt fullscreen once.
         if (!props.containsKey(KEY_SETTINGS_VERSION)) {
@@ -190,6 +204,7 @@ public final class GameSettings {
         props.setProperty(KEY_PLAYER_UUID, playerUuid);
         props.setProperty(KEY_PLAYER_NAME, playerName);
         props.setProperty(KEY_PLAYER_RATING, Integer.toString(playerRating));
+        props.setProperty(KEY_BOT_DIFFICULTY, botDifficulty == null ? BotDifficulty.HERO.name() : botDifficulty.name());
         props.setProperty(KEY_LOBBY_WORKER_URL, lobbyWorkerUrl == null ? "" : lobbyWorkerUrl);
         props.setProperty(KEY_SETTINGS_VERSION, GameVersion.VERSION);
         try {

@@ -6,18 +6,18 @@ import com.infiniteconquest.data.Keyword;
 public final class GameState {
     private final long seed;
     private final MatchRules rules;
-    private final BoardState board = new BoardState();
-    private final List<PlayerState> players = List.of(new PlayerState(0), new PlayerState(1));
-    private final Map<UUID, CardInstance> cards = new LinkedHashMap<>();
-    private final List<GameEvent> events = new ArrayList<>();
-    private final int[] personalTurns = new int[2];
-    private final boolean[] mulliganCompleted = new boolean[2];
-    private final int[] landsPlayedThisTurn = new int[2];
-    private final int[] structuresPlayedThisTurn = new int[2];
-    private final Set<String> terrainTriggersUsed = new HashSet<>();
-    private final Set<String> capitalPassivesUsedThisTurn = new HashSet<>();
-    private final CapitalPassiveRules capitalPassiveRules = new CapitalPassiveRules();
-    private final CardAbilityRules cardAbilityRules = new CardAbilityRules();
+    private final BoardState board;
+    private final List<PlayerState> players;
+    private final Map<UUID, CardInstance> cards;
+    private final List<GameEvent> events;
+    private final int[] personalTurns;
+    private final boolean[] mulliganCompleted;
+    private final int[] landsPlayedThisTurn;
+    private final int[] structuresPlayedThisTurn;
+    private final Set<String> terrainTriggersUsed;
+    private final Set<String> capitalPassivesUsedThisTurn;
+    private final CapitalPassiveRules capitalPassiveRules;
+    private final CardAbilityRules cardAbilityRules;
     private int activePlayer;
     private int startingPlayer;
     private int turnNumber;
@@ -32,7 +32,57 @@ public final class GameState {
     GameState(long seed, MatchRules rules, boolean startImmediately) {
         this.seed = seed;
         this.rules = Objects.requireNonNull(rules);
+        this.board = new BoardState();
+        this.players = List.of(new PlayerState(0), new PlayerState(1));
+        this.cards = new LinkedHashMap<>();
+        this.events = new ArrayList<>();
+        this.personalTurns = new int[2];
+        this.mulliganCompleted = new boolean[2];
+        this.landsPlayedThisTurn = new int[2];
+        this.structuresPlayedThisTurn = new int[2];
+        this.terrainTriggersUsed = new HashSet<>();
+        this.capitalPassivesUsedThisTurn = new HashSet<>();
+        this.capitalPassiveRules = new CapitalPassiveRules();
+        this.cardAbilityRules = new CardAbilityRules();
         if (startImmediately) initializeMatch();
+    }
+
+    /**
+     * Deep copy of the full authoritative state, used for AI lookahead
+     * simulations. The rules objects are stateless and recreated; everything
+     * else is duplicated, so applying engine actions to the copy can never
+     * affect the original. Engine behavior is unchanged by this method's
+     * existence.
+     */
+    public GameState copy() {
+        return new GameState(this);
+    }
+
+    private GameState(GameState source) {
+        this.seed = source.seed;
+        this.rules = source.rules;
+        this.board = new BoardState(source.board);
+        this.players = List.of(new PlayerState(source.players.get(0)), new PlayerState(source.players.get(1)));
+        this.cards = new LinkedHashMap<>();
+        for (CardInstance card : source.cards.values()) this.cards.put(card.instanceId(), new CardInstance(card));
+        this.events = new ArrayList<>(source.events);
+        this.personalTurns = source.personalTurns.clone();
+        this.mulliganCompleted = source.mulliganCompleted.clone();
+        this.landsPlayedThisTurn = source.landsPlayedThisTurn.clone();
+        this.structuresPlayedThisTurn = source.structuresPlayedThisTurn.clone();
+        this.terrainTriggersUsed = new HashSet<>(source.terrainTriggersUsed);
+        this.capitalPassivesUsedThisTurn = new HashSet<>(source.capitalPassivesUsedThisTurn);
+        this.capitalPassiveRules = new CapitalPassiveRules();
+        this.cardAbilityRules = new CardAbilityRules();
+        this.activePlayer = source.activePlayer;
+        this.startingPlayer = source.startingPlayer;
+        this.turnNumber = source.turnNumber;
+        this.phase = source.phase;
+        this.nextEventSequence = source.nextEventSequence;
+        this.winner = source.winner;
+        this.started = source.started;
+        this.mulliganWindowOpen = source.mulliganWindowOpen;
+        this.initialCapitalPassiveActivated = source.initialCapitalPassiveActivated;
     }
 
     public long seed() { return seed; }

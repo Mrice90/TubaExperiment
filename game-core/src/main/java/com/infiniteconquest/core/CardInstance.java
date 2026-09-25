@@ -26,6 +26,20 @@ public final class CardInstance {
         this.zone = Objects.requireNonNull(zone);
     }
 
+    /** Deep copy of a live instance; the definition reference is shared (definitions are immutable). */
+    CardInstance(CardInstance source) {
+        this(source.instanceId, source.definition, source.owner, source.zone);
+        this.damage = source.damage;
+        this.tapped = source.tapped;
+        this.movementSpent = source.movementSpent;
+        this.attackedThisTurn = source.attackedThisTurn;
+        this.blinkUsedThisTurn = source.blinkUsedThisTurn;
+        this.attackBonus = source.attackBonus;
+        this.defenseBonus = source.defenseBonus;
+        this.combatDamage = source.combatDamage;
+        this.abilityUsedThisTurn = source.abilityUsedThisTurn;
+    }
+
     public UUID instanceId() { return instanceId; }
     public CardDefinition definition() { return definition; }
     public int owner() { return owner; }
