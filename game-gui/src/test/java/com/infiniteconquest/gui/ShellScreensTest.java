@@ -40,6 +40,42 @@ class ShellScreensTest {
     }
 
     @Test
+    void titleScreenPaintsStormCloudsAndLightning() throws Exception {
+        GameSettings settings = GameSettings.load();
+        settings.animationMode = GameSettings.AnimationMode.FULL;
+        TitleScreen screen = new TitleScreen(stubShell(), settings);
+        screen.onShow();
+        // Drive the real weather update path: clouds drift, no bolt yet.
+        var updateWeather = TitleScreen.class.getDeclaredMethod("updateWeather", double.class);
+        updateWeather.setAccessible(true);
+        for (int i = 0; i < 30; i++) updateWeather.invoke(screen, .033);
+        var clouds = TitleScreen.class.getDeclaredField("clouds");
+        clouds.setAccessible(true);
+        assertEquals(4, ((java.util.List<?>) clouds.get(screen)).size(),
+                "four storm clouds should seed over the title backdrop");
+        // Force a mid-strike frame to exercise the bolt and sky flash.
+        var boltFlash = TitleScreen.class.getDeclaredField("boltFlash");
+        boltFlash.setAccessible(true);
+        boltFlash.set(screen, 1.0);
+        BufferedImage image = paint(screen, 1500, 950);
+        assertTrue(pixelVariance(image) > 0.02,
+                "storm title should paint art, clouds, lightning, and menu");
+        screen.onHide();
+    }
+
+    @Test
+    void titleScreenReducedModePaintsStaticStorm() {
+        GameSettings settings = GameSettings.load();
+        settings.animationMode = GameSettings.AnimationMode.REDUCED;
+        TitleScreen screen = new TitleScreen(stubShell(), settings);
+        screen.onShow();
+        BufferedImage image = paint(screen, 1500, 950);
+        assertTrue(pixelVariance(image) > 0.02,
+                "reduced title should still paint its static storm backdrop");
+        screen.onHide();
+    }
+
+    @Test
     void settingsScreenBuildsEveryRow() {
         SettingsScreen screen = new SettingsScreen(stubShell(), GameSettings.load());
         screen.onShow();

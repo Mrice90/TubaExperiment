@@ -75,4 +75,16 @@ class FxTest {
         assertTrue(Fx.BADGE_FADE_MS < Fx.BADGE_MS / 2);
         assertTrue(Fx.SHAKE_MS < Fx.DAMAGE_FLOAT_MS);
     }
+
+    @Test
+    void playFlightAndHoverTimings() throws Exception {
+        assertTrue(Fx.PLAY_FLIGHT_MS >= 350 && Fx.PLAY_FLIGHT_MS <= 450,
+                "card-play flight must run 350-450ms, was " + Fx.PLAY_FLIGHT_MS);
+        assertTrue(Fx.HOVER_MS > 0 && Fx.HOVER_MS < 150,
+                "hover lift must stay under 150ms, was " + Fx.HOVER_MS);
+        assertTrue(Fx.LAND_POP_MS < Fx.PLAY_FLIGHT_MS,
+                "landing pop must fit inside the flight window");
+        assertEquals(1L, Fx.durationNanos(Fx.PLAY_FLIGHT_MS, reduced()),
+                "reduced mode must collapse the flight to one frame");
+    }
 }

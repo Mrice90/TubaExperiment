@@ -295,6 +295,7 @@ class LoopbackSessionTest {
         ActionHints hints = new ActionHints();
         GameEngine engine = new GameEngine();
         JsonNode prompt = null;
+        JsonNode waiting = null;
         for (int step = 0; step < 60 && prompt == null; step++) {
             int active = hostView.activePlayer();
             Driver actor = active == 0 ? host : guest;
@@ -315,6 +316,13 @@ class LoopbackSessionTest {
                         "unexpected envelope after state update: " + node.get("type").asText());
                 prompt = node;
                 assertEquals(1 - active, node.get("reactingPlayer").asInt());
+                // The non-reacting player gets the lightweight waiting notice
+                // (no card data) instead of the prompt; capture it before the
+                // game-over probe below discards queued envelopes.
+                String notice = actor.peer.next(800, TimeUnit.MILLISECONDS);
+                assertNotNull(notice, "active player must get a reaction_waiting notice");
+                waiting = Protocol.MAPPER.readTree(notice);
+                assertEquals("reaction_waiting", waiting.get("type").asText());
             }
             try {
                 host.nextOfType("game_over", 50);
@@ -323,6 +331,17 @@ class LoopbackSessionTest {
             }
         }
         assertNotNull(prompt, "expected a reaction window to open within 60 steps");
+        assertNotNull(waiting, "expected a reaction_waiting notice alongside the prompt");
+
+        // The waiting notice names the reacting player, carries the timeout,
+        // and carries no card data.
+        int reactor = prompt.get("reactingPlayer").asInt();
+        assertEquals(reactor, waiting.get("reactingPlayer").asInt(),
+                "waiting notice must name the reacting player");
+        assertEquals(60, waiting.get("secondsLeft").asInt(),
+                "waiting notice must carry the reaction timeout");
+        assertTrue(waiting.path("commands").isMissingNode(),
+                "reaction_waiting must not carry card data: " + waiting);
 
         // The prompt reached the inactive player (guest) only.
         assertNull(host.peer.next(300, TimeUnit.MILLISECONDS),

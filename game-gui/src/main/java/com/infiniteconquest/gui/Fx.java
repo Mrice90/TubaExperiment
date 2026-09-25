@@ -34,6 +34,10 @@ public final class Fx {
     public static final int BADGE_FADE_MS = 500;
     /** Deploy landing pop: scale overshoot after the card arc lands. */
     public static final int LAND_POP_MS = 120;
+    /** Card-play flight: eased arc from the hand tray to the target hex. */
+    public static final int PLAY_FLIGHT_MS = 400;
+    /** Hover lift in/out on hand cards: subtle and fast. */
+    public static final int HOVER_MS = 120;
 
     /** Milliseconds to nanoseconds, the overlay's native unit. */
     public static long nanos(int millis) {

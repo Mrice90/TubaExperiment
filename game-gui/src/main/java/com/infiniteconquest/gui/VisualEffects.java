@@ -10,15 +10,25 @@ import java.util.Objects;
 
 /** Loads, tints and caches the CC0 Kenney particle sprites used by cards and battle effects. */
 final class VisualEffects {
-    enum Sprite { MAGIC, ORBIT, SMOKE, FLAME, SPARK, SLASH, RING, TRACE, LIGHT }
+    enum Sprite { MAGIC, ORBIT, SMOKE, FLAME, SPARK, SLASH, RING, TRACE, LIGHT,
+        TWIRL, DEBRIS_A, DEBRIS_B, DEBRIS_C }
 
-    private static final String ROOT = "/vfx/kenney-particle-pack/";
-    private static final Map<Sprite, String> FILES = Map.of(
-            Sprite.MAGIC, "magic_01.png", Sprite.ORBIT, "magic_04.png",
-            Sprite.SMOKE, "smoke_03.png", Sprite.FLAME, "flame_04.png",
-            Sprite.SPARK, "spark_07.png", Sprite.SLASH, "slash_02.png",
-            Sprite.RING, "circle_03.png", Sprite.TRACE, "trace_06.png",
-            Sprite.LIGHT, "light_03.png");
+    /** Resource roots for bundled VFX sprite art (see THIRD_PARTY_ASSETS.md). */
+    private static final String KENNEY_ROOT = "/vfx/kenney-particle-pack/";
+    private static final String FREE_VFX_ROOT = "/vfx/free-vfx-pack/";
+
+    /**
+     * Sprite key -&gt; full classpath resource path. Keys are stable; the backing
+     * pack may change per key.
+     */
+    private static final Map<Sprite, String> FILES = Map.ofEntries(
+            Map.entry(Sprite.MAGIC, KENNEY_ROOT + "magic_01.png"), Map.entry(Sprite.ORBIT, KENNEY_ROOT + "magic_04.png"),
+            Map.entry(Sprite.SMOKE, KENNEY_ROOT + "smoke_03.png"), Map.entry(Sprite.FLAME, KENNEY_ROOT + "flame_04.png"),
+            Map.entry(Sprite.SPARK, KENNEY_ROOT + "spark_07.png"), Map.entry(Sprite.SLASH, KENNEY_ROOT + "slash_02.png"),
+            Map.entry(Sprite.RING, KENNEY_ROOT + "circle_03.png"), Map.entry(Sprite.TRACE, KENNEY_ROOT + "trace_06.png"),
+            Map.entry(Sprite.LIGHT, KENNEY_ROOT + "light_03.png"), Map.entry(Sprite.TWIRL, FREE_VFX_ROOT + "vortex_swirl.png"),
+            Map.entry(Sprite.DEBRIS_A, FREE_VFX_ROOT + "ember_debris_a.png"), Map.entry(Sprite.DEBRIS_B, FREE_VFX_ROOT + "ember_debris_b.png"),
+            Map.entry(Sprite.DEBRIS_C, FREE_VFX_ROOT + "ember_debris_c.png"));
     private static final Map<Sprite, BufferedImage> SOURCE = new HashMap<>();
     private static final Map<Key, BufferedImage> CACHE = new HashMap<>();
 
@@ -54,7 +64,7 @@ final class VisualEffects {
             if (SOURCE.containsKey(sprite)) return SOURCE.get(sprite);
             try {
                 BufferedImage image = ImageIO.read(Objects.requireNonNull(
-                        VisualEffects.class.getResourceAsStream(ROOT + FILES.get(sprite))));
+                        VisualEffects.class.getResourceAsStream(FILES.get(sprite))));
                 SOURCE.put(sprite, image);
                 return image;
             } catch (IOException | NullPointerException exception) {

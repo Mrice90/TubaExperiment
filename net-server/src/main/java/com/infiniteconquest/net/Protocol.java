@@ -160,6 +160,18 @@ public final class Protocol {
         public ReactionTimeout { requireType(type, "reaction_timeout"); }
     }
 
+    /**
+     * Server -> the non-reacting player: a reaction window is open for the
+     * other seat. Carries no card data, only who is reacting and the timeout,
+     * so the client can show a waiting indicator and lock input.
+     */
+    public record ReactionWaiting(String type, int reactingPlayer, int secondsLeft) {
+        public ReactionWaiting(int reactingPlayer, int secondsLeft) {
+            this("reaction_waiting", reactingPlayer, secondsLeft);
+        }
+        public ReactionWaiting { requireType(type, "reaction_waiting"); }
+    }
+
     private static void requireType(String actual, String expected) {
         if (!expected.equals(actual))
             throw new IllegalArgumentException("Expected type \"" + expected + "\" but got \"" + actual + "\"");

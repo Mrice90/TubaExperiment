@@ -89,6 +89,9 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private boolean netMulliganOpen;
     /** The local mulligan decision was sent; waiting on the opponent. */
     private boolean netMulliganWaiting;
+    private boolean netReactionWaiting; // opponent's reaction window is open
+    private javax.swing.Timer pulseTimer;
+    private float pulsePhase;
     /** Generation counter for reaction windows; stale dialogs must not answer. */
     private int netReactionGen;
     /** The currently open network reaction dialog, if any (for timeout dismissal). */
@@ -207,6 +210,22 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         if (!screenshotMode && !decksReady) loadSavedDecks();
         if (screenshotMode) startMatch(defaultChoice(), 424242L, false);
         else if (netSession == null) newMatch();
+        startPulseTimer();
+    }
+
+    /**
+     * Gentle pulsing highlight on legal drop hexes while a card or unit is
+     * selected. Runs at ~8fps and only repaints while a selection is active;
+     * REDUCED mode keeps the static intent outline instead.
+     */
+    private void startPulseTimer() {
+        pulseTimer = new javax.swing.Timer(120, event -> {
+            if (Fx.reduced(gameSettings) || !interaction.hasSelection()) return;
+            pulsePhase += .55f;
+            boardPanel.putClientProperty("pulsePhase", pulsePhase);
+            boardPanel.repaint();
+        });
+        pulseTimer.start();
     }
 
     /** Online battle setup: perspective, labels, and the initial server snapshot. */
@@ -223,6 +242,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         state = GameState.fromSnapshot(snapshot, netDefinitions);
         netLastFrame = PresentationSnapshot.capture(state);
         netMulliganWaiting = false; // a live snapshot means both mulligans are in
+        netReactionWaiting = false; // and any reaction window is resolved
         if (!netStarted) {
             netStarted = true;
             initNetMatchMeta();
@@ -278,6 +298,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                                        GameSnapshot snapshot) {
         if (netGameOver) return;
         netPendingCommand = null;
+        netReactionWaiting = false; // any open reaction window resolved with this update
         GameState after = GameState.fromSnapshot(snapshot, netDefinitions);
         PresentationSnapshot.Frame before = netLastFrame;
         netLastFrame = PresentationSnapshot.capture(after);
@@ -294,6 +315,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         netGameOver = true;
         netWinner = winner;
         netPendingCommand = null;
+        netReactionWaiting = false;
         state = GameState.fromSnapshot(snapshot, netDefinitions);
         netLastFrame = PresentationSnapshot.capture(state);
         interaction.markGameOver();
@@ -314,6 +336,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     @Override public void onDisconnected(String reason) {
         if (netGameOver) return;
         netGameOver = true;
+        netReactionWaiting = false;
         JOptionPane.showMessageDialog(this,
                 "Lost connection to the host.\n" + (reason == null ? "" : reason),
                 "Disconnected", JOptionPane.WARNING_MESSAGE);
@@ -381,12 +404,25 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
 
     @Override public void onReactionTimeout(int player) {
         if (netGameOver || !netMode()) return;
+        netReactionWaiting = false; // the window resolved; input unlocks below
         netReactionGen++; // any open dialog must not answer a dead window
         VisualReactionDialog dialog = activeReactionDialog;
         activeReactionDialog = null;
         if (dialog != null && player == localPlayer()) dialog.dispose();
         message(player == localPlayer() ? "Your reaction window expired — auto-passed."
                 : opponentName + "'s reaction window expired — auto-passed.");
+        refresh();
+    }
+
+    /**
+     * The opponent is reacting: show the waiting indicator and lock
+     * spell/attack input until the window resolves. This envelope carries no
+     * card data — it is only delivered to the non-reacting player.
+     */
+    @Override public void onReactionWaiting(int reactingPlayer, int secondsLeft) {
+        if (netGameOver || !netMode() || reactingPlayer == localPlayer()) return;
+        netReactionWaiting = true;
+        message("Opponent is reacting… (" + secondsLeft + "s)");
         refresh();
     }
 
@@ -1411,6 +1447,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private boolean canAcceptHumanInput() {
         if (netMode() && netPendingCommand != null) return false; // awaiting server confirmation
         if (netMode() && (netMulliganOpen || netMulliganWaiting)) return false; // mulligan not resolved
+        if (netMode() && netReactionWaiting) return false; // opponent is reacting
         return state != null && !playerOneBot && !botRunning && state.activePlayer() == localPlayer()
                 && state.phase() != Phase.GAME_OVER && interaction.acceptsHumanInput();
     }
@@ -1548,6 +1585,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             cell.putClientProperty("card", null);
             cell.putClientProperty("height", TerrainRules.height(state,position));
             cell.putClientProperty("badge", intent == null ? "" : intent.label);
+            cell.putClientProperty("pulse", intent != null);
             cell.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.RAISED,
                     surface.brighter(), surface.brighter(), surface.darker(), surface.darker()), new CompoundBorder(
                     new LineBorder(outline, outlineWidth, true),
@@ -1666,7 +1704,19 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 g.drawString(text,pillX+9,pillY+pillH-metrics.getDescent()-3);
             }
             g.setClip(null);g.setStroke(new BasicStroke(isFocusOwner()?3:((Number)getClientProperty("outlineWidth")).floatValue()));
-            g.setColor(isFocusOwner()?Color.WHITE:(Color)getClientProperty("outline"));g.draw(hex);g.dispose();
+            Color outline = isFocusOwner() ? Color.WHITE : (Color) getClientProperty("outline");
+            if (Boolean.TRUE.equals(getClientProperty("pulse"))) {
+                // Gentle breathing glow on legal drop hexes while selected.
+                java.awt.Container parent = getParent();
+                Object phase = parent instanceof JComponent
+                        ? ((JComponent) parent).getClientProperty("pulsePhase") : null;
+                float wave = phase instanceof Number
+                        ? (float) Math.sin(((Number) phase).floatValue()) : 0f;
+                float glow = .55f + .45f * wave;
+                outline = new Color(outline.getRed(), outline.getGreen(), outline.getBlue(),
+                        Math.round(255 * Math.max(.2f, glow)));
+            }
+            g.setColor(outline);g.draw(hex);g.dispose();
         }
         private void centered(Graphics2D g,String text,int y){
             FontMetrics metrics = g.getFontMetrics();
@@ -1709,7 +1759,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             int cardHeight = handExpanded ? 202 : 40;
             int artWidth = handExpanded ? 169 : 30;
             int artHeight = handExpanded ? 105 : 28;
-            JButton tile = new JButton(handExpanded ? handCardHtml(def) : "<html>"+html(compactName(def.name(),18))+"<br>"+html(playRequirement(def))+"</html>", CardArtFactory.iconFor(def, artWidth, artHeight));
+            JButton tile = new HoverLiftButton(handExpanded ? handCardHtml(def) : "<html>"+html(compactName(def.name(),18))+"<br>"+html(playRequirement(def))+"</html>", CardArtFactory.iconFor(def, artWidth, artHeight), gameSettings);
             Dimension cardSize = new Dimension(cardWidth, cardHeight);
             tile.setPreferredSize(cardSize);
             tile.setMaximumSize(cardSize);
@@ -2154,10 +2204,15 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                         .findFirst().orElse(null);
                 CardDefinition definition = deployed == null ? null
                         : state.card(deployed.id()).map(CardInstance::definition).orElse(null);
+                Color burst = burrow ? BURROW : DEPLOY;
                 if (definition != null) {
-                    combatOverlay.animateCard(definition, deployed.owner(), to, burrow ? BURROW : DEPLOY);
+                    // The flight is driven by the state update, so it plays for
+                    // local and network games alike; the burst lands on arrival.
+                    boolean opponentPlay = deployed.owner() != localPlayer();
+                    combatOverlay.animatePlayFlight(definition, opponentPlay, to, burst);
+                    combatOverlay.animate(null, to, burst, false, AnimationStyle.DEPLOY, Fx.DEPLOY_MS);
                 } else {
-                    combatOverlay.animate(null, to, burrow ? BURROW : DEPLOY, false, AnimationStyle.DEPLOY);
+                    combatOverlay.animate(null, to, burst, false, AnimationStyle.DEPLOY, Fx.DEPLOY_MS);
                 }
                 SoundEffects.play(SoundEffects.Cue.DEPLOY);
             }
@@ -3354,7 +3409,8 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         }
     }
 
-    private enum AnimationStyle { MOVE, BLINK, MELEE, RANGED, SPELL, DEPLOY, SNAP_BACK, DESTROY, RULES, DAMAGE }
+    private enum AnimationStyle { MOVE, BLINK, MELEE, RANGED, SPELL, DEPLOY, PLAY_FLIGHT,
+        SNAP_BACK, DESTROY, RULES, DAMAGE }
 
     private final class CombatOverlay extends JComponent {
         private Animation animation;
@@ -3386,11 +3442,17 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             if (animation == null && queued.isEmpty()) completeSequence();
         }
 
-        void animateCard(CardDefinition card, int owner, BoardPosition to, Color color) {
+        /**
+         * Card-play flight: the card arcs from the hand tray (or the top of the
+         * screen for the opponent's plays) to the target hex, while a summon
+         * swirl spins up at the destination. The arrival burst (DEPLOY) should
+         * be queued right after so the landing lands with impact.
+         */
+        void animatePlayFlight(CardDefinition card, boolean opponentSource, BoardPosition to, Color color) {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Image image = CardArtFactory.iconFor(card, 160, 140).getImage();
-            Animation requested = new Animation(null, to, color, false, AnimationStyle.DEPLOY, 0L,
-                    image, owner == 1, Fx.durationNanos(Fx.DEPLOY_MS, gameSettings), false, false, null);
+            Animation requested = new Animation(null, to, color, false, AnimationStyle.PLAY_FLIGHT, 0L,
+                    image, opponentSource, Fx.durationNanos(Fx.PLAY_FLIGHT_MS, gameSettings), false, false, null);
             if (animation != null) queued.addLast(requested);
             else start(requested);
         }
@@ -3440,9 +3502,14 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         }
 
         void animate(BoardPosition from, BoardPosition to, Color color, boolean fromRules, AnimationStyle style) {
+            animate(from, to, color, fromRules, style, Fx.GENERIC_MS);
+        }
+
+        void animate(BoardPosition from, BoardPosition to, Color color, boolean fromRules,
+                     AnimationStyle style, int durationMs) {
             if (!sequenceOpen) throw new IllegalStateException("Animations require an open presentation sequence");
             Animation requested = new Animation(from, to, color, fromRules, style, 0L,
-                    null, false, Fx.durationNanos(Fx.GENERIC_MS, gameSettings), false, false, null);
+                    null, false, Fx.durationNanos(durationMs, gameSettings), false, false, null);
             if (animation != null) {
                 queued.addLast(requested);
                 return;
@@ -3647,6 +3714,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             float progress = animation.progress();
             boolean cardLunge = animation.cardImage() != null && animation.style() == AnimationStyle.MELEE;
             boolean cardDestroy = animation.cardImage() != null && animation.style() == AnimationStyle.DESTROY;
+            boolean playFlight = animation.cardImage() != null && animation.style() == AnimationStyle.PLAY_FLIGHT;
             float fade = cardDestroy ? 1f - progress : animation.cardImage()!=null ? 1f
                     : progress < .72f ? 1f : Math.max(0f, (1f - progress) / .28f);
             g.setComposite(AlphaComposite.SrcOver.derive(.88f * fade));
@@ -3658,7 +3726,9 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             int orbX = Math.round(source.x + (target.x - source.x) * travel);
             int orbY = Math.round(source.y + (target.y - source.y) * travel);
             if (animation.cardImage() != null) {
-                int arc = Math.min(22, Math.abs(target.x-source.x)/12);
+                // Play flights arc higher so the throw reads clearly across the board.
+                int arc = playFlight ? Math.min(72, Math.abs(target.x - source.x) / 5 + 26)
+                        : Math.min(22, Math.abs(target.x-source.x)/12);
                 float inverse = 1f - travel;
                 orbX = Math.round(inverse * inverse * source.x
                         + 2 * inverse * travel * ((source.x + target.x) / 2f)
@@ -3667,10 +3737,18 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                         + 2 * inverse * travel * (Math.min(source.y, target.y) - arc)
                         + travel * travel * target.y);
                 float collapse = cardDestroy ? Fx.easeOutCubic(progress) : 0f;
+                // Landing pop: a spring overshoot on the card scale through the
+                // final LAND_POP_MS of the flight so the arrival has impact.
+                float popScale = 1f;
+                if (playFlight) {
+                    float popT = (progress * Fx.PLAY_FLIGHT_MS - (Fx.PLAY_FLIGHT_MS - Fx.LAND_POP_MS))
+                            / (float) Fx.LAND_POP_MS;
+                    if (popT > 0f) popScale = 1f + .16f * (Fx.spring(Math.min(1f, popT)) - Math.min(1f, popT));
+                }
                 JButton footprint=targetButton!=null?targetButton:boardButtons.values().iterator().next();
                 int tileWidth=Math.max(44,footprint.getWidth()),tileHeight=Math.max(38,footprint.getHeight());
-                int width=Math.max(16,Math.round(tileWidth*(cardDestroy?1f-.68f*collapse:1f)));
-                int height=Math.max(16,Math.round(tileHeight*(cardDestroy?1f-.68f*collapse:1f)));
+                int width=Math.max(16,Math.round(tileWidth*(cardDestroy?1f-.68f*collapse:1f)*popScale));
+                int height=Math.max(16,Math.round(tileHeight*(cardDestroy?1f-.68f*collapse:1f)*popScale));
                 orbX=Math.max(width/2+6,Math.min(getWidth()-width/2-6,orbX));
                 orbY=Math.max(height/2+6,Math.min(getHeight()-height/2-6,orbY));
                 g.setComposite(AlphaComposite.SrcOver.derive(.30f * fade));
@@ -3682,23 +3760,38 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 Shape oldClip=g.getClip();g.clip(sprite);
                 g.drawImage(animation.cardImage(),left,top,width,height,null);g.setClip(oldClip);
                 g.setColor(animation.color());g.setStroke(new BasicStroke(2f));g.draw(sprite);
-                VisualEffects.draw(g, VisualEffects.Sprite.LIGHT, orbX, orbY,
-                        Math.max(width, height), animation.color(), .36f, progress);
+                if (playFlight && Fx.particles(gameSettings)) {
+                    // Summon swirl: spins up at the destination while the card
+                    // is in flight, then the DEPLOY burst lands on top of it.
+                    VisualEffects.draw(g, VisualEffects.Sprite.TWIRL, target.x, target.y,
+                            Math.round(48 + 96 * progress), animation.color(),
+                            .5f * Math.min(1f, progress * 1.5f), progress * 5.0);
+                    // Faint motion trail behind the flying card.
+                    VisualEffects.draw(g, VisualEffects.Sprite.TRACE, orbX, orbY,
+                            Math.max(24, width / 2), animation.color(), .3f * (1f - progress),
+                            Math.atan2(target.y - source.y, target.x - source.x));
+                } else {
+                    VisualEffects.draw(g, VisualEffects.Sprite.LIGHT, orbX, orbY,
+                            Math.max(width, height), animation.color(), .36f, progress);
+                }
                 if (cardLunge && progress > .34f && progress < .68f) {
                     float strikeAlpha = 1f - Math.abs(progress - .51f) / .17f;
                     VisualEffects.draw(g, VisualEffects.Sprite.SLASH, target.x, target.y, 104,
                             Color.WHITE, Math.max(0f, strikeAlpha), Math.atan2(target.y - source.y, target.x - source.x));
                 }
                 if (cardDestroy && Fx.particles(gameSettings)) {
-                    g.setComposite(AlphaComposite.SrcOver.derive(Math.max(0f, .82f * (1f - progress))));
-                    g.setColor(new Color(255, 111, 103));
+                    // Textured debris chunks instead of flat circles.
+                    VisualEffects.Sprite[] debris = {VisualEffects.Sprite.DEBRIS_A,
+                            VisualEffects.Sprite.DEBRIS_B, VisualEffects.Sprite.DEBRIS_C};
+                    Color ember = new Color(255, 140, 90);
                     for (int index = 0; index < 12; index++) {
                         double angle = index * Math.PI / 6.0 + .35;
                         int distance = Math.round(18 + progress * 74);
                         int particleX = orbX + (int) Math.round(Math.cos(angle) * distance);
                         int particleY = orbY + (int) Math.round(Math.sin(angle) * distance);
-                        int size = Math.max(3, Math.round(9 * (1f - progress)));
-                        g.fillOval(particleX - size / 2, particleY - size / 2, size, size);
+                        int size = Math.max(8, Math.round(10 + 22 * (1f - progress)));
+                        VisualEffects.draw(g, debris[index % debris.length], particleX, particleY,
+                                size, ember, Math.max(0f, .9f * (1f - progress)), angle + progress * 3.0);
                     }
                     VisualEffects.draw(g, VisualEffects.Sprite.SPARK, orbX, orbY,
                             Math.round(72 + progress * 86), ATTACK, .72f * (1f - progress), progress * 2.4);
@@ -3717,6 +3810,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 case MELEE -> VisualEffects.Sprite.SLASH;
                 case RANGED -> VisualEffects.Sprite.SPARK;
                 case DEPLOY -> VisualEffects.Sprite.LIGHT;
+                case PLAY_FLIGHT -> VisualEffects.Sprite.TRACE; // flights always carry a card; unreachable
                 case SNAP_BACK -> VisualEffects.Sprite.TRACE;
                 case DESTROY -> VisualEffects.Sprite.SPARK;
                 case RULES -> VisualEffects.Sprite.FLAME;

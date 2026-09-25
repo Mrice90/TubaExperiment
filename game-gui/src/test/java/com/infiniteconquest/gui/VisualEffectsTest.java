@@ -15,4 +15,20 @@ class VisualEffectsTest {
             assertTrue(pixels>0,"Effect must render");
         }
     }
+
+    @Test void everySpriteLoadsAndRenders() {
+        assertTrue(VisualEffects.Sprite.values().length >= 13,
+                "summon swirl and debris sprites must be registered");
+        for (VisualEffects.Sprite sprite : VisualEffects.Sprite.values()) {
+            BufferedImage image = new BufferedImage(140, 140, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g = image.createGraphics();
+            VisualEffects.draw(g, sprite, 70, 70, 64, Color.WHITE, 1, 0);
+            g.dispose();
+            int pixels = 0;
+            for (int y = 0; y < 140; y++)
+                for (int x = 0; x < 140; x++)
+                    if ((image.getRGB(x, y) >>> 24) != 0) pixels++;
+            assertTrue(pixels > 0, "sprite must render pixels: " + sprite);
+        }
+    }
 }

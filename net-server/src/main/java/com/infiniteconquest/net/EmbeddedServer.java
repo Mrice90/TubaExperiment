@@ -436,6 +436,12 @@ public final class EmbeddedServer implements AutoCloseable {
         if (seat != null)
             send(seat.peer, Protocol.encode(new Protocol.ReactionPrompt(
                     seq, matchId, reactor, options, REACTION_WINDOW_SECONDS)));
+        // The other seat gets a lightweight waiting notice: no card data,
+        // just who is reacting and the timeout.
+        Seat waiting = slots[1 - reactor];
+        if (waiting != null)
+            send(waiting.peer, Protocol.encode(new Protocol.ReactionWaiting(
+                    reactor, REACTION_WINDOW_SECONDS)));
         reaction.timeout = reactionTimers.schedule(
                 () -> {
                     try {

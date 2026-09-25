@@ -37,6 +37,12 @@ public final class NetClient {
                                       List<String> commands, int expiresInSeconds) {}
         /** A reaction window expired unanswered and was auto-passed. */
         default void onReactionTimeout(int player) {}
+        /**
+         * The other seat is reacting: show a lightweight waiting indicator
+         * and lock spell/attack input until the window resolves. Carries no
+         * card data. Only delivered to the non-reacting player.
+         */
+        default void onReactionWaiting(int reactingPlayer, int secondsLeft) {}
     }
 
     private final NetTransport transport;
@@ -131,6 +137,11 @@ public final class NetClient {
                 case "reaction_timeout" -> {
                     Protocol.ReactionTimeout timeout = Protocol.decode(line, Protocol.ReactionTimeout.class);
                     dispatch.execute(() -> listener.onReactionTimeout(timeout.player()));
+                }
+                case "reaction_waiting" -> {
+                    Protocol.ReactionWaiting waiting = Protocol.decode(line, Protocol.ReactionWaiting.class);
+                    dispatch.execute(() -> listener.onReactionWaiting(
+                            waiting.reactingPlayer(), waiting.secondsLeft()));
                 }
                 default -> dispatch.execute(() -> listener.onError("Unexpected message: " + type));
             }

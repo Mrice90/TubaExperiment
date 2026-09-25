@@ -1,0 +1,33 @@
+Free VFX Asset Pack — provenance and license
+============================================
+
+Pack:    "Free VFX Asset Pack" (22 pixel-art effects made with SpriteMancer)
+Author:  CodeManu (CodeManuPro)
+License: CC0 1.0 Universal / public domain dedication.
+         The OpenGameArt page states: "This is a public domain asset, you can
+         use it for both personal and comercial purposes."
+         No credit required; attribution recorded here for provenance only.
+
+Sources:
+  - https://codemanu.itch.io/vfx-free-pack
+  - https://opengameart.org/content/free-vfx-asset-pack
+
+Files in this directory are single frames extracted (no pixel edits, only
+PNG re-encoding) from the pack's own animated GIF previews, fetched via the
+korlibs/korge-free-gfx mirror which republishes the pack under CC0
+(https://github.com/korlibs/korge-free-gfx/tree/HEAD/CodeManuPro):
+
+  vortex_swirl.png   - frame 19 (0-based) of the 48-frame Effect_TheVortex.gif
+                       (cyan spiral vortex). The frame's luminance was baked
+                       into its alpha channel (white RGB) so the game's
+                       silhouette-tint pipeline preserves the spiral arms when
+                       the swirl is tinted the summoning faction's color.
+                       Used as the summon-arrival swirl.
+  ember_debris_a.png - frame 26 (0-based) of the 41-frame Effect_Explosion.gif
+                       (chunky fire clusters). Destroy-debris variant A.
+  ember_debris_b.png - frame 32 (0-based) of the 44-frame Effect_Explosion2.gif
+                       (scattered ember ring). Destroy-debris variant B.
+  ember_debris_c.png - frame 27 (0-based) of the 44-frame Effect_Explosion2.gif
+                       (fire ring with embers). Destroy-debris variant C.
+
+Total: ~51 KB.

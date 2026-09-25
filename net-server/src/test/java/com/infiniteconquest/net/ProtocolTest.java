@@ -25,6 +25,7 @@ class ProtocolTest {
         assertRoundTrip(new Protocol.ReactionDecision("react 2 3 4"), Protocol.ReactionDecision.class);
         assertRoundTrip(new Protocol.ReactionDecision(null), Protocol.ReactionDecision.class);
         assertRoundTrip(new Protocol.ReactionTimeout(1), Protocol.ReactionTimeout.class);
+        assertRoundTrip(new Protocol.ReactionWaiting(1, 60), Protocol.ReactionWaiting.class);
     }
 
     private <T> void assertRoundTrip(T message, Class<T> type) {
@@ -46,6 +47,7 @@ class ProtocolTest {
         if (message instanceof Protocol.ReactionPrompt r) return r.type();
         if (message instanceof Protocol.ReactionDecision r) return r.type();
         if (message instanceof Protocol.ReactionTimeout r) return r.type();
+        if (message instanceof Protocol.ReactionWaiting r) return r.type();
         throw new IllegalArgumentException("unexpected");
     }
 

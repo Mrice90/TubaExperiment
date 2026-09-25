@@ -13,6 +13,22 @@ Infinite Conquest prefers CC0 and public-domain visual assets so the game can be
 
 These transparent sprites are dynamically scaled, tinted, rotated, and composited into battle animations, victory/defeat presentation, and card illustrations. Credit is not required by CC0, but is retained here in appreciation and to preserve provenance.
 
+## Free VFX Asset Pack (additional particle pack, 2026-09-25)
+
+- Pack: "Free VFX Asset Pack" — 22 pixel-art effects made with SpriteMancer
+- Creator: CodeManu (CodeManuPro)
+- Original asset pages: https://codemanu.itch.io/vfx-free-pack and https://opengameart.org/content/free-vfx-asset-pack
+- License: CC0 1.0 Universal / public domain dedication ("This is a public domain asset, you can use it for both personal and comercial purposes.")
+- License/provenance text: `game-gui/src/main/resources/vfx/free-vfx-pack/LICENSE.txt`
+- Imported files (single frames extracted from the pack's own animated GIF previews, no pixel edits):
+  - `vortex_swirl.png` — frame 19 (0-based) of the 48-frame `Effect_TheVortex.gif`; wired as the summon-arrival swirl
+  - `ember_debris_a.png` — frame 26 of the 41-frame `Effect_Explosion.gif`; destroy-debris variant
+  - `ember_debris_b.png` — frame 32 of the 44-frame `Effect_Explosion2.gif`; destroy-debris variant
+  - `ember_debris_c.png` — frame 27 of the 44-frame `Effect_Explosion2.gif`; destroy-debris variant
+- Total: ~51 KB (well under the few-hundred-KB budget)
+
+The vortex is spun up at the deploy destination as a unit lands; the ember frames replace the previous flat destroy particles as textured, spinning debris chunks. Credit is not required by CC0, but is retained here in appreciation and to preserve provenance.
+
 ## Kenney audio packs (CC0)
 
 - Creator: Kenney Vleugels (Kenney.nl)

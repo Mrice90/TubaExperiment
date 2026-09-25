@@ -316,6 +316,11 @@ public final class NetSession implements NetClient.Listener, AutoCloseable {
             battle.onReactionTimeout(player);
     }
 
+    @Override public void onReactionWaiting(int reactingPlayer, int secondsLeft) {
+        for (NetClient.Listener battle : battleListeners)
+            battle.onReactionWaiting(reactingPlayer, secondsLeft);
+    }
+
     @Override public void onStateUpdate(long seq, String command, String result, int actor,
                                         GameSnapshot snapshot) {
         for (NetClient.Listener battle : battleListeners)

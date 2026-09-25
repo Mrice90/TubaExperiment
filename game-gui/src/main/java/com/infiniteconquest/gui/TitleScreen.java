@@ -4,6 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
@@ -27,6 +28,14 @@ final class TitleScreen extends JPanel implements ShellScreen {
     private BufferedImage zeusArt;
     private BufferedImage poseidonArt;
     private int selectedIndex;
+    /** Drifting storm clouds layered over the backdrop. */
+    private final List<StormCloud> clouds = new ArrayList<>();
+    private BufferedImage cloudSprite;
+    /** Lightning state: 1 at the strike, easing back to 0. */
+    private double boltFlash;
+    private double nextBolt = 3;
+    private long boltSeed;
+    private float boltX = .2f;
 
     TitleScreen(GameShell shell, GameSettings settings) {
         this.shell = shell;
@@ -58,6 +67,61 @@ final class TitleScreen extends JPanel implements ShellScreen {
         installKeyboard();
     }
 
+    /** A soft procedural storm cloud: position, scale, drift speed, base alpha. */
+    private static final class StormCloud {
+        float x, y, scale, speed, alpha;
+        StormCloud(float x, float y, float scale, float speed, float alpha) {
+            this.x = x; this.y = y; this.scale = scale; this.speed = speed; this.alpha = alpha;
+        }
+    }
+
+    /** Builds the shared cloud puff: layered soft blobs tinted storm blue-grey. */
+    private static BufferedImage makeCloudSprite() {
+        BufferedImage sprite = new BufferedImage(480, 180, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g = sprite.createGraphics();
+        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        Random r = new Random(7);
+        for (int i = 0; i < 18; i++) {
+            int cx = 60 + r.nextInt(360), cy = 55 + r.nextInt(70);
+            int rad = 40 + r.nextInt(70);
+            int base = 46 + r.nextInt(22);
+            Color core = new Color(base, base + 10, base + 30, 30);
+            Color edge = new Color(base, base + 10, base + 30, 0);
+            RadialGradientPaint paint = new RadialGradientPaint(cx, cy, rad,
+                    new float[]{0f, .7f, 1f},
+                    new Color[]{core, new Color(base, base + 10, base + 30, 12), edge});
+            g.setPaint(paint);
+            g.fillOval(cx - rad, cy - rad, rad * 2, rad * 2);
+        }
+        g.dispose();
+        return sprite;
+    }
+
+    private void seedClouds() {
+        clouds.clear();
+        for (int i = 0; i < 4; i++) {
+            clouds.add(new StormCloud(random.nextFloat() * 1.2f, .03f + random.nextFloat() * .28f,
+                    .8f + random.nextFloat() * 1.1f, .010f + random.nextFloat() * .018f,
+                    .10f + random.nextFloat() * .12f));
+        }
+    }
+
+    /** Advances clouds and lightning; called from the animation timer. */
+    private void updateWeather(double dt) {
+        for (StormCloud cloud : clouds) {
+            cloud.x -= cloud.speed * dt;
+            if (cloud.x < -.45f) cloud.x = 1.35f;
+        }
+        nextBolt -= dt;
+        if (nextBolt <= 0) {
+            boltFlash = 1;
+            boltSeed = random.nextLong();
+            boltX = random.nextBoolean() ? .04f + random.nextFloat() * .24f : .72f + random.nextFloat() * .24f;
+            nextBolt = 4 + random.nextDouble() * 6;
+            // Distant lightning stays silent: no thunder cue in the library.
+        }
+        boltFlash = Math.max(0, boltFlash - dt / .9);
+    }
     private void addMenuButton(JPanel column, String text, java.util.function.Consumer<ActionEvent> action) {
         ShellUi.MenuButton button = new ShellUi.MenuButton(text);
         button.addActionListener(action::accept);
@@ -106,6 +170,10 @@ final class TitleScreen extends JPanel implements ShellScreen {
         boolean animated = settings.animationMode == GameSettings.AnimationMode.FULL;
         banner.entrance = animated ? 0f : 1f;
         for (FadePanel panel : fadePanels) panel.alpha = animated ? 0f : 1f;
+        if (cloudSprite == null) cloudSprite = makeCloudSprite();
+        seedClouds();
+        boltFlash = 0;
+        nextBolt = 3;
         if (animated) {
             long start = System.currentTimeMillis();
             entranceTimer = new Timer(16, null);
@@ -129,6 +197,7 @@ final class TitleScreen extends JPanel implements ShellScreen {
                     Particle p = particles.get(i).drift();
                     particles.set(i, p.life() <= 0 ? spawn(false) : p);
                 }
+                updateWeather(.033);
                 repaint();
             });
             particleTimer.start();
@@ -169,16 +238,59 @@ final class TitleScreen extends JPanel implements ShellScreen {
         int w = getWidth(), h = getHeight();
         ShellUi.paintBackdrop(g, w, h);
         ShellUi.paintBackdropImage(g, backdrop, w, h, 0.62f);
+        paintClouds(g, w, h);
         for (Particle p : particles) {
             float fade = Math.min(1f, p.life() / (float) p.maxLife() * 2f);
             g.setColor(new Color(p.color().getRed(), p.color().getGreen(), p.color().getBlue(),
                     Math.round(150 * Math.min(1f, fade))));
             g.fillOval(Math.round(p.x()), Math.round(p.y()), Math.round(p.size()), Math.round(p.size()));
         }
+        paintBolt(g, w, h);
         ShellUi.paintVignette(g, w, h);
         paintCapitalChip(g, zeusArt, (int) (w * 0.13), h / 2, "ZEUS");
         paintCapitalChip(g, poseidonArt, (int) (w * 0.87), h / 2, "POSEIDON");
         g.dispose();
+    }
+
+    /** Layers the drifting storm clouds over the backdrop; lightning brightens them. */
+    private void paintClouds(Graphics2D g, int w, int h) {
+        if (cloudSprite == null || w <= 0) return;
+        float brighten = (float) Math.min(.28, boltFlash * .28);
+        for (StormCloud cloud : clouds) {
+            int cw = Math.round(w * .55f * cloud.scale);
+            int ch = Math.round(cw * cloudSprite.getHeight() / (float) cloudSprite.getWidth());
+            int x = Math.round(cloud.x * w - cw / 2f);
+            int y = Math.round(cloud.y * h);
+            g.setComposite(AlphaComposite.SrcOver.derive(Math.min(.55f, cloud.alpha + brighten)));
+            g.drawImage(cloudSprite, x, y, cw, ch, null);
+        }
+        g.setComposite(AlphaComposite.SrcOver);
+    }
+
+    /** Draws the distant lightning bolt and the sky flash that follows it. */
+    private void paintBolt(Graphics2D g, int w, int h) {
+        float fade = Fx.easeOutCubic((float) Math.max(0, Math.min(1, boltFlash)));
+        if (fade <= 0f) return;
+        Random r = new Random(boltSeed);
+        Path2D bolt = new Path2D.Float();
+        int x = Math.round(boltX * w), y = 0;
+        bolt.moveTo(x, y);
+        while (y < h * .55) {
+            y += 30 + r.nextInt(50);
+            x += r.nextInt(70) - 35;
+            bolt.lineTo(x, y);
+        }
+        g.setComposite(AlphaComposite.SrcOver.derive(.8f * fade));
+        g.setStroke(new BasicStroke(9f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(new Color(150, 190, 255, 90));
+        g.draw(bolt);
+        g.setStroke(new BasicStroke(3f, BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND));
+        g.setColor(new Color(225, 235, 255));
+        g.draw(bolt);
+        g.setComposite(AlphaComposite.SrcOver.derive(.20f * fade));
+        g.setColor(new Color(190, 210, 255));
+        g.fillRect(0, 0, w, h);
+        g.setComposite(AlphaComposite.SrcOver);
     }
 
     private void paintCapitalChip(Graphics2D g, BufferedImage art, int centerX, int centerY, String label) {
