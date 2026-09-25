@@ -36,6 +36,42 @@ class UpdateLogicTest {
     }
 
     @Test
+    void sha256LinesParseFromReleaseBody() {
+        String updateHex = "ab".repeat(32);
+        String setupHex = "CD".repeat(32); // uppercase tolerated, normalized down
+        String body = "## Notes\n\n### Integrity (SHA-256)\n\n"
+                + "SHA256-Update: " + updateHex + "  (InfiniteConquest-Update-0.7.5.zip)\n"
+                + "SHA256-Setup: " + setupHex + "  (InfiniteConquest-Alpha-0.7.5-Setup.exe)\n";
+        assertEquals(updateHex, UpdateChecker.parseSha256(body, "Update"));
+        assertEquals(setupHex.toLowerCase(), UpdateChecker.parseSha256(body, "Setup"));
+        assertEquals("", UpdateChecker.parseSha256(body, "Portable"));
+        assertEquals("", UpdateChecker.parseSha256("no hashes here", "Update"));
+    }
+
+    @Test
+    void sha256ParseRejectsMalformedHashes() {
+        assertEquals("", UpdateChecker.parseSha256("SHA256-Update: not-a-hash", "Update"));
+        assertEquals("", UpdateChecker.parseSha256("SHA256-Update: " + "ab".repeat(31), "Update"));
+        assertEquals("", UpdateChecker.parseSha256("SHA256-Update: " + "zz".repeat(32), "Update"));
+    }
+
+    @Test
+    void parseReleaseCarriesExpectedHashes() throws Exception {
+        String hex = "01".repeat(32);
+        String json = "{\"tag_name\":\"v9.9.9-alpha\","
+                + "\"body\":\"notes\\nSHA256-Update: " + hex + "  (f.zip)\\n"
+                + "SHA256-Setup: " + hex + "  (s.exe)\","
+                + "\"assets\":[{\"name\":\"InfiniteConquest-Update-9.9.9.zip\","
+                + "\"browser_download_url\":\"https://example.com/u.zip\",\"size\":42}]}";
+        UpdateChecker.UpdateInfo info = UpdateChecker.parseRelease(json);
+        assertNotNull(info);
+        assertEquals("9.9.9", info.version());
+        assertEquals("https://example.com/u.zip", info.updateZipUrl());
+        assertEquals(hex, info.updateZipSha256());
+        assertEquals(hex, info.setupSha256());
+    }
+
+    @Test
     void installedBuildDetectionLooksForUninstaller() throws Exception {
         var tmp = java.nio.file.Files.createTempDirectory("ic-installroot");
         try {

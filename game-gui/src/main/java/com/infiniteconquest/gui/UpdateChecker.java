@@ -24,9 +24,11 @@ final class UpdateChecker {
     private static final String UPDATE_ASSET_PREFIX = "InfiniteConquest-Update-";
     private static final Duration TIMEOUT = Duration.ofSeconds(15);
 
-    /** What a newer release offers. Null urls mean that package wasn't published. */
+    /** What a newer release offers. Null urls mean that package wasn't published.
+     * The sha256 fields carry the expected SHA-256 hex of the matching asset,
+     * parsed from the release notes; empty when the notes carry no hash. */
     record UpdateInfo(String version, String changelog, String updateZipUrl, long updateZipBytes,
-                      String setupUrl) { }
+                      String setupUrl, String updateZipSha256, String setupSha256) { }
 
     private final HttpClient http = HttpClient.newBuilder().connectTimeout(TIMEOUT).build();
 
@@ -69,7 +71,29 @@ final class UpdateChecker {
                 setupUrl = url;
             }
         }
-        return new UpdateInfo(version, changelog, updateZipUrl, updateZipBytes, setupUrl);
+        return new UpdateInfo(version, changelog, updateZipUrl, updateZipBytes, setupUrl,
+                parseSha256(changelog, "Update"), parseSha256(changelog, "Setup"));
+    }
+
+    /**
+     * Extracts an expected SHA-256 hex digest from the release notes. The
+     * release script publishes one {@code SHA256-<key>: <hex>} line per asset;
+     * the digest is the first whitespace-delimited token after the colon, so a
+     * trailing filename comment is tolerated. Returns "" when absent or
+     * malformed. Pure, for tests.
+     */
+    static String parseSha256(String body, String key) {
+        String prefix = "SHA256-" + key + ":";
+        for (String line : body.split("\n")) {
+            String t = line.strip();
+            if (t.regionMatches(true, 0, prefix, 0, prefix.length())) {
+                String rest = t.substring(prefix.length()).strip();
+                int space = rest.indexOf(' ');
+                String hex = (space < 0 ? rest : rest.substring(0, space)).toLowerCase();
+                if (hex.matches("[0-9a-f]{64}")) return hex;
+            }
+        }
+        return "";
     }
 
     /** Prefers the asset whose embedded version is newest. */

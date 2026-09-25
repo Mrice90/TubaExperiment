@@ -25,6 +25,20 @@ import java.util.zip.ZipFile;
  * holds them open), so new jars land in {@code app/pending/} and the launcher
  * script swaps them in before Java starts. The launcher script itself is never
  * locked, so it is replaced directly.
+ *
+ * <p>Every downloaded byte is SHA-256-verified against the hash published in
+ * the release notes BEFORE anything is staged or backed up; a mismatch (or a
+ * release with no published hash) aborts, deletes the download, and logs to
+ * app/update.log. Tampered or truncated bytes therefore never reach
+ * app/pending/.
+ *
+ * <p>KNOWN LIMITATION (deliberate, $0 budget): SHA-256 proves the bytes match
+ * what the release author published, but GitHub release notes are not signed.
+ * A compromised GitHub account or token could publish a matching hash for a
+ * malicious package. Full protection would need signed releases (PGP/cosign)
+ * with a baked-in verification key; the hash check still defeats corrupted
+ * downloads, CDN/proxy corruption, and transport-level tampering, which is
+ * the realistic threat on this budget.
  */
 final class UpdateApplier {
     private static final Duration TIMEOUT = Duration.ofMinutes(10);
@@ -70,7 +84,94 @@ final class UpdateApplier {
             }
             progress.accept(100);
 
-            List<String> jarEntries = new ArrayList<>();
+            // Integrity gate: verify BEFORE the zip is even opened, so no
+            // byte of an unverified download can reach the staging logic.
+            return stageVerifiedDownload(download, root, info);
+        } finally {
+            Files.deleteIfExists(download);
+        }
+    }
+
+    /**
+     * Verifies a fully-downloaded update zip against its expected SHA-256 and
+     * stages it. Package-visible so tests can exercise the verify-before-stage
+     * ordering without the network: the download step is the only part skipped.
+     */
+    static Path stageVerifiedDownload(Path download, Path root, UpdateChecker.UpdateInfo info)
+            throws IOException {
+        verifyDownload(download, info.updateZipSha256(), root, "update package");
+        return stageFromDownload(download, root, info);
+    }
+
+    /**
+     * Verifies a downloaded file against the expected SHA-256 hex from the
+     * release notes. On mismatch — or when the release carries no hash at all
+     * (fail-closed: an old release without hashes must not be trusted silently) —
+     * logs to app/update.log and throws. The caller's temp file is left for
+     * its own finally block to delete; nothing is staged first.
+     */
+    static void verifyDownload(Path download, String expectedHex, Path root, String what)
+            throws IOException {
+        String actual;
+        try {
+            actual = sha256Hex(download);
+        } catch (IOException e) {
+            appendUpdateLog(root, "ERROR: could not hash downloaded " + what + ": " + e);
+            throw new IOException("Download failed verification: "
+                    + "could not read the downloaded file.", e);
+        }
+        if (expectedHex == null || expectedHex.isEmpty()) {
+            appendUpdateLog(root, "ERROR: " + what
+                    + " has no expected SHA-256 in the release notes; refusing to apply.");
+            throw new IOException("Download failed verification: "
+                    + "the release notes carry no integrity hash for this package. "
+                    + "Please download the new version manually from the release page.");
+        }
+        if (!actual.equalsIgnoreCase(expectedHex)) {
+            appendUpdateLog(root, "ERROR: " + what + " failed SHA-256 verification: expected "
+                    + expectedHex + ", got " + actual + ". Download discarded; nothing was changed.");
+            throw new IOException("Download failed verification: "
+                    + "the downloaded file does not match the SHA-256 hash published with the release. "
+                    + "The download was discarded and nothing was changed. "
+                    + "Try again, or download manually from the release page.");
+        }
+        appendUpdateLog(root, what + " passed SHA-256 verification.");
+    }
+
+    /**
+     * SHA-256 hex digest of a file. MessageDigest is JDK-bundled: no new
+     * dependencies. Pure, for tests.
+     */
+    static String sha256Hex(Path file) throws IOException {
+        try {
+            java.security.MessageDigest digest =
+                    java.security.MessageDigest.getInstance("SHA-256");
+            try (InputStream in = Files.newInputStream(file)) {
+                byte[] buf = new byte[65536];
+                int n;
+                while ((n = in.read(buf)) >= 0) {
+                    digest.update(buf, 0, n);
+                }
+            }
+            StringBuilder sb = new StringBuilder(64);
+            for (byte b : digest.digest()) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (java.security.NoSuchAlgorithmException e) {
+            // SHA-256 is mandatory in every JDK; unreachable in practice.
+            throw new IOException("SHA-256 unavailable in this JVM", e);
+        }
+    }
+
+    /**
+     * Opens an already-verified update zip and stages its contents: backs up
+     * the running jars, stages new jars (+ cloudflared.exe) into app/pending/,
+     * and replaces the launcher script. Package-visible for tests.
+     */
+    static Path stageFromDownload(Path download, Path root, UpdateChecker.UpdateInfo info)
+            throws IOException {
+        List<String> jarEntries = new ArrayList<>();
             String launcherEntry = null;
             String cloudflaredEntry = null;
             try (ZipFile zip = new ZipFile(download.toFile())) {
@@ -133,9 +234,6 @@ final class UpdateApplier {
                     + " jar(s)" + (cloudflaredEntry != null ? " + cloudflared.exe" : "")
                     + (launcherEntry != null ? ", launcher script replaced" : ""));
             return root;
-        } finally {
-            Files.deleteIfExists(download);
-        }
     }
 
     /** Downloads the full installer and launches it, then exits for the upgrade. */
@@ -158,6 +256,14 @@ final class UpdateApplier {
         try (InputStream in = response.body();
              OutputStream out = Files.newOutputStream(setup)) {
             in.transferTo(out);
+        }
+        // Same integrity gate as the jars path: a tampered installer must
+        // never be left in temp, let alone executed.
+        try {
+            verifyDownload(setup, info.setupSha256(), UpdateChecker.installRoot(), "installer");
+        } catch (IOException e) {
+            Files.deleteIfExists(setup);
+            throw e;
         }
         progress.accept(100);
         return setup;
