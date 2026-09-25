@@ -246,7 +246,7 @@
       "name": "Olympian Cloudbank",
       "type": "LAND",
       "faction": "ZEUS",
-      "cost": 0,
+      "cost": 1,
       "attack": 0,
       "defense": 0,
       "range": 0,
@@ -967,12 +967,12 @@
       "abilities": [
         {
           "trigger": "ACTIVATED",
-          "effect": "DAMAGE_ENEMY_CAPITAL",
-          "amount": 1,
-          "gpCost": 1
+          "effect": "DRAW_CARD",
+          "amount": 2,
+          "gpCost": 3
         }
       ],
-      "rulesText": "Activate once per turn — 1 GP: deal 1 damage to the enemy Capital.",
+      "rulesText": "Activate once per turn — 3 GP: draw 2 cards.",
       "description": "A cheap, hungry lattice that throws lightning at anything.",
       "rarity": 1,
       "contentStatus": "PROTOTYPE"

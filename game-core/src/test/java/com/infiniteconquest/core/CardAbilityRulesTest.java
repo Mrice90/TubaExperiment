@@ -157,21 +157,25 @@ class CardAbilityRulesTest {
         // DESTROYED dredge: Drowned Archive draws 2 on death.
         CardInstance filler1 = inDeck(state, 0, permanent("filler1", List.of()));
         CardInstance filler2 = inDeck(state, 0, permanent("filler2", List.of()));
-        state.player(0).loadDeck(List.of(filler1.instanceId(), filler2.instanceId()));
+        CardInstance lf1 = inDeck(state, 0, permanent("lf1", List.of()));
+        CardInstance lf2 = inDeck(state, 0, permanent("lf2", List.of()));
+        state.player(0).loadDeck(List.of(filler1.instanceId(), filler2.instanceId(),
+                lf1.instanceId(), lf2.instanceId()));
         int handBefore = state.player(0).hand().size();
         CardInstance archive = add(state, 0,
                 catalog.require("poseidon_drowned_archive").toDefinition(), new BoardPosition(1, 1));
         state.destroy(archive);
         assertEquals(handBefore + 2, state.player(0).hand().size(), "Archive dredges 2 cards");
 
-        // Cheap Zeus burn: Ion Storm Lattice pays 1 GP for 1 Capital damage.
+        // Storm surge engine: Ion Storm Lattice pays 3 GP to draw 2 cards.
         CardInstance lattice = add(state, 0,
                 catalog.require("zeus_ion_storm_lattice").toDefinition(), new BoardPosition(2, 1));
-        state.player(0).restoreGp(1);
+        int handBeforeLattice = state.player(0).hand().size();
+        state.player(0).restoreGp(3);
         int gpBeforeLattice = state.player(0).currentGp();
         assertTrue(engine.apply(state, new GameAction.ActivateAbility(0, lattice.instanceId())).accepted());
-        assertEquals(5, enemyCapital.damage(), "Lattice strike");
-        assertEquals(gpBeforeLattice - 1, state.player(0).currentGp(), "Lattice paid 1 GP");
+        assertEquals(handBeforeLattice + 2, state.player(0).hand().size(), "Lattice surges 2 cards");
+        assertEquals(gpBeforeLattice - 3, state.player(0).currentGp(), "Lattice paid 3 GP");
     }
 
     private CardInstance add(GameState state, int owner, CardDefinition definition, BoardPosition position) {

@@ -53,7 +53,7 @@ class FactionCardSetTest {
                             : card.id().contains("_apex_") ? 19
                             : card.id().contains("_land_") ? 22 : 10), card.id() + " HP");
                 } else if (card.type() == CardType.STRUCTURE) {
-                    // Floor is 4 for cheap fragile burn structures (Ion Storm Lattice);
+                    // Floor is 4 for cheap fragile utility structures (Ion Storm Lattice);
                     // everything else stays at 5+.
                     assertTrue(card.hitPoints() >= 4 && card.hitPoints() <= (card.id().contains("_tutor_") ? 26
                             : card.id().contains("_apex_") ? 24
