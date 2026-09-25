@@ -73,4 +73,34 @@ class MovementRulesTest {
                 .filter(event -> event.type() == GameEvent.Type.OPPORTUNITY_ATTACK).count());
         assertFalse(sentry.attackedThisTurn(), "free attack must not consume the normal attack");
     }
+
+    @Test void movementHalvedInEnemyTerritory() {
+        GameState state = new GameState(11L);
+        // Player 0 invader on player 1's home rows: movement 3 becomes 1.
+        CardInstance invader = character(state, 3, new BoardPosition(1, 4));
+        var destinations = new GameEngine().legalMovementDestinations(state, invader.instanceId());
+        assertFalse(destinations.isEmpty());
+        for (BoardPosition destination : destinations) {
+            assertEquals(1, state.rules().geometry().distance(new BoardPosition(1, 4), destination));
+        }
+    }
+
+    @Test void slowUnitStillMovesOneInEnemyTerritory() {
+        GameState state = new GameState(12L);
+        CardInstance invader = character(state, 1, new BoardPosition(1, 5));
+        var destinations = new GameEngine().legalMovementDestinations(state, invader.instanceId());
+        assertFalse(destinations.isEmpty(), "minimum 1 movement in enemy territory");
+        for (BoardPosition destination : destinations) {
+            assertEquals(1, state.rules().geometry().distance(new BoardPosition(1, 5), destination));
+        }
+    }
+
+    @Test void fullMovementOnOwnSide() {
+        GameState state = new GameState(13L);
+        // Home rows are not enemy territory: full speed.
+        CardInstance scout = character(state, 3, new BoardPosition(1, 1));
+        var destinations = new GameEngine().legalMovementDestinations(state, scout.instanceId());
+        assertTrue(destinations.stream()
+                .anyMatch(d -> state.rules().geometry().distance(new BoardPosition(1, 1), d) == 3));
+    }
 }

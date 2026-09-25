@@ -25,4 +25,11 @@ public record BoardPosition(int x, int y) {
         if (playerId == 1) return y >= PLOT_HEIGHT;
         throw new IllegalArgumentException("Player ID must be 0 or 1");
     }
+
+    /** True when the position sits on the opponent's home plot. */
+    public boolean isOnEnemySide(int playerId) {
+        if (playerId == 0) return y >= PLOT_HEIGHT;
+        if (playerId == 1) return y < PLOT_HEIGHT;
+        throw new IllegalArgumentException("Player ID must be 0 or 1");
+    }
 }

@@ -11,6 +11,8 @@ public final class MovementRules {
         int allowance = character.movementRemaining();
         if (allowance == 0) return Set.of();
         BoardPosition origin = originResult.get();
+        // Invading enemy territory is slow going: halve movement, minimum 1.
+        if (origin.isOnEnemySide(character.owner())) allowance = Math.max(1, allowance / 2);
         Map<BoardPosition, Integer> distance = new HashMap<>();
         ArrayDeque<BoardPosition> queue = new ArrayDeque<>();
         distance.put(origin, 0);

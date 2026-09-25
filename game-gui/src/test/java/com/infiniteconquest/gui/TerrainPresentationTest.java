@@ -14,7 +14,7 @@ class TerrainPresentationTest {
         }
         var turret=new CardDefinition("turret","Turret",CardType.STRUCTURE,"NEUTRAL",0,0,0,0,0,10,Set.of(Keyword.TURRET),List.of(),0,DevelopmentPassive.NONE,List.of(),Map.of(Keyword.TURRET,new KeywordValue(1,10)),Set.of(),0);
         var source=new CardInstance(UUID.randomUUID(),turret,1-owner,Zone.BATTLEFIELD);state.register(source);state.board().push(new BoardPosition(0,0),source.instanceId());
-        var mover=new CardInstance(UUID.randomUUID(),new CardDefinition("mover","Mover",CardType.CHARACTER,"NEUTRAL",0,1,5,4,1),owner,Zone.BATTLEFIELD);state.register(mover);state.board().push(new BoardPosition(3,0),mover.instanceId());
+        var mover=new CardInstance(UUID.randomUUID(),new CardDefinition("mover","Mover",CardType.CHARACTER,"NEUTRAL",0,1,5,6,1),owner,Zone.BATTLEFIELD);state.register(mover);state.board().push(new BoardPosition(3,0),mover.instanceId());
         var before=PresentationSnapshot.capture(state);
         assertTrue(new GameEngine().apply(state,new GameAction.MoveCharacter(owner,mover.instanceId(),new BoardPosition(0,1))).accepted());
         assertEquals(Zone.DISCARD,mover.zone());
