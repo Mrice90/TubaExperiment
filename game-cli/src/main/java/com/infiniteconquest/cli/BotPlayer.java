@@ -1,6 +1,7 @@
 package com.infiniteconquest.cli;
 
 import com.infiniteconquest.core.*;
+import com.infiniteconquest.data.Keyword;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -12,21 +13,15 @@ public final class BotPlayer {
     public static final int BOT_ID = 1;
     /**
      * MORTAL mistake model, documented for players: on each decision the bot
-     * misjudges like a human beginner. It is face-blind — it does not even
-     * consider attacking the enemy Capital, preferring to clear the board
-     * like a cautious novice who has not learned to go for the win.
+     * misjudges like a human beginner. It is a cautious novice — it would
+     * rather clear the board than strike the enemy Capital, so it filters out
+     * capital attacks except for obvious lethals (even a beginner takes the
+     * winning hit) and except when the Capital is the only enemy target left.
      * Independently, 25% of the time it explores, picking uniformly among
-     * its top 3 heuristic actions instead of the best one. The face-blindness
-     * is the systematic weakness; the exploration is ordinary epsilon-greedy
-     * noise.
+     * its top 3 heuristic actions instead of the best one. The misplaced
+     * priorities are the systematic weakness; the exploration is ordinary
+     * epsilon-greedy noise.
      */
-    /**
-     * Chance MORTAL ignores Capital attacks on a decision (face-blind).
-     * Set to 1.0: a cautious beginner who never goes for the win. Lower it
-     * if MORTAL ever needs to close games; even 0.8 lets it win nearly half
-     * its games against HERO, so keep this at 1.0 for a clear difficulty gap.
-     */
-    public static final double MORTAL_FACE_BLIND_RATE = 1.00;
     /** Chance MORTAL explores among its top actions instead of taking the best. */
     public static final double MORTAL_MISTAKE_RATE = 0.25;
     /** How many top heuristic actions MORTAL samples from when it explores. */
@@ -102,29 +97,45 @@ public final class BotPlayer {
     }
 
     /**
-     * Human-like mistakes: MORTAL is face-blind — like a cautious beginner it
-     * would rather clear the board than strike the enemy Capital, so most
-     * decisions it does not even consider attacks on Capitals. On top of
-     * that, {@link #MORTAL_MISTAKE_RATE} of the time it explores, picking
+     * Human-like mistakes: MORTAL plays like a cautious beginner. It would
+     * rather clear the board than strike the enemy Capital, so non-lethal
+     * capital attacks are filtered out of its options — but it still takes
+     * an obvious lethal on the Capital, and it still attacks the Capital
+     * when nothing else is left to hit. On top of that,
+     * {@link #MORTAL_MISTAKE_RATE} of the time it explores, picking
      * uniformly among its top {@link #MORTAL_EXPLORATION_WIDTH} heuristic
      * actions instead of the best. RNG draws happen in a fixed order per
      * decision, so a seeded {@link Random} reproduces the same game exactly.
      */
     private String mortalChoice(GameState state, List<String> legal, int playerId) {
-        List<String> pool = legal;
-        if (random.nextDouble() < MORTAL_FACE_BLIND_RATE) {
-            List<String> noFace = new ArrayList<>(legal.size());
-            for (String command : legal) {
-                if (isCapitalAttack(state, command)) continue;
-                noFace.add(command);
-            }
-            if (!noFace.isEmpty()) pool = noFace;
-        }
+        List<String> pool = filterCapitalAttacks(state, legal);
         List<String> ranked = ranked(state, pool, playerId);
         if (ranked.size() > 1 && random.nextDouble() < MORTAL_MISTAKE_RATE) {
             return ranked.get(random.nextInt(Math.min(MORTAL_EXPLORATION_WIDTH, ranked.size())));
         }
         return ranked.get(0);
+    }
+
+    /**
+     * The novice's misplaced priorities: drop attacks on the enemy Capital
+     * unless the attack would obviously destroy it, or unless the Capital is
+     * the only enemy target available. Never returns an empty pool — if every
+     * legal command was a filtered capital attack, the full list is kept.
+     */
+    private List<String> filterCapitalAttacks(GameState state, List<String> legal) {
+        List<String> capitalAttacks = new ArrayList<>();
+        List<String> others = new ArrayList<>(legal.size());
+        for (String command : legal) {
+            if (isCapitalAttack(state, command)) capitalAttacks.add(command);
+            else others.add(command);
+        }
+        if (capitalAttacks.isEmpty()) return legal;
+        boolean anyOtherAttackTarget = others.stream().anyMatch(command -> command.startsWith("attack"));
+        if (!anyOtherAttackTarget) return legal; // nothing else to hit: even a novice swings at the Capital
+        for (String command : capitalAttacks) {
+            if (isLethalCapitalAttack(state, command)) others.add(command); // even a novice takes lethal
+        }
+        return others.isEmpty() ? legal : others;
     }
 
     /** True if the command attacks a Capital. */
@@ -134,6 +145,25 @@ public final class BotPlayer {
         BoardPosition target = new BoardPosition(Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
         return state.board().topAt(target).flatMap(state::card)
                 .map(card -> card.definition().type() == CardType.CAPITAL).orElse(false);
+    }
+
+    /**
+     * True if the attack would obviously destroy the enemy Capital: the
+     * attacker's power (doubled by SIEGE, as the engine applies it) meets or
+     * beats the Capital's remaining hit points. Terrain damage reduction is
+     * ignored on purpose — a novice misjudges that, and erring toward
+     * attacking the Capital is the desired direction.
+     */
+    private boolean isLethalCapitalAttack(GameState state, String command) {
+        String[] parts = command.split("\\s+");
+        BoardPosition from = new BoardPosition(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        BoardPosition target = new BoardPosition(Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
+        CardInstance attacker = state.board().topAt(from).flatMap(state::card).orElse(null);
+        CardInstance capital = state.board().topAt(target).flatMap(state::card).orElse(null);
+        if (attacker == null || capital == null || capital.definition().type() != CardType.CAPITAL) return false;
+        int power = attacker.effectiveAttack();
+        if (attacker.definition().hasKeyword(Keyword.SIEGE)) power *= 2;
+        return power >= capital.definition().hitPoints() - capital.damage();
     }
 
     /**
@@ -162,19 +192,21 @@ public final class BotPlayer {
 
     /**
      * Position evaluation from {@code playerId}'s perspective. An immediate
-     * win/loss dwarfs everything; otherwise material (attack + remaining
-     * defense of non-Capital permanents), Capital health, GP, and hand size
-     * differentials decide, with weights tuned so killing the enemy Capital
-     * always outranks incremental gains.
+     * win/loss dwarfs everything — a simulated move that destroys the enemy
+     * Capital scores near-infinite, so lethal-on-capital detection dominates
+     * the score automatically. Otherwise the Capital-health differential is
+     * the primary axis: dealing Capital damage and preventing own-Capital
+     * damage outrank material, GP, and hand-size differentials by an order
+     * of magnitude, because the Capital is the win condition.
      */
     private double evaluate(GameState state, int playerId) {
         int foe = 1 - playerId;
         if (state.winner().isPresent()) return state.winner().getAsInt() == playerId ? 1e9 : -1e9;
-        double material = materialValue(state, playerId) - materialValue(state, foe);
         double capitals = capitalHealth(state, playerId) - capitalHealth(state, foe);
+        double material = materialValue(state, playerId) - materialValue(state, foe);
         double gp = state.player(playerId).currentGp() - state.player(foe).currentGp();
         double cards = state.player(playerId).hand().size() - state.player(foe).hand().size();
-        return 10.0 * material + 30.0 * capitals + 1.5 * gp + 2.0 * cards;
+        return 100.0 * capitals + 10.0 * material + 1.5 * gp + 2.0 * cards;
     }
 
     private double materialValue(GameState state, int playerId) {
@@ -210,9 +242,23 @@ public final class BotPlayer {
         int base = switch (parts[0]) {
             case "cast", "react" -> spellScore(state, parts, playerId);
             case "attack" -> {
+                BoardPosition from = new BoardPosition(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
                 BoardPosition target = new BoardPosition(Integer.parseInt(parts[3]), Integer.parseInt(parts[4]));
+                CardInstance attacker = state.board().topAt(from).flatMap(state::card).orElseThrow();
                 CardInstance card = state.board().topAt(target).flatMap(state::card).orElseThrow();
-                yield card.definition().isPermanent() ? 115 : 105;
+                if (card.definition().type() == CardType.CAPITAL) {
+                    // Destroying the Capital wins the game. A lethal strike is
+                    // the best possible action; chip damage is worth dealing,
+                    // but killing enemy Characters that threaten our own
+                    // Capital comes first.
+                    int power = attacker.effectiveAttack();
+                    if (attacker.definition().hasKeyword(Keyword.SIEGE)) power *= 2;
+                    int remaining = card.definition().hitPoints() - card.damage();
+                    yield power >= remaining ? 150 : 108;
+                }
+                // Characters are threats to the Capital; other permanents are
+                // support pieces — worth hitting, but not before the real war.
+                yield card.definition().type() == CardType.CHARACTER ? 110 : 95;
             }
             case "play" -> {
                 int index = Integer.parseInt(parts[1]);

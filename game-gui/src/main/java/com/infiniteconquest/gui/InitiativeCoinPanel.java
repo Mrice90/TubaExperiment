@@ -1,9 +1,11 @@
 package com.infiniteconquest.gui;
 
+import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 import java.awt.*;
 import java.awt.geom.Ellipse2D;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
 import static com.infiniteconquest.gui.UiTheme.*;
 
 /** A tossed disk: trajectory and face mapping are independent of the selected surface art. */
@@ -12,9 +14,12 @@ final class InitiativeCoinPanel extends JPanel {
     enum Skin {
         OLYMPIAN_GOLD("Olympian Gold",new Color(255,235,149),new Color(156,92,25)),
         MOON_SILVER("Moon Silver",new Color(236,248,255),new Color(86,110,139)),
-        OBSIDIAN("Obsidian",new Color(126,108,172),new Color(25,19,42));
-        final String label; final Color light,dark;
-        Skin(String label,Color light,Color dark){this.label=label;this.light=light;this.dark=dark;}
+        OBSIDIAN("Obsidian",new Color(126,108,172),new Color(25,19,42)),
+        ZEUS("Zeus",new Color(255,235,149),new Color(156,92,25),"/art/coins/zeus.png"),
+        POSEIDON("Poseidon",new Color(236,248,255),new Color(44,84,130),"/art/coins/poseidon.png");
+        final String label; final Color light,dark; final String artPath;
+        Skin(String label,Color light,Color dark){this(label,light,dark,null);}
+        Skin(String label,Color light,Color dark,String artPath){this.label=label;this.light=light;this.dark=dark;this.artPath=artPath;}
         @Override public String toString(){return label;}
     }
     record Pose(double lift,double angle,double tilt) { }
@@ -25,7 +30,26 @@ final class InitiativeCoinPanel extends JPanel {
     InitiativeCoinPanel(int winner) { this(winner,Skin.OLYMPIAN_GOLD); }
     InitiativeCoinPanel(int winner,Skin skin) {
         if(winner<0 || winner>1)throw new IllegalArgumentException("Invalid coin winner");
-        this.winner=winner;this.skin=skin;faces=new BufferedImage[]{surface(skin,"I"),surface(skin,"II")};setOpaque(false);
+        this.winner=winner;this.skin=skin;faces=facesFor(skin);setOpaque(false);
+    }
+    /** Package-visible for tests: the rendered face images, 240x240 each. */
+    BufferedImage faceImage(int index){return faces[index];}
+    /** Package-visible for tests: true when the skin's generated art loaded from resources. */
+    boolean facesFromArt(){return skin.artPath!=null&&loadArt(skin.artPath)!=null;}
+    private static BufferedImage[] facesFor(Skin skin) {
+        if(skin.artPath!=null){
+            BufferedImage art=loadArt(skin.artPath);
+            if(art!=null)return new BufferedImage[]{art,art};
+        }
+        return new BufferedImage[]{surface(skin,"I"),surface(skin,"II")};
+    }
+    private static BufferedImage loadArt(String path) {
+        try(var stream=InitiativeCoinPanel.class.getResourceAsStream(path)){
+            if(stream==null)return null;
+            BufferedImage image=ImageIO.read(stream);
+            if(image==null||image.getWidth()!=240||image.getHeight()!=240)return null;
+            return image;
+        }catch(IOException e){return null;}
     }
     void setProgress(double value){progress=Math.max(0,Math.min(1,value));repaint();}
     static double angle(double progress,int winner){return pose(progress,winner).angle();}

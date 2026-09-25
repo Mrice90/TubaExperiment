@@ -27,4 +27,33 @@ class InitiativeCoinPanelTest {
         assertEquals(0,InitiativeCoinPanel.pose(1,0).lift(),.001);
         assertTrue(InitiativeCoinPanel.DURATION_NANOS>=3_500_000_000L);
     }
+    @Test void zeusAndPoseidonSkinsLoadTheirGeneratedArtFaces() {
+        for(var skin:new InitiativeCoinPanel.Skin[]{InitiativeCoinPanel.Skin.ZEUS,InitiativeCoinPanel.Skin.POSEIDON}) {
+            InitiativeCoinPanel panel=new InitiativeCoinPanel(0,skin);
+            assertTrue(panel.facesFromArt(),skin+" should load its generated coin art");
+            for(int i=0;i<2;i++) {
+                assertNotNull(panel.faceImage(i));
+                assertEquals(240,panel.faceImage(i).getWidth());
+                assertEquals(240,panel.faceImage(i).getHeight());
+            }
+        }
+        InitiativeCoinPanel zeus=new InitiativeCoinPanel(0,InitiativeCoinPanel.Skin.ZEUS);
+        InitiativeCoinPanel poseidon=new InitiativeCoinPanel(0,InitiativeCoinPanel.Skin.POSEIDON);
+        assertFalse(samePixels(zeus.faceImage(0),poseidon.faceImage(0)),"Zeus and Poseidon faces must differ");
+    }
+    @Test void classicSkinsKeepTheirProceduralFaces() {
+        for(var skin:new InitiativeCoinPanel.Skin[]{InitiativeCoinPanel.Skin.OLYMPIAN_GOLD,InitiativeCoinPanel.Skin.MOON_SILVER,InitiativeCoinPanel.Skin.OBSIDIAN}) {
+            InitiativeCoinPanel panel=new InitiativeCoinPanel(1,skin);
+            assertFalse(panel.facesFromArt(),skin+" should keep its procedural faces");
+            assertNotNull(panel.faceImage(0));
+            assertNotNull(panel.faceImage(1));
+            assertFalse(samePixels(panel.faceImage(0),panel.faceImage(1)),"procedural faces I and II must differ");
+        }
+    }
+    private static boolean samePixels(java.awt.image.BufferedImage a,java.awt.image.BufferedImage b) {
+        if(a.getWidth()!=b.getWidth()||a.getHeight()!=b.getHeight())return false;
+        for(int y=0;y<a.getHeight();y+=7)for(int x=0;x<a.getWidth();x+=7)
+            if(a.getRGB(x,y)!=b.getRGB(x,y))return false;
+        return true;
+    }
 }

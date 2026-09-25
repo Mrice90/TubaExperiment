@@ -252,9 +252,9 @@ public final class GameState {
         }
         if (permanent) capitalPassiveRules.onPermanentDestroyed(this, card);
         if (permanent && phase != Phase.GAME_OVER) {
-            int result = new VictoryEvaluator().winnerAfterPermanentLoss(this, card.owner());
+            int result = new VictoryEvaluator().winnerAfterCapitalLoss(this, card.owner());
             if (result >= 0) {
-                finishGame(result, "Player " + result + " wins");
+                finishGame(result, "Player " + result + " destroyed the enemy Capital");
             }
         }
         if (phase != Phase.GAME_OVER && formerPosition != null) {

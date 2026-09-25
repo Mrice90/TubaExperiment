@@ -14,6 +14,10 @@ class CardAbilityRulesTest {
         CardInstance home = add(state, 0, permanent("home", List.of()), new BoardPosition(0, 0));
         CardInstance enemyCapital = add(state, 1, new CardDefinition("enemy_capital", "Enemy Capital",
                 CardType.CAPITAL, "TEST", 0, 0, 0, 0, 0, 20), new BoardPosition(0, 5));
+        // The capital win rule ends the game when a player has no Capital, so the
+        // fixture needs a home Capital to survive the deathrattle destroy below.
+        add(state, 0, new CardDefinition("home_capital", "Home Capital",
+                CardType.CAPITAL, "TEST", 0, 0, 0, 0, 0, 20), new BoardPosition(3, 5));
 
         CardInstance arrival = add(state, 0, permanent("arrival", List.of(
                 ability(AbilityTrigger.ENTERS_PLAY, AbilityEffectType.GAIN_GP, 2, 0))), new BoardPosition(1, 0));

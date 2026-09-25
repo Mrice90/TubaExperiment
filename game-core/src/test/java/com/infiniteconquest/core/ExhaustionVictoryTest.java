@@ -32,13 +32,18 @@ class ExhaustionVictoryTest {
                 "TEST", 0, 0, 0, 0, 0, 1), position);
         CardInstance structure = add(state, new CardDefinition("structure", "Structure", CardType.STRUCTURE,
                 "TEST", 0, 0, 0, 0, 0, 1), position);
+        // A surviving Capital keeps the game alive under the capital-destruction
+        // win condition, so the buried cascade can be observed.
+        CardInstance capital = add(state, new CardDefinition("capital", "Capital", CardType.CAPITAL,
+                "TEST", 0, 0, 0, 0, 0, 10), new BoardPosition(2, 0));
 
         new GameEngine().apply(state, new GameAction.EndTurn(0));
         new GameEngine().apply(state, new GameAction.EndTurn(1));
 
         assertEquals(Zone.DISCARD, structure.zone());
         assertEquals(Zone.DISCARD, land.zone());
-        assertEquals(Phase.GAME_OVER, state.phase());
+        assertEquals(Zone.BATTLEFIELD, capital.zone());
+        assertEquals(Phase.PLAY, state.phase());
     }
 
     private CardInstance add(GameState state, CardDefinition definition, BoardPosition position) {

@@ -1,10 +1,14 @@
 package com.infiniteconquest.cli;
 
+import com.infiniteconquest.core.BoardPosition;
 import com.infiniteconquest.core.CardDefinition;
+import com.infiniteconquest.core.CardInstance;
+import com.infiniteconquest.core.CardType;
 import com.infiniteconquest.core.GameAction;
 import com.infiniteconquest.core.GameEngine;
 import com.infiniteconquest.core.GameState;
 import com.infiniteconquest.core.Phase;
+import com.infiniteconquest.core.Zone;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -90,23 +94,59 @@ class BotDifficultyTest {
     /**
      * The difficulty ladder, proven by a seat-balanced deterministic
      * tournament on symmetric capital positions (so neither seat gets a
-     * positional edge): DEMIGOD must dominate HERO, and HERO must dominate
-     * MORTAL — MORTAL's face-blindness means it never goes for the Capital,
-     * so it must never win a game against HERO.
+     * positional edge): DEMIGOD must dominate HERO; HERO must outscore
+     * MORTAL; and MORTAL — a novice that still takes obvious lethals and
+     * swings when the Capital is its only target — must win a real share of
+     * its games against HERO now that closing out is possible.
      */
     @Test
     void tournamentProvesDemigodBeatsHeroBeatsMortal() {
         int[] dh = playMatch(BotDifficulty.DEMIGOD, BotDifficulty.HERO, 9100L, 4);
-        assertEquals(0, dh[1], "HERO should never beat DEMIGOD");
         assertTrue(dh[0] >= 3, "DEMIGOD should dominate HERO, got " + dh[0] + " wins");
+        assertTrue(dh[0] > dh[1], "DEMIGOD should beat HERO overall, got " + dh[0] + "-" + dh[1]);
 
         int[] hm = playMatch(BotDifficulty.HERO, BotDifficulty.MORTAL, 9200L, 8);
-        assertEquals(0, hm[1], "MORTAL should never beat HERO");
-        assertTrue(hm[0] >= 2, "HERO should clearly outscore MORTAL, got " + hm[0]);
+        assertTrue(hm[1] > 0, "MORTAL should win at least one game against HERO now");
+        assertTrue(hm[0] > hm[1], "HERO should still outscore MORTAL, got " + hm[0] + "-" + hm[1]);
 
         int[] dm = playMatch(BotDifficulty.DEMIGOD, BotDifficulty.MORTAL, 9300L, 4);
-        assertEquals(0, dm[1], "MORTAL should never beat DEMIGOD");
-        assertTrue(dm[0] > 0, "DEMIGOD should beat MORTAL");
+        assertTrue(dm[0] >= 3, "DEMIGOD should dominate MORTAL, got " + dm[0] + " wins");
+        assertTrue(dm[0] > dm[1], "DEMIGOD should beat MORTAL overall, got " + dm[0] + "-" + dm[1]);
+    }
+
+    /**
+     * MORTAL takes an obvious lethal on the enemy Capital instead of
+     * clearing the board: a constructed position with a 1-HP enemy Capital
+     * in range and a healthy enemy Land as the "cautious" alternative must
+     * still end with the novice swinging at the Capital.
+     */
+    @Test
+    void mortalTakesObviousLethalOnTheCapital() {
+        GameState state = new GameState(424242L);
+        BoardPosition capitalAt = new BoardPosition(2, 2);
+        BoardPosition attackerAt = new BoardPosition(2, 3);
+        BoardPosition landAt = new BoardPosition(2, 4);
+        add(state, 0, new CardDefinition("c_cap", "Cap", CardType.CAPITAL, "T", 0, 0, 0, 0, 0, 1), capitalAt);
+        add(state, 1, new CardDefinition("c_att", "Attacker", CardType.CHARACTER, "T", 0, 5, 3, 0, 1), attackerAt);
+        add(state, 0, new CardDefinition("c_land", "Land", CardType.LAND, "T", 0, 0, 0, 0, 0, 10), landAt);
+        if (state.activePlayer() == 0) new GameEngine().apply(state, new GameAction.EndTurn(0));
+        assertEquals(1, state.activePlayer());
+
+        CommandProcessor commands = new CommandProcessor(state);
+        BotPlayer mortal = new BotPlayer(BotDifficulty.MORTAL, new Random(7L));
+        BotPlayer.Decision decision = mortal.takeNextAction(state, commands, 1);
+
+        assertTrue(decision.result().startsWith("OK:"), decision.toString());
+        assertEquals("attack 2 3 2 2", decision.command());
+        assertEquals(Phase.GAME_OVER, state.phase());
+        assertEquals(1, state.winner().orElseThrow());
+    }
+
+    private static CardInstance add(GameState state, int owner, CardDefinition definition, BoardPosition position) {
+        CardInstance card = new CardInstance(java.util.UUID.randomUUID(), definition, owner, Zone.BATTLEFIELD);
+        state.register(card);
+        state.board().push(position, card.instanceId());
+        return card;
     }
 
     /**

@@ -989,7 +989,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         JPanel bottom = new JPanel(new BorderLayout(0, 8));
         bottom.setOpaque(false);
         messageLabel.setForeground(new Color(205, 215, 229));
-        messageLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 12));
+        messageLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
         messageLabel.setVerticalAlignment(SwingConstants.TOP);
         messageLabel.setPreferredSize(new Dimension(320, 34));
         bottom.add(messageLabel, BorderLayout.NORTH);
@@ -1587,6 +1587,13 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     }
 
     private void refreshBoard() {
+        // Readiness indicators: derive which board positions currently have a
+        // legal attack or a legal activated ability, so the player can see at a
+        // glance what is still usable this turn. Recomputed every refresh, so
+        // the markers vanish the moment the action is spent.
+        ReadinessIndicators.Readiness readiness = ReadinessIndicators.compute(legalCommands());
+        Set<BoardPosition> attackReady = readiness.attackReady();
+        Set<BoardPosition> abilityReady = readiness.abilityReady();
         for (BoardPosition position : state.board().positions()) {
             JButton cell = boardButtons.get(position);
             Optional<UUID> topId = maskedBoardCells.contains(position)
@@ -1606,6 +1613,8 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             cell.putClientProperty("height", TerrainRules.height(state,position));
             cell.putClientProperty("badge", intent == null ? "" : intent.label);
             cell.putClientProperty("pulse", intent != null);
+            cell.putClientProperty("readyAttack", attackReady.contains(position));
+            cell.putClientProperty("readyAbility", abilityReady.contains(position));
             cell.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.RAISED,
                     surface.brighter(), surface.brighter(), surface.darker(), surface.darker()), new CompoundBorder(
                     new LineBorder(outline, outlineWidth, true),
@@ -1722,6 +1731,25 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 g.fillRoundRect(pillX,pillY,pillW,pillH,pillH/2,pillH/2);
                 g.setColor(new Color(252,226,137));
                 g.drawString(text,pillX+9,pillY+pillH-metrics.getDescent()-3);
+            }
+            // Readiness indicators: static corner markers (never pulsing, so
+            // they stay calm under Reduced Animation). Gold chevron = this
+            // Character can still attack; cyan diamond = this top card has an
+            // unused activated ability.
+            int marker=Math.max(10,(int)(width*.13));
+            if(Boolean.TRUE.equals(getClientProperty("readyAttack"))){
+                int x0=(int)(width*.06),y0=(int)(height*.05);
+                g.setColor(new Color(0,0,0,190));
+                g.fillPolygon(new int[]{x0-2,x0+marker+2,x0+marker/2},new int[]{y0+marker+2,y0+marker+2,y0-3},3);
+                g.setColor(new Color(255,202,58));
+                g.fillPolygon(new int[]{x0,x0+marker,x0+marker/2},new int[]{y0+marker,y0+marker,y0},3);
+            }
+            if(Boolean.TRUE.equals(getClientProperty("readyAbility"))){
+                int cx=(int)(width*.94)-marker/2,cy=(int)(height*.05)+marker/2,r=marker/2;
+                g.setColor(new Color(0,0,0,190));
+                g.fillPolygon(new int[]{cx,cx+r+2,cx,cx-r-2},new int[]{cy-r-2,cy,cy+r+2,cy},4);
+                g.setColor(new Color(96,205,255));
+                g.fillPolygon(new int[]{cx,cx+r,cx,cx-r},new int[]{cy-r,cy,cy+r,cy},4);
             }
             g.setClip(null);g.setStroke(new BasicStroke(isFocusOwner()?3:((Number)getClientProperty("outlineWidth")).floatValue()));
             Color outline = isFocusOwner() ? Color.WHITE : (Color) getClientProperty("outline");
@@ -2662,7 +2690,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         String reason = state.events().stream().filter(event -> event.type() == GameEvent.Type.GAME_OVER)
                 .reduce((first, second) -> second).map(GameEvent::detail).orElse("Match ended");
         message("<b>" + result + "</b> — " + reason
-                + ". A player loses immediately when they have no permanents. Start a new match to play again.");
+                + ". A player loses immediately when their Capital is destroyed. Start a new match to play again.");
         if (!winnerSoundPlayed) {
             winnerSoundPlayed = true;
             SoundEffects.play(playerOneWon ? SoundEffects.Cue.VICTORY : SoundEffects.Cue.DEFEAT);
@@ -2737,7 +2765,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private String friendlyGameOverReason(String reason) {
         if (reason.matches("Player [01] wins")) {
             int winner = Integer.parseInt(reason.substring(7, 8));
-            return "Player " + (winner + 1) + " won because the opponent lost every permanent.";
+            return "Player " + (winner + 1) + " destroyed the enemy Capital.";
         }
         return reason.replace("Player 1", "Player 2").replace("Player 0", "Player 1");
     }
