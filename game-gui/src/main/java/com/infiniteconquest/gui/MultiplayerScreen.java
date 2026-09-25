@@ -154,13 +154,39 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         lobbyPanel.setVisible(false);
         card.add(lobbyPanel);
 
-        JScrollPane scroll = new JScrollPane(card);
+        // The menu is taller than short windows, so it must scroll — but the
+        // centered GridBagLayout wrapper drops zero-weight components to their
+        // *minimum* size when the preferred size doesn't fit, and a
+        // JScrollPane's stock minimum is a ~21x5 sliver. Keep the full
+        // preferred width so the menu stays centered instead of vanishing;
+        // the height still collapses, and contentConstraints() below makes the
+        // pane fill the wrapper vertically so it scrolls (2026-09-25: the
+        // screen showed only its title and back button).
+        JScrollPane scroll = new JScrollPane(card) {
+            @Override
+            public Dimension getMinimumSize() {
+                Dimension minimum = super.getMinimumSize();
+                minimum.width = Math.max(minimum.width, getPreferredSize().width);
+                return minimum;
+            }
+        };
         scroll.setOpaque(false);
         scroll.getViewport().setOpaque(false);
         scroll.setBorder(null);
         scroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         scroll.getVerticalScrollBar().setUnitIncrement(24);
         return scroll;
+    }
+
+    /** The menu scrolls, so it fills the wrapper vertically instead of being
+     * centered at a preferred height the window may not have (see the
+     * GridBagLayout note in {@link SubScreen#contentConstraints()}). */
+    @Override
+    protected GridBagConstraints contentConstraints() {
+        GridBagConstraints constraints = new GridBagConstraints();
+        constraints.fill = GridBagConstraints.VERTICAL;
+        constraints.weighty = 1.0;
+        return constraints;
     }
 
     /** Public lobby browser: refresh, join selected, join by code. */

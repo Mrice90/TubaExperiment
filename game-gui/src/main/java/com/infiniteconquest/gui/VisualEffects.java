@@ -2,6 +2,7 @@ package com.infiniteconquest.gui;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.HashMap;
@@ -50,6 +51,31 @@ final class VisualEffects {
     }
 
     static boolean available() { return source(Sprite.SPARK) != null; }
+
+    /**
+     * Sprite draw that reuses a caller-owned scratch graphics instead of
+     * creating and disposing a copy per call. The scratch's composite and
+     * transform are saved and restored, so the caller's state is untouched;
+     * the rendered pixels are identical to {@link #draw}. Intended for hot
+     * per-frame loops (e.g. the combat overlay's destroy debris) that would
+     * otherwise churn a Graphics2D copy per sprite per frame.
+     */
+    static void drawInto(Graphics2D scratch, Sprite sprite, int centerX, int centerY, int size,
+                         Color color, float alpha, double rotation) {
+        if (size <= 0 || alpha <= 0f) return;
+        BufferedImage image = tinted(sprite, size, color);
+        if (image == null) return;
+        Composite savedComposite = scratch.getComposite();
+        AffineTransform savedTransform = scratch.getTransform();
+        scratch.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        scratch.setComposite(AlphaComposite.SrcOver.derive(Math.max(0f, Math.min(1f, alpha))));
+        scratch.rotate(rotation, centerX, centerY);
+        // Cached textures use size buckets; draw at the requested size so the center
+        // does not jump whenever an expanding effect crosses a bucket boundary.
+        scratch.drawImage(image, centerX - size / 2, centerY - size / 2, size, size, null);
+        scratch.setTransform(savedTransform);
+        scratch.setComposite(savedComposite);
+    }
 
     private static BufferedImage tinted(Sprite sprite, int size, Color color) {
         int bucket = Math.max(16, ((size + 7) / 8) * 8);

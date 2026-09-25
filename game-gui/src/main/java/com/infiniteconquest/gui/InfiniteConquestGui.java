@@ -2962,7 +2962,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         @Override public String toString() { return card.name() + " • " + card.hitPoints() + " HP"; }
     }
 
-    private record MulliganChoice(UUID id, CardDefinition card) {
+    record MulliganChoice(UUID id, CardDefinition card) {
         @Override public String toString() {
             String requirement = card.type() == CardType.LAND || card.type() == CardType.STRUCTURE
                     ? "Turn " + Math.max(1, card.cost()) + ", +" + card.gpGeneration() + " GP/turn"
@@ -3181,161 +3181,37 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     }
 
     /**
-     * Shared mulligan dialog for local and online games. Shows the player's
-     * redacted opening hand at readable size; selected cards move to the
-     * discard tray and are replaced from the deck. KEEP HAND keeps everything,
-     * REDRAW SELECTED discards exactly the selected cards.
+     * Shared mulligan dialog for local and online games. The layout lives in
+     * {@link MulliganDialogView}: the KEEP HAND / REDRAW SELECTED action bar
+     * is pinned at the bottom of the dialog (outside any scroll pane) and the
+     * trays scroll vertically, so on small or display-scaled screens the
+     * discard tray and the confirm controls can never be pushed out of reach.
+     * The dialog itself is capped to the usable screen area.
      */
     private final class VisualMulliganDialog extends JDialog {
-        private static final Color KEEP_GREEN = new Color(104, 211, 139);
-        private static final Color REDRAW_RED = new Color(239, 106, 122);
-        private static final Color REDRAW_AMBER = new Color(240, 191, 73);
-
-        private final List<MulliganChoice> choices;
-        private final Set<UUID> discarded = new LinkedHashSet<>();
-        private final JPanel handTray = new JPanel();
-        private final JPanel discardTray = new JPanel();
-        private final JLabel handTitle = new JLabel();
-        private final JLabel discardTitle = new JLabel();
-        private final JLabel statusLine = new JLabel();
-        private final JButton keepButton;
-        private final JButton redrawButton;
-        private UUID dragging;
-        private Point pressPoint;
+        private final MulliganDialogView view;
 
         VisualMulliganDialog(List<MulliganChoice> choices) {
             super(InfiniteConquestGui.this, "Mulligan — Choose Your Opening Hand", true);
-            this.choices = choices;
-            handTray.setLayout(new BoxLayout(handTray, BoxLayout.X_AXIS));
-            discardTray.setLayout(new BoxLayout(discardTray, BoxLayout.X_AXIS));
-            handTray.setBackground(new Color(24, 72, 58));
-            discardTray.setBackground(new Color(78, 42, 50));
-
-            JLabel title = new JLabel("MULLIGAN");
-            title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 30));
-            title.setForeground(REDRAW_AMBER);
-            JLabel directions = new JLabel("<html>Review your opening hand. <b>Select up to 3 cards</b> you don't want — "
-                    + "click a card (or press <b>Space</b> on it), or drag it between trays. "
-                    + "Each discarded card is <b>replaced with a fresh card from your deck</b>; "
-                    + "cards you don't select stay in your hand.</html>");
-            directions.setForeground(Color.WHITE);
-            directions.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
-            JPanel header = new JPanel(new BorderLayout(0, 6));
-            header.setOpaque(false);
-            header.setBorder(new EmptyBorder(4, 4, 8, 4));
-            header.add(title, BorderLayout.NORTH);
-            header.add(directions, BorderLayout.CENTER);
-
-            JPanel trays = new JPanel(new GridLayout(2, 1, 0, 10)); trays.setOpaque(false);
-            trays.add(tray(handTitle, "OPENING HAND — KEEPING", handTray, KEEP_GREEN));
-            trays.add(tray(discardTitle, "DISCARD & REDRAW", discardTray, REDRAW_RED));
-
-            keepButton = button("KEEP HAND", e -> { SoundEffects.play(SoundEffects.Cue.KEEP); discarded.clear(); dispose(); }, true);
-            keepButton.setMnemonic(KeyEvent.VK_K);
-            keepButton.setToolTipText("Keep your entire opening hand (Alt+K, or Enter)");
-            keepButton.getAccessibleContext().setAccessibleDescription(
-                    "Keep your entire opening hand and start the game");
-            redrawButton = button("REDRAW SELECTED", e -> { SoundEffects.play(SoundEffects.Cue.SHUFFLE); dispose(); }, true);
-            redrawButton.setMnemonic(KeyEvent.VK_R);
-            redrawButton.setToolTipText("Discard the selected cards and draw replacements (Alt+R)");
-            redrawButton.getAccessibleContext().setAccessibleDescription(
-                    "Discard the selected cards and draw one replacement for each");
-            getRootPane().setDefaultButton(keepButton);
-            getRootPane().registerKeyboardAction(e -> { SoundEffects.play(SoundEffects.Cue.KEEP); discarded.clear(); dispose(); },
+            view = new MulliganDialogView(choices,
+                    choice -> visualChoiceCard(choice.card(), 200, 240, 108),
+                    (text, action) -> button(text, e -> action.run(), true),
+                    () -> { SoundEffects.play(SoundEffects.Cue.KEEP); dispose(); },
+                    () -> { SoundEffects.play(SoundEffects.Cue.SHUFFLE); dispose(); });
+            getRootPane().setDefaultButton(view.keepButton());
+            getRootPane().registerKeyboardAction(e -> view.keepButton().doClick(),
                     KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), JComponent.WHEN_IN_FOCUSED_WINDOW);
-
-            statusLine.setForeground(Color.WHITE);
-            statusLine.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
-            JPanel footer = new JPanel(new BorderLayout(10, 0)); footer.setOpaque(false);
-            footer.setBorder(new EmptyBorder(8, 4, 0, 4));
-            footer.add(statusLine, BorderLayout.WEST);
-            JPanel buttons = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-            buttons.setOpaque(false);
-            buttons.add(redrawButton); buttons.add(keepButton);
-            footer.add(buttons, BorderLayout.EAST);
-
-            JPanel content = panel(new BorderLayout(8, 8));
-            content.setBorder(new EmptyBorder(12, 14, 12, 14));
-            content.add(header, BorderLayout.NORTH); content.add(trays, BorderLayout.CENTER); content.add(footer, BorderLayout.SOUTH);
-            setContentPane(content); setSize(1300, 760); setLocationRelativeTo(InfiniteConquestGui.this);
+            setContentPane(view);
+            // Never size beyond the usable screen: a fixed 1300x760 window on a
+            // small or display-scaled screen pushed the discard tray and the
+            // action bar below the visible area with no way to reach them.
+            Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
+            setSize(Math.min(1300, screen.width), Math.min(760, screen.height));
+            setLocationRelativeTo(InfiniteConquestGui.this);
             setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
-            rebuild();
         }
 
-        Set<UUID> choose() { setVisible(true); return Set.copyOf(discarded); }
-
-        private JPanel tray(JLabel titleLabel, String name, JPanel cards, Color color) {
-            titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
-            titleLabel.setForeground(color);
-            JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false);
-            header.add(titleLabel, BorderLayout.WEST);
-            JPanel result = new JPanel(new BorderLayout(5, 5)); result.setOpaque(false);
-            result.add(header, BorderLayout.NORTH);
-            JScrollPane scroll = new JScrollPane(cards, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
-                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-            scroll.setBorder(new LineBorder(color, 2, true)); result.add(scroll, BorderLayout.CENTER);
-            result.getAccessibleContext().setAccessibleName(name);
-            return result;
-        }
-
-        private void rebuild() {
-            handTray.removeAll(); discardTray.removeAll();
-            for (MulliganChoice choice : choices) {
-                boolean selected = discarded.contains(choice.id());
-                JPanel destination = selected ? discardTray : handTray;
-                JButton card = visualChoiceCard(choice.card(), 200, 240, 108);
-                card.setFocusPainted(true); // keyboard users must see the focused card
-                if (selected) {
-                    card.setBorder(new CompoundBorder(new LineBorder(REDRAW_RED, 4, true), card.getBorder()));
-                }
-                String state = selected ? "selected for redraw" : "in your opening hand";
-                card.getAccessibleContext().setAccessibleDescription(html(choice.card().name()) + ", "
-                        + choice.card().goldCost() + " gold, currently " + state
-                        + ". Press Space to " + (selected ? "keep it" : "select it for redraw") + ".");
-                // Mouse: click toggles, drag moves between trays. Keyboard: Space/Enter
-                // toggle via an explicit binding (no ActionListener, so a mouse click
-                // can never double-toggle through button activation).
-                card.addMouseListener(new MouseAdapter() {
-                    @Override public void mousePressed(MouseEvent e) {
-                        dragging = choice.id();
-                        pressPoint = e.getPoint();
-                    }
-                    @Override public void mouseReleased(MouseEvent e) {
-                        boolean fromDiscard = discarded.contains(choice.id());
-                        Point handPoint = SwingUtilities.convertPoint(card, e.getPoint(), handTray);
-                        Point discardPoint = SwingUtilities.convertPoint(card, e.getPoint(), discardTray);
-                        if (!fromDiscard && discardTray.contains(discardPoint)) moveToDiscard(choice.id());
-                        else if (fromDiscard && handTray.contains(handPoint)) discarded.remove(choice.id());
-                        else if (pressPoint != null && pressPoint.distance(e.getPoint()) < 8) toggle(choice.id());
-                        dragging = null; pressPoint = null; rebuild();
-                    }
-                });
-                AbstractAction toggleSelection = new AbstractAction() {
-                    @Override public void actionPerformed(java.awt.event.ActionEvent e) {
-                        toggle(choice.id()); rebuild();
-                    }
-                };
-                card.getInputMap(JComponent.WHEN_FOCUSED)
-                        .put(KeyStroke.getKeyStroke(KeyEvent.VK_SPACE, 0), "mulligan-toggle");
-                card.getInputMap(JComponent.WHEN_FOCUSED)
-                        .put(KeyStroke.getKeyStroke(KeyEvent.VK_ENTER, 0), "mulligan-toggle");
-                card.getActionMap().put("mulligan-toggle", toggleSelection);
-                destination.add(card); destination.add(Box.createHorizontalStrut(8));
-            }
-            int keeping = choices.size() - discarded.size();
-            handTitle.setText("🛡  OPENING HAND — KEEPING (" + keeping + ")");
-            discardTitle.setText("↻  DISCARD & REDRAW (" + discarded.size() + "/3)");
-            statusLine.setText("Discarding " + discarded.size() + " of up to 3  •  Keeping " + keeping);
-            redrawButton.setText("REDRAW SELECTED" + (discarded.isEmpty() ? "" : " (" + discarded.size() + ")"));
-            redrawButton.setEnabled(!discarded.isEmpty());
-            handTray.revalidate(); discardTray.revalidate(); handTray.repaint(); discardTray.repaint();
-        }
-
-        private void toggle(UUID id) { if (!discarded.remove(id)) moveToDiscard(id); }
-        private void moveToDiscard(UUID id) {
-            if (discarded.size() >= 3 && !discarded.contains(id)) { Toolkit.getDefaultToolkit().beep(); return; }
-            discarded.add(id);
-        }
+        Set<UUID> choose() { setVisible(true); return view.discardedIds(); }
     }
 
     private record MatchChoice(String humanFaction, CardDefinition humanCapital,
@@ -3388,8 +3264,16 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private record EffectBadge(String text, String color) { }
 
     private final class VictoryPanel extends JPanel {
+        private static final Color FRAME = new Color(255,255,255,20);
         private final Color faction;
         private final boolean victory;
+        // Per-frame allocation hoists: rebuilt ~31 times a second otherwise.
+        private final Color gradientTop;
+        private final Color glowColor;
+        private final Color spriteTint;
+        private final Color sparkColor;
+        private GradientPaint backgroundPaint;
+        private int backgroundW = -1, backgroundH = -1;
         private final List<Point> sparks = new ArrayList<>();
         private javax.swing.Timer animation;
         private float phase;
@@ -3397,6 +3281,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         VictoryPanel(String factionName, boolean victory) {
             this.faction = factionColor(factionName);
             this.victory = victory;
+            gradientTop = blend(INK, this.faction, .48f);
+            glowColor = victory ? new Color(255, 207, 91, 42) : new Color(255, 88, 108, 36);
+            spriteTint = victory ? new Color(255,220,124) : new Color(146,110,180);
+            sparkColor = victory ? new Color(255, 220, 124) : new Color(170, 190, 220);
             setOpaque(true);
             Random random = new Random((factionName + state.turnNumber()).hashCode());
             for (int i = 0; i < 46; i++) sparks.add(new Point(random.nextInt(760), random.nextInt(590)));
@@ -3413,24 +3301,27 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             super.paintComponent(graphics);
             Graphics2D g = (Graphics2D) graphics.create();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setPaint(new GradientPaint(0, 0, blend(INK, faction, .48f), getWidth(), getHeight(), INK));
+            if (backgroundPaint == null || backgroundW != getWidth() || backgroundH != getHeight()) {
+                backgroundPaint = new GradientPaint(0, 0, gradientTop, getWidth(), getHeight(), INK);
+                backgroundW = getWidth(); backgroundH = getHeight();
+            }
+            g.setPaint(backgroundPaint);
             g.fillRect(0, 0, getWidth(), getHeight());
             int halo = 280 + Math.round(22 * (float)Math.sin(phase * Math.PI * 2));
-            Color glow = victory ? new Color(255, 207, 91, 42) : new Color(255, 88, 108, 36);
-            g.setColor(glow); g.fillOval(getWidth()/2-halo/2, 45-halo/4, halo, halo);
+            g.setColor(glowColor); g.fillOval(getWidth()/2-halo/2, 45-halo/4, halo, halo);
             VisualEffects.draw(g, victory ? VisualEffects.Sprite.LIGHT : VisualEffects.Sprite.SMOKE,
-                    getWidth()/2, 150, halo, victory ? new Color(255,220,124) : new Color(146,110,180),
+                    getWidth()/2, 150, halo, spriteTint,
                     .22f, phase / 3.0);
             for (int i = 0; i < sparks.size(); i++) {
                 Point spark = sparks.get(i);
                 int y = Math.floorMod(spark.y - Math.round(phase * (18 + i % 24)), Math.max(1, getHeight()));
                 float pulse = .35f + .65f * Math.abs((float)Math.sin(phase * 4 + i));
                 g.setComposite(AlphaComposite.SrcOver.derive(pulse));
-                g.setColor(victory ? new Color(255, 220, 124) : new Color(170, 190, 220));
+                g.setColor(sparkColor);
                 int size = 2 + i % 4; g.fillOval(Math.floorMod(spark.x, Math.max(1,getWidth())), y, size, size);
             }
             g.setComposite(AlphaComposite.SrcOver);
-            g.setColor(new Color(255,255,255,20));
+            g.setColor(FRAME);
             for (int i=0;i<4;i++) g.drawRoundRect(12+i*3,12+i*3,getWidth()-25-i*6,getHeight()-25-i*6,28,28);
             g.dispose();
         }
@@ -3461,6 +3352,28 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         SNAP_BACK, DESTROY, RULES, DAMAGE }
 
     private final class CombatOverlay extends JComponent {
+        // Per-frame allocation hoists: these are created once and reused every
+        // animation tick instead of being rebuilt ~60 times a second.
+        private static final Font BANNER_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 46);
+        private static final Color BANNER_SHADOW = new Color(0, 0, 0, 170);
+        private static final Color DAMAGE_COLOR = new Color(255, 122, 105);
+        private static final Color DESTROY_EMBER = new Color(255, 140, 90);
+        private static final BasicStroke CARD_OUTLINE = new BasicStroke(2f);
+        private static final BasicStroke TRAIL_THIN = new BasicStroke(4f,
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        private static final BasicStroke TRAIL_WIDE = new BasicStroke(5f,
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        private static final BasicStroke MELEE_LINE = new BasicStroke(8f,
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        private static final BasicStroke SLASH_STROKE = new BasicStroke(6f);
+        private static final BasicStroke BLINK_PATH = new BasicStroke(7f,
+                BasicStroke.CAP_ROUND, BasicStroke.JOIN_ROUND);
+        private static final BasicStroke BLINK_GLOW = new BasicStroke(15f);
+        /** Reused hex clip for the flying card sprite: mutated in place each frame. */
+        private final Polygon cardClip = new Polygon(new int[6], new int[6], 6);
+        /** Damage-number font, rebuilt only when the pop-scaled size changes. */
+        private Font damageFont;
+        private int damageFontSize = -1;
         private Animation animation;
         private final ArrayDeque<Animation> queued = new ArrayDeque<>();
         private javax.swing.Timer timer;
@@ -3647,8 +3560,12 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             float pop = 1f + 0.35f * Math.max(0f, 1f - progress * 5f);
             float alpha = progress < 0.55f ? 1f
                     : 1f - Fx.easeInOutQuad(Math.min(1f, (progress - 0.55f) / 0.45f));
-            Font font = new Font(Font.SANS_SERIF, Font.BOLD, Math.max(12, Math.round(30 * pop)));
-            g.setFont(font);
+            int size = Math.max(12, Math.round(30 * pop));
+            if (damageFont == null || damageFontSize != size) {
+                damageFont = new Font(Font.SANS_SERIF, Font.BOLD, size);
+                damageFontSize = size;
+            }
+            g.setFont(damageFont);
             FontMetrics metrics = g.getFontMetrics();
             int width = metrics.stringWidth(text);
             int x = target.x - width / 2;
@@ -3657,7 +3574,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             g.setColor(Color.BLACK);
             g.drawString(text, x + 2, y + 2);
             g.setComposite(AlphaComposite.SrcOver.derive(alpha));
-            g.setColor(new Color(255, 122, 105));
+            g.setColor(DAMAGE_COLOR);
             g.drawString(text, x, y);
         }
 
@@ -3665,8 +3582,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         private void drawBanner(Graphics2D g, long now) {
             float total = Fx.nanos(Fx.TURN_BANNER_MS);
             float bp = Math.min(1f, (now - bannerStartedAt) / total);
-            Font font = new Font(Font.SANS_SERIF, Font.BOLD, 46);
-            g.setFont(font);
+            g.setFont(BANNER_FONT);
             FontMetrics metrics = g.getFontMetrics();
             int textWidth = metrics.stringWidth(bannerText);
             float sweep = Fx.easeInOutQuad(Math.min(1f, bp / 0.45f));
@@ -3675,7 +3591,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             float alpha = bp < 0.70f ? 1f
                     : 1f - Fx.easeInOutQuad(Math.min(1f, (bp - 0.70f) / 0.30f));
             g.setComposite(AlphaComposite.SrcOver.derive(alpha));
-            g.setColor(new Color(0, 0, 0, 170));
+            g.setColor(BANNER_SHADOW);
             g.drawString(bannerText, x + 3, y + 3);
             g.setColor(bannerColor);
             g.drawString(bannerText, x, y);
@@ -3724,7 +3640,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             if (animation == null && !shaking && !banner) return;
             Graphics2D g = (Graphics2D) graphics.create();
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BICUBIC);
+            // Bilinear, not bicubic: the only per-frame scaled image is the flying
+            // card art, and on a moving sprite the difference is invisible while the
+            // bicubic kernel cost is paid every tick. (Sprite copies use their own
+            // bilinear hint inside VisualEffects.)
+            g.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
             if (shaking) {
                 float shakeProgress = (now - shakeStartedAt) / (float) Fx.nanos(Fx.SHAKE_MS);
                 // Ease the decay so the board settles instead of snapping back.
@@ -3760,6 +3680,9 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             }
 
             float progress = animation.progress();
+            // One scratch copy for every sprite draw this frame; VisualEffects.drawInto
+            // restores its state per call so no create/dispose churn happens per sprite.
+            Graphics2D fx = (Graphics2D) g.create();
             boolean cardLunge = animation.cardImage() != null && animation.style() == AnimationStyle.MELEE;
             boolean cardDestroy = animation.cardImage() != null && animation.style() == AnimationStyle.DESTROY;
             boolean playFlight = animation.cardImage() != null && animation.style() == AnimationStyle.PLAY_FLIGHT;
@@ -3804,51 +3727,62 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 g.fillRoundRect(orbX - width / 2 + 6, orbY - height / 2 + 8, width, height, 16, 16);
                 g.setComposite(AlphaComposite.SrcOver.derive(Math.max(0f, fade)));
                 int left=orbX-width/2,top=orbY-height/2;
-                Polygon sprite=new Polygon(new int[]{left+width/2,left+width,left+width,left+width/2,left,left},new int[]{top,top+height/4,top+3*height/4,top+height,top+3*height/4,top+height/4},6);
-                Shape oldClip=g.getClip();g.clip(sprite);
+                // Reuse the field polygon instead of allocating a clip (plus two int
+                // arrays) every frame; invalidate() clears the cached bounds.
+                int[] clipX = cardClip.xpoints, clipY = cardClip.ypoints;
+                clipX[0]=left+width/2; clipY[0]=top;
+                clipX[1]=left+width;   clipY[1]=top+height/4;
+                clipX[2]=left+width;   clipY[2]=top+3*height/4;
+                clipX[3]=left+width/2; clipY[3]=top+height;
+                clipX[4]=left;         clipY[4]=top+3*height/4;
+                clipX[5]=left;         clipY[5]=top+height/4;
+                cardClip.npoints = 6; cardClip.invalidate();
+                Shape oldClip=g.getClip();g.clip(cardClip);
                 g.drawImage(animation.cardImage(),left,top,width,height,null);g.setClip(oldClip);
-                g.setColor(animation.color());g.setStroke(new BasicStroke(2f));g.draw(sprite);
+                g.setColor(animation.color());g.setStroke(CARD_OUTLINE);g.draw(cardClip);
                 if (playFlight && Fx.particles(gameSettings)) {
                     // Summon swirl: spins up at the destination while the card
                     // is in flight, then the DEPLOY burst lands on top of it.
-                    VisualEffects.draw(g, VisualEffects.Sprite.TWIRL, target.x, target.y,
+                    VisualEffects.drawInto(fx, VisualEffects.Sprite.TWIRL, target.x, target.y,
                             Math.round(48 + 96 * progress), animation.color(),
                             .5f * Math.min(1f, progress * 1.5f), progress * 5.0);
                     // Faint motion trail behind the flying card.
-                    VisualEffects.draw(g, VisualEffects.Sprite.TRACE, orbX, orbY,
+                    VisualEffects.drawInto(fx, VisualEffects.Sprite.TRACE, orbX, orbY,
                             Math.max(24, width / 2), animation.color(), .3f * (1f - progress),
                             Math.atan2(target.y - source.y, target.x - source.x));
                 } else {
-                    VisualEffects.draw(g, VisualEffects.Sprite.LIGHT, orbX, orbY,
+                    VisualEffects.drawInto(fx, VisualEffects.Sprite.LIGHT, orbX, orbY,
                             Math.max(width, height), animation.color(), .36f, progress);
                 }
                 if (cardLunge && progress > .34f && progress < .68f) {
                     float strikeAlpha = 1f - Math.abs(progress - .51f) / .17f;
-                    VisualEffects.draw(g, VisualEffects.Sprite.SLASH, target.x, target.y, 104,
+                    VisualEffects.drawInto(fx, VisualEffects.Sprite.SLASH, target.x, target.y, 104,
                             Color.WHITE, Math.max(0f, strikeAlpha), Math.atan2(target.y - source.y, target.x - source.x));
                 }
                 if (cardDestroy && Fx.particles(gameSettings)) {
                     // Textured debris chunks instead of flat circles.
                     VisualEffects.Sprite[] debris = {VisualEffects.Sprite.DEBRIS_A,
                             VisualEffects.Sprite.DEBRIS_B, VisualEffects.Sprite.DEBRIS_C};
-                    Color ember = new Color(255, 140, 90);
+                    Color ember = DESTROY_EMBER;
                     for (int index = 0; index < 12; index++) {
                         double angle = index * Math.PI / 6.0 + .35;
                         int distance = Math.round(18 + progress * 74);
                         int particleX = orbX + (int) Math.round(Math.cos(angle) * distance);
                         int particleY = orbY + (int) Math.round(Math.sin(angle) * distance);
                         int size = Math.max(8, Math.round(10 + 22 * (1f - progress)));
-                        VisualEffects.draw(g, debris[index % debris.length], particleX, particleY,
+                        VisualEffects.drawInto(fx, debris[index % debris.length], particleX, particleY,
                                 size, ember, Math.max(0f, .9f * (1f - progress)), angle + progress * 3.0);
                     }
-                    VisualEffects.draw(g, VisualEffects.Sprite.SPARK, orbX, orbY,
+                    VisualEffects.drawInto(fx, VisualEffects.Sprite.SPARK, orbX, orbY,
                             Math.round(72 + progress * 86), ATTACK, .72f * (1f - progress), progress * 2.4);
                 }
+                fx.dispose();
                 g.dispose();
                 return;
             }
             if (animation.style() == AnimationStyle.DAMAGE) {
                 drawDamage(g, targetButton, target, progress);
+                fx.dispose();
                 g.dispose();
                 return;
             }
@@ -3864,7 +3798,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 case RULES -> VisualEffects.Sprite.FLAME;
                 case DAMAGE -> VisualEffects.Sprite.SPARK;
             };
-            VisualEffects.draw(g, traveling, orbX, orbY,
+            VisualEffects.drawInto(fx, traveling, orbX, orbY,
                     animation.style()==AnimationStyle.SPELL ? 72 : 48,
                     animation.color(), .72f*fade, Math.atan2(target.y-source.y,target.x-source.x));
 
@@ -3872,13 +3806,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 int arc = Math.max(28, Math.abs(target.x-source.x)/5 + 18);
                 QuadCurve2D path = new QuadCurve2D.Float(source.x, source.y,
                         (source.x+target.x)/2f, Math.min(source.y,target.y)-arc, target.x,target.y);
-                g.setStroke(new BasicStroke(animation.style()==AnimationStyle.BLINK?7f:4f,
-                        BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND)); g.draw(path);
+                g.setStroke(animation.style()==AnimationStyle.BLINK?BLINK_PATH:TRAIL_THIN); g.draw(path);
                 if(animation.style()==AnimationStyle.BLINK){g.setComposite(AlphaComposite.SrcOver.derive(.34f*fade));
-                    g.setStroke(new BasicStroke(15f));g.draw(path);g.setComposite(AlphaComposite.SrcOver.derive(.88f*fade));}
+                    g.setStroke(BLINK_GLOW);g.draw(path);g.setComposite(AlphaComposite.SrcOver.derive(.88f*fade));}
             } else {
-                g.setStroke(new BasicStroke(animation.style()==AnimationStyle.MELEE?8f:5f,
-                        BasicStroke.CAP_ROUND,BasicStroke.JOIN_ROUND));
+                g.setStroke(animation.style()==AnimationStyle.MELEE?MELEE_LINE:TRAIL_WIDE);
                 if(animation.style()==AnimationStyle.RULES){
                     Path2D bolt=new Path2D.Double();bolt.moveTo(source.x,source.y);Random r=new Random(animation.startedAt());
                     for(int i=1;i<6;i++)bolt.lineTo(source.x+(target.x-source.x)*i/6.0+r.nextInt(19)-9,source.y+(target.y-source.y)*i/6.0);bolt.lineTo(target.x,target.y);g.draw(bolt);
@@ -3898,7 +3830,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             if(animation.style()==AnimationStyle.RANGED){
                 Path2D projectile=new Path2D.Double();projectile.moveTo(orbX+10,orbY);projectile.lineTo(orbX,orbY-5);projectile.lineTo(orbX-10,orbY);projectile.lineTo(orbX,orbY+5);projectile.closePath();g.fill(projectile);
             }else if(animation.style()==AnimationStyle.MELEE&&progress>.34f){
-                int slash=24+Math.round(18*progress);g.setStroke(new BasicStroke(6f));g.drawLine(target.x-slash,target.y+slash,target.x+slash,target.y-slash);g.drawLine(target.x-slash/2,target.y-slash,target.x+slash/2,target.y+slash);
+                int slash=24+Math.round(18*progress);g.setStroke(SLASH_STROKE);g.drawLine(target.x-slash,target.y+slash,target.x+slash,target.y-slash);g.drawLine(target.x-slash/2,target.y-slash,target.x+slash/2,target.y+slash);
             }else{g.fillOval(orbX-7,orbY-7,14,14);}
             g.setColor(animation.color());
             g.setStroke(new BasicStroke(4f));
@@ -3906,7 +3838,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             g.drawOval(target.x - pulse / 2, target.y - pulse / 2, pulse, pulse);
             if(animation.style()==AnimationStyle.SPELL){
                 for(int i=0;i<3;i++){int ring=pulse+i*18;g.drawOval(target.x-ring/2,target.y-ring/2,ring,ring);double a=progress*10+i*2.1;g.fillOval(target.x+(int)(Math.cos(a)*ring/2)-4,target.y+(int)(Math.sin(a)*ring/2)-4,8,8);}
-                VisualEffects.draw(g,VisualEffects.Sprite.ORBIT,target.x,target.y,
+                VisualEffects.drawInto(fx,VisualEffects.Sprite.ORBIT,target.x,target.y,
                         90+Math.round(progress*44),animation.color(),.68f*fade,progress*2.5);
             }
             if(animation.style()==AnimationStyle.DEPLOY){
@@ -3915,15 +3847,16 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 g.setComposite(AlphaComposite.SrcOver.derive(.3f*fade));
                 g.fillRoundRect(target.x-highlightWidth/2,target.y-highlightHeight/2,
                         highlightWidth,highlightHeight,24,24);
-                VisualEffects.draw(g,VisualEffects.Sprite.LIGHT,target.x,target.y,
+                VisualEffects.drawInto(fx,VisualEffects.Sprite.LIGHT,target.x,target.y,
                         100+Math.round(progress*30),animation.color(),.72f*fade,0);
             }
             if(animation.style()==AnimationStyle.MELEE&&progress>.28f)
-                VisualEffects.draw(g,VisualEffects.Sprite.SLASH,target.x,target.y,112,
+                VisualEffects.drawInto(fx,VisualEffects.Sprite.SLASH,target.x,target.y,112,
                         Color.WHITE,.8f*fade,angle);
-            VisualEffects.draw(g,VisualEffects.Sprite.SPARK,target.x,target.y,
+            VisualEffects.drawInto(fx,VisualEffects.Sprite.SPARK,target.x,target.y,
                     62+Math.round(progress*70),animation.color(),.62f*fade,progress*1.8);
             for(int i=0;i<8;i++){double a=i*Math.PI/4+progress*2;int distance=Math.round(progress*48);int px=target.x+(int)(Math.cos(a)*distance),py=target.y+(int)(Math.sin(a)*distance);g.fillOval(px-3,py-3,6,6);}
+            fx.dispose();
             g.dispose();
         }
 

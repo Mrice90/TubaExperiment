@@ -10,7 +10,9 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.LongConsumer;
@@ -127,6 +129,9 @@ final class UpdateApplier {
                     }
                 }
             }
+            appendUpdateLog(root, "Staged update " + info.version() + ": " + jarEntries.size()
+                    + " jar(s)" + (cloudflaredEntry != null ? " + cloudflared.exe" : "")
+                    + (launcherEntry != null ? ", launcher script replaced" : ""));
             return root;
         } finally {
             Files.deleteIfExists(download);
@@ -158,18 +163,76 @@ final class UpdateApplier {
         return setup;
     }
 
+    /** Install root-relative path of the portable launcher script. Pure, for tests. */
+    static Path launcherScript(Path root) {
+        return root.resolve("Play Infinite Conquest.vbs");
+    }
+
+    /**
+     * Exact command used to relaunch the portable build. Pure, for tests.
+     * Two argv entries: no shell quoting is needed even when the install path
+     * contains spaces, because ProcessBuilder passes each entry verbatim.
+     */
+    static List<String> restartCommand(Path root) {
+        return List.of("wscript.exe", launcherScript(root).toString());
+    }
+
+    /** Diagnostics log next to the pending/ staging dir. Pure, for tests. */
+    static Path updateLogPath(Path root) {
+        return root.resolve("app").resolve("update.log");
+    }
+
+    /**
+     * Best-effort append to the update log. Never throws: diagnostics must
+     * never break the update itself (e.g. a read-only install dir).
+     */
+    static void appendUpdateLog(Path root, String message) {
+        try {
+            Path log = updateLogPath(root);
+            Files.createDirectories(log.getParent());
+            String line = LocalDateTime.now() + " [updater] " + message
+                    + System.lineSeparator();
+            Files.writeString(log, line,
+                    StandardOpenOption.CREATE, StandardOpenOption.APPEND);
+        } catch (Exception ignored) {
+        }
+    }
+
     /** Relaunches the portable build through its launcher script and exits. */
     void restartToApply(Path root) throws IOException {
-        Path launcher = root.resolve("Play Infinite Conquest.vbs");
-        new ProcessBuilder("wscript.exe", launcher.toString())
-                .directory(root.toFile())
-                .start();
+        // NOTE: the launcher is spawned while THIS JVM is still alive. Its
+        // .vbs waits for our jar locks to release before swapping pending/
+        // into app/ (see the launcher script); do not relaunch javaw
+        // directly or the swap is skipped and the old jars keep running.
+        List<String> command = restartCommand(root);
+        appendUpdateLog(root, "Restarting to apply staged update (build "
+                + GameVersion.VERSION + "): command=" + command
+                + " cwd=" + root.toAbsolutePath());
+        try {
+            Process child = new ProcessBuilder(command)
+                    .directory(root.toFile())
+                    .start();
+            appendUpdateLog(root, "Launcher spawned, pid=" + child.pid());
+        } catch (IOException e) {
+            appendUpdateLog(root, "ERROR spawning launcher: " + e);
+            throw e;
+        }
         System.exit(0);
     }
 
     /** Hands off to the NSIS installer and exits so files are free to replace. */
     void handoffToInstaller(Path setupExe) throws IOException {
-        new ProcessBuilder(setupExe.toString()).start();
+        Path root = UpdateChecker.installRoot();
+        appendUpdateLog(root, "Handing off to installer (build " + GameVersion.VERSION
+                + "): command=[" + setupExe + "]"
+                + " cwd=" + Path.of(System.getProperty("user.dir")).toAbsolutePath());
+        try {
+            Process child = new ProcessBuilder(setupExe.toString()).start();
+            appendUpdateLog(root, "Installer spawned, pid=" + child.pid());
+        } catch (IOException e) {
+            appendUpdateLog(root, "ERROR spawning installer: " + e);
+            throw e;
+        }
         System.exit(0);
     }
 

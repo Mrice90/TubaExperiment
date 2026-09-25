@@ -47,12 +47,28 @@ abstract class SubScreen extends JPanel implements ShellScreen {
      */
     protected abstract JComponent buildContent();
 
+    /**
+     * GridBagConstraints used to place the content in the centered wrapper.
+     * The default centers the content at its preferred size.
+     *
+     * <p>GridBagLayout is all-or-nothing about sizing: when the content's
+     * preferred size doesn't fit the wrapper in <em>either</em> dimension, the
+     * whole layout falls back to <em>minimum</em> sizes in both dimensions —
+     * and a JScrollPane's stock minimum size is a ~21x5 sliver, so a menu that
+     * grows taller than the window vanishes instead of scrolling. Screens
+     * whose content is a scroll pane should override this to fill the
+     * available space (with a minimum size that keeps the content usable).
+     */
+    protected GridBagConstraints contentConstraints() {
+        return new GridBagConstraints();
+    }
+
     @Override
     public void onShow() {
         if (backdrop == null) backdrop = CardArtFactory.worldBackdrop();
         if (!contentBuilt) {
             contentBuilt = true;
-            centerWrapper.add(buildContent());
+            centerWrapper.add(buildContent(), contentConstraints());
             revalidate();
             repaint();
         }

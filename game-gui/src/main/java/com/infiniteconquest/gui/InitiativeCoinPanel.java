@@ -23,14 +23,22 @@ final class InitiativeCoinPanel extends JPanel {
         @Override public String toString(){return label;}
     }
     record Pose(double lift,double angle,double tilt) { }
+    private static final Font TITLE_FONT = new Font(Font.SERIF, Font.BOLD, 24);
+    private static final Font SUBTITLE_FONT = new Font(Font.SANS_SERIF, Font.PLAIN, 14);
+    private static final Color BACK_TOP = new Color(27, 44, 65);
+    private static final Color BACK_BOTTOM = new Color(10, 18, 31);
+    private static final Color SUBTITLE_TEXT = new Color(184, 202, 218);
     private final int winner;
     private final Skin skin;
+    private final Color rimDark;
     private final BufferedImage[] faces;
+    private GradientPaint backgroundPaint;
+    private int backgroundH = -1;
     private double progress;
     InitiativeCoinPanel(int winner) { this(winner,Skin.OLYMPIAN_GOLD); }
     InitiativeCoinPanel(int winner,Skin skin) {
         if(winner<0 || winner>1)throw new IllegalArgumentException("Invalid coin winner");
-        this.winner=winner;this.skin=skin;faces=facesFor(skin);setOpaque(false);
+        this.winner=winner;this.skin=skin;faces=facesFor(skin);rimDark=skin.dark.darker();setOpaque(false);
     }
     /** Package-visible for tests: the rendered face images, 240x240 each. */
     BufferedImage faceImage(int index){return faces[index];}
@@ -75,19 +83,23 @@ final class InitiativeCoinPanel extends JPanel {
         super.paintComponent(graphics);Graphics2D g=(Graphics2D)graphics.create();
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING,RenderingHints.VALUE_ANTIALIAS_ON);
         g.setRenderingHint(RenderingHints.KEY_INTERPOLATION,RenderingHints.VALUE_INTERPOLATION_BICUBIC);
-        g.setPaint(new GradientPaint(0,0,new Color(27,44,65),0,getHeight(),new Color(10,18,31)));g.fillRect(0,0,getWidth(),getHeight());
+        if (backgroundPaint == null || backgroundH != getHeight()) {
+            backgroundPaint = new GradientPaint(0, 0, BACK_TOP, 0, getHeight(), BACK_BOTTOM);
+            backgroundH = getHeight();
+        }
+        g.setPaint(backgroundPaint);g.fillRect(0,0,getWidth(),getHeight());
         Pose pose=pose(progress,winner);double cosine=Math.cos(pose.angle());
         int cx=getWidth()/2,cy=(int)(225-pose.lift());
         int shadow=(int)(136-pose.lift()*.42);g.setColor(new Color(0,0,0,(int)(85-pose.lift()*.3)));g.fillOval(cx-shadow/2,306,shadow,16);
         Graphics2D model=(Graphics2D)g.create();model.translate(cx,cy);model.rotate(pose.tilt());
         double squash=Math.max(.025,Math.abs(cosine));double rim=7*Math.abs(Math.sin(pose.angle()))+2;
         g.setColor(skin.dark);
-        model.setColor(skin.dark.darker());model.fill(new Ellipse2D.Double(-78,-78*squash,156,156*squash+rim));
+        model.setColor(rimDark);model.fill(new Ellipse2D.Double(-78,-78*squash,156,156*squash+rim));
         Graphics2D face=(Graphics2D)model.create();face.scale(1,squash);face.clip(new Ellipse2D.Double(-78,-78,156,156));
         face.drawImage(faces[cosine>=0?0:1],-78,-78,156,156,null);face.dispose();model.dispose();
-        g.setFont(new Font(Font.SERIF,Font.BOLD,24));g.setColor(progress>=1?GOLD:Color.WHITE);
+        g.setFont(TITLE_FONT);g.setColor(progress>=1?GOLD:Color.WHITE);
         centered(g,progress>=1?"PLAYER "+(winner+1)+" STARTS":"A TOSS OF FATE",355);
-        g.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,14));g.setColor(new Color(184,202,218));
+        g.setFont(SUBTITLE_FONT);g.setColor(SUBTITLE_TEXT);
         centered(g,progress>=1?"The battlefield is ready.":skin.label+" · deciding initiative",381);g.dispose();
     }
     private void centered(Graphics2D g,String text,int y){g.drawString(text,(getWidth()-g.getFontMetrics().stringWidth(text))/2,y);}

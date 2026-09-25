@@ -95,7 +95,6 @@ final class SettingsScreen extends SubScreen {
         lobbyHint.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
         lobbyHint.setForeground(new Color(150, 158, 172));
         card.add(SubScreen.row("", lobbyHint));
-        card.add(Box.createVerticalStrut(26));
 
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 14, 0));
         buttons.setOpaque(false);
@@ -105,8 +104,6 @@ final class SettingsScreen extends SubScreen {
         defaults.addActionListener(e -> restoreDefaults());
         buttons.add(save);
         buttons.add(defaults);
-        buttons.setAlignmentX(CENTER_ALIGNMENT);
-        card.add(buttons);
 
         JPanel frame = new JPanel(new BorderLayout());
         frame.setOpaque(true);
@@ -114,7 +111,22 @@ final class SettingsScreen extends SubScreen {
         frame.setBorder(BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(new Color(240, 191, 73, 90), 1),
                 new EmptyBorder(6, 6, 6, 6)));
-        frame.add(card, BorderLayout.CENTER);
+        // ISSUE 2: the form is taller than small windows (and can be clipped by
+        // the centered GridBag wrapper), so the rows scroll while the button
+        // bar stays pinned at the bottom, always reachable.
+        JScrollPane scroller = new JScrollPane(card,
+                ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
+                ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+        scroller.setOpaque(false);
+        scroller.getViewport().setOpaque(false);
+        scroller.setBorder(null);
+        scroller.getVerticalScrollBar().setUnitIncrement(24);
+        frame.add(scroller, BorderLayout.CENTER);
+        JPanel buttonBar = new JPanel(new BorderLayout());
+        buttonBar.setOpaque(false);
+        buttonBar.setBorder(new EmptyBorder(10, 0, 6, 0));
+        buttonBar.add(buttons, BorderLayout.CENTER);
+        frame.add(buttonBar, BorderLayout.SOUTH);
         return frame;
     }
 
