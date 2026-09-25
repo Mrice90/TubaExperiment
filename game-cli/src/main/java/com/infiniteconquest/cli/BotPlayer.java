@@ -108,7 +108,7 @@ public final class BotPlayer {
      * decision, so a seeded {@link Random} reproduces the same game exactly.
      */
     private String mortalChoice(GameState state, List<String> legal, int playerId) {
-        List<String> pool = filterCapitalAttacks(state, legal);
+        List<String> pool = filterCapitalAttacks(state, legal, playerId);
         List<String> ranked = ranked(state, pool, playerId);
         if (ranked.size() > 1 && random.nextDouble() < MORTAL_MISTAKE_RATE) {
             return ranked.get(random.nextInt(Math.min(MORTAL_EXPLORATION_WIDTH, ranked.size())));
@@ -117,25 +117,62 @@ public final class BotPlayer {
     }
 
     /**
-     * The novice's misplaced priorities: drop attacks on the enemy Capital
-     * unless the attack would obviously destroy it, or unless the Capital is
-     * the only enemy target available. Never returns an empty pool — if every
-     * legal command was a filtered capital attack, the full list is kept.
+     * The novice's misplaced priorities: drop strikes on the enemy Capital —
+     * both attacks and activated damage abilities — unless the strike would
+     * obviously destroy it, or unless the Capital is the only enemy target
+     * available. Never returns an empty pool — if every legal command was a
+     * filtered capital strike, the full list is kept.
      */
-    private List<String> filterCapitalAttacks(GameState state, List<String> legal) {
-        List<String> capitalAttacks = new ArrayList<>();
+    private List<String> filterCapitalAttacks(GameState state, List<String> legal, int playerId) {
+        List<String> capitalStrikes = new ArrayList<>();
         List<String> others = new ArrayList<>(legal.size());
         for (String command : legal) {
-            if (isCapitalAttack(state, command)) capitalAttacks.add(command);
+            if (isCapitalStrike(state, command)) capitalStrikes.add(command);
             else others.add(command);
         }
-        if (capitalAttacks.isEmpty()) return legal;
+        if (capitalStrikes.isEmpty()) return legal;
         boolean anyOtherAttackTarget = others.stream().anyMatch(command -> command.startsWith("attack"));
         if (!anyOtherAttackTarget) return legal; // nothing else to hit: even a novice swings at the Capital
-        for (String command : capitalAttacks) {
-            if (isLethalCapitalAttack(state, command)) others.add(command); // even a novice takes lethal
+        for (String command : capitalStrikes) {
+            if (isLethalCapitalStrike(state, command, playerId)) others.add(command); // even a novice takes lethal
         }
         return others.isEmpty() ? legal : others;
+    }
+
+    /** True if the command strikes the enemy Capital: an attack on it, or an
+     * activated ability whose every effect damages it. */
+    private boolean isCapitalStrike(GameState state, String command) {
+        return isCapitalAttack(state, command) || isCapitalPinger(state, command);
+    }
+
+    /** True if the command activates an ability that does nothing but damage the enemy Capital. */
+    private boolean isCapitalPinger(GameState state, String command) {
+        if (!command.startsWith("activate")) return false;
+        String[] parts = command.split("\\s+");
+        BoardPosition position = new BoardPosition(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        return state.board().topAt(position).flatMap(state::card)
+                .map(card -> {
+                    List<CardAbility> abilities = card.definition().abilities().stream()
+                            .filter(ability -> ability.trigger() == AbilityTrigger.ACTIVATED)
+                            .toList();
+                    return !abilities.isEmpty() && abilities.stream()
+                            .allMatch(ability -> ability.effect() == AbilityEffectType.DAMAGE_ENEMY_CAPITAL);
+                })
+                .orElse(false);
+    }
+
+    /** True if the capital strike would obviously destroy the enemy Capital. */
+    private boolean isLethalCapitalStrike(GameState state, String command, int playerId) {
+        if (command.startsWith("attack")) return isLethalCapitalAttack(state, command);
+        String[] parts = command.split("\\s+");
+        BoardPosition position = new BoardPosition(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        int ping = state.board().topAt(position).flatMap(state::card)
+                .map(card -> card.definition().abilities().stream()
+                        .filter(ability -> ability.trigger() == AbilityTrigger.ACTIVATED)
+                        .mapToInt(CardAbility::amount)
+                        .sum())
+                .orElse(0);
+        return ping >= enemyCapitalRemaining(state, playerId);
     }
 
     /** True if the command attacks a Capital. */
@@ -273,7 +310,7 @@ public final class BotPlayer {
             case "burrow" -> 82;
             case "blink" -> 45;
             case "move" -> 35;
-            case "activate" -> 75;
+            case "activate" -> activateScore(state, parts, playerId);
             case "end" -> 0;
             default -> 1;
         };
@@ -293,6 +330,65 @@ public final class BotPlayer {
             case BUFF_DEFENSE -> 100 + effect.amount();
             case TELEPORT_CHARACTER -> 60;
         };
+    }
+
+    /**
+     * Values an activated ability by what it actually does instead of a flat
+     * score. Lethal damage on the enemy Capital wins the game, so it scores
+     * like a lethal attack; chip damage, card draw, healing, and buffs score
+     * on the same scale as the rest of the heuristic, minus the GP the
+     * ability costs to fire. Firing a heal with nothing to heal scores below
+     * "end", so the bot holds its GP instead of wasting it.
+     */
+    private int activateScore(GameState state, String[] parts, int playerId) {
+        BoardPosition position = new BoardPosition(Integer.parseInt(parts[1]), Integer.parseInt(parts[2]));
+        CardInstance card = state.board().topAt(position).flatMap(state::card).orElse(null);
+        if (card == null) return 1;
+        int total = 0;
+        int gpCost = 0;
+        for (CardAbility ability : card.definition().abilities()) {
+            if (ability.trigger() != AbilityTrigger.ACTIVATED) continue;
+            gpCost += ability.gpCost();
+            total += switch (ability.effect()) {
+                case DAMAGE_ENEMY_CAPITAL -> {
+                    int remaining = enemyCapitalRemaining(state, playerId);
+                    if (ability.amount() >= remaining) yield 150;
+                    yield 104 + 2 * ability.amount();
+                }
+                case DRAW_CARD, DRAW_CHARACTER, DRAW_STRUCTURE -> 66 + 6 * ability.amount();
+                case GAIN_GP -> 48 + 2 * ability.amount();
+                case HEAL_SELF -> {
+                    int missing = card.damage();
+                    if (missing == 0) yield 0;
+                    yield 40 + 4 * Math.min(ability.amount(), missing);
+                }
+                case HEAL_CAPITAL -> {
+                    int missing = ownCapitalMissing(state, playerId);
+                    if (missing == 0) yield 0;
+                    yield 50 + 5 * Math.min(ability.amount(), missing);
+                }
+                case BUFF_SELF_ATTACK -> 58 + 4 * ability.amount();
+                case BUFF_SELF_DEFENSE -> 58 + 3 * ability.amount();
+            };
+        }
+        return total - gpCost;
+    }
+
+    /** Least remaining hit points across the enemy Capitals. */
+    private int enemyCapitalRemaining(GameState state, int playerId) {
+        return state.battlefieldCards(1 - playerId).stream()
+                .filter(card -> card.definition().type() == CardType.CAPITAL)
+                .mapToInt(card -> Math.max(0, card.definition().hitPoints() - card.damage()))
+                .min()
+                .orElse(Integer.MAX_VALUE);
+    }
+
+    /** Total missing hit points across the player's own Capitals. */
+    private int ownCapitalMissing(GameState state, int playerId) {
+        return state.battlefieldCards(playerId).stream()
+                .filter(card -> card.definition().type() == CardType.CAPITAL)
+                .mapToInt(CardInstance::damage)
+                .sum();
     }
 
     private int capitalSynergy(GameState state, int playerId, String action) {
