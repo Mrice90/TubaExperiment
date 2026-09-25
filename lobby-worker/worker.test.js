@@ -8,7 +8,7 @@
 
 import test from "node:test";
 import assert from "node:assert/strict";
-import worker, { eloUpdate, sanitizeName } from "./worker.js";
+import worker, { eloUpdate, sanitizeName, wssUrlHasIpHost } from "./worker.js";
 
 function fakeKv() {
     const store = new Map();
@@ -181,4 +181,127 @@ test("dual report: disagreement is discarded and flagged", async () => {
 
     const flag = await e.IC_KV.get("flag:m2");
     assert.ok(flag, "disagreement must be kept for review");
+});
+
+// --- IP privacy (tunnel mode must keep both players' direct IPs private) ---
+
+test("wssUrlHasIpHost: hostnames pass, IP literals fail", () => {
+    assert.equal(wssUrlHasIpHost("wss://abc.trycloudflare.com"), false);
+    assert.equal(wssUrlHasIpHost("wss://abc.trycloudflare.com/game"), false);
+    assert.equal(wssUrlHasIpHost("wss://203.0.113.7"), true);
+    assert.equal(wssUrlHasIpHost("wss://203.0.113.7:8443/x"), true);
+    assert.equal(wssUrlHasIpHost("wss://user@203.0.113.7/x"), true);
+    assert.equal(wssUrlHasIpHost("wss://[2001:db8::1]/"), true);
+    assert.equal(wssUrlHasIpHost("wss://[2001:db8::1]:8443/x"), true);
+    assert.equal(wssUrlHasIpHost("http://abc.trycloudflare.com"), true, "non-wss rejected");
+    assert.equal(wssUrlHasIpHost("garbage"), true);
+    assert.equal(wssUrlHasIpHost(null), true);
+});
+
+test("lobby register rejects IP-literal tunnel URLs", async () => {
+    const e = env();
+    for (const bad of [
+        "wss://203.0.113.7/",
+        "wss://203.0.113.7:8443/game",
+        "wss://user@198.51.100.23/x",
+        "wss://[2001:db8::1]/",
+        "wss://[2001:db8::1]:8443/x",
+    ]) {
+        const res = await call(e, post("/lobbies", {
+            hostUuid: "aaaa", hostName: "Sneaky", hostRating: 1000, wssUrl: bad,
+        }));
+        assert.equal(res.status, 400, `expected 400 for ${bad}`);
+        assert.match(res.json.error, /IP/i);
+    }
+    // A genuine tunnel hostname still registers.
+    const ok = await call(e, post("/lobbies", {
+        hostUuid: "aaaa", hostName: "Honest", hostRating: 1000,
+        wssUrl: "wss://good-42.trycloudflare.com",
+    }));
+    assert.equal(ok.status, 200);
+});
+
+test("quick-match pairing rejects IP-literal tunnel URLs", async () => {
+    const e = env();
+    const res = await call(e, post("/pair", {
+        hostUuid: "11111111-1111-4111-8111-111111111111",
+        forUuid: "22222222-2222-4222-8222-222222222222",
+        wssUrl: "wss://203.0.113.7:8443",
+        code: "XYZ", hostName: "Sneaky", hostRating: 1000,
+    }));
+    assert.equal(res.status, 400);
+    assert.match(res.json.error, /IP/i);
+});
+
+// Matches dotted quads (IPv4) and bracketed or bare hex-colon groups (IPv6).
+const IPV4 = /(?:\d{1,3}\.){3}\d{1,3}/;
+const IPV6 = /\[[0-9a-fA-F:]{2,}\]|(?:^|[^0-9a-fA-F])(?:[0-9a-fA-F]{0,4}:){2,}[0-9a-fA-F:]*:[0-9a-fA-F]{0,4}(?:[^0-9a-fA-F:]|$)/;
+
+function assertNoIp(payload, where) {
+    const text = JSON.stringify(payload);
+    assert.ok(!IPV4.test(text), `${where} must not contain an IPv4 address: ${text}`);
+    assert.ok(!IPV6.test(text), `${where} must not contain an IPv6 address: ${text}`);
+}
+
+test("no worker payload ever contains an IP address", async () => {
+    const e = env();
+    const uuidA = "aaaaaaaa-1111-4111-8111-aaaaaaaaaaaa";
+    const uuidB = "bbbbbbbb-2222-4222-8222-bbbbbbbbbbbb";
+
+    // Full public flow: register, list, get, queue, poll, pair, dual report.
+    const reg = await call(e, post("/lobbies", {
+        hostUuid: uuidA, hostName: "Tunnel Host", hostRating: 1042,
+        wssUrl: "wss://epic-name-99.trycloudflare.com", dataVersion: "ic-net-2",
+    }));
+    assert.equal(reg.status, 200);
+    const code = reg.json.code;
+    assertNoIp(reg.json, "lobby register response");
+
+    const list = await call(e, get("/lobbies"));
+    assertNoIp(list.json, "lobby listing");
+    assert.equal(list.json.length, 1);
+
+    const one = await call(e, get(`/lobbies/${code}`));
+    assertNoIp(one.json, "lobby get");
+
+    await call(e, post("/queue", { uuid: uuidA, name: "Alice", rating: 1000 }));
+    await call(e, post("/queue", { uuid: uuidB, name: "Bob", rating: 1050 }));
+    const alice = await call(e, get(`/queue/poll?uuid=${uuidA}`));
+    assertNoIp(alice.json, "queue poll (host)");
+    const pair = await call(e, post("/pair", {
+        hostUuid: uuidA, forUuid: uuidB, wssUrl: "wss://epic-name-99.trycloudflare.com",
+        code: "QM1", hostName: "Alice", hostRating: 1000,
+    }));
+    assert.equal(pair.json.ok, true);
+    const bobReady = await call(e, get(`/queue/poll?uuid=${uuidB}`));
+    assertNoIp(bobReady.json, "queue poll (ready)");
+
+    const reportBody = (reporter, winner, loser) => ({
+        matchId: "ip-m1", reporterUuid: reporter, winnerUuid: winner, loserUuid: loser,
+        dataVersion: "ic-net-2",
+    });
+    const r1 = await call(e, post("/report", reportBody(uuidA, uuidA, uuidB)));
+    assertNoIp(r1.json, "first report response");
+    const r2 = await call(e, post("/report", reportBody(uuidB, uuidA, uuidB)));
+    assertNoIp(r2.json, "second report response");
+    assert.equal(r2.json.applied, true);
+
+    const rating = await call(e, get(`/rating/${uuidA}`));
+    assertNoIp(rating.json, "rating record");
+    const board = await call(e, get("/leaderboard?limit=25"));
+    assertNoIp(board.json, "leaderboard");
+
+    // Even a hostile register attempt that slips a raw IP into the *name*
+    // field must not surface as an IP-looking payload entry.
+    const evil = await call(e, post("/lobbies", {
+        hostUuid: uuidB, hostName: "call me 203.0.113.7", hostRating: 1000,
+        wssUrl: "wss://other-1.trycloudflare.com",
+    }));
+    assert.equal(evil.status, 200);
+    const list2 = await call(e, get("/lobbies"));
+    const evilEntry = list2.json.find((x) => x.code === evil.json.code);
+    assert.ok(evilEntry, "evil lobby should be listed");
+    // Names are public labels; the tunnel URL fields must stay clean.
+    assertNoIp({ wssUrl: evilEntry.wssUrl }, "lobby entry wssUrl after hostile name");
+    assert.equal(evilEntry.wssUrl, "wss://other-1.trycloudflare.com");
 });

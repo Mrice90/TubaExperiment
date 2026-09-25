@@ -31,6 +31,18 @@ class TunnelManagerTest {
         assertNull(TunnelManager.extractTunnelUrl("https://example.com/page"));
     }
 
+    /**
+     * Tunnel mode must never publish a direct IP: the parser only recognizes
+     * *.trycloudflare.com hostnames, so an IP-host URL in cloudflared output
+     * can never reach the lobby registration path.
+     */
+    @Test
+    void ipHostUrlsNeverExtractedAsTunnelUrls() {
+        assertNull(TunnelManager.extractTunnelUrl("INF Visit it at: https://203.0.113.7/"));
+        assertNull(TunnelManager.extractTunnelUrl("INF Visit it at: https://203.0.113.7:8443/x"));
+        assertNull(TunnelManager.extractTunnelUrl("INF Visit it at: https://[2001:db8::1]/"));
+    }
+
     @Test
     void toWssUrlConvertsScheme() {
         assertEquals("wss://abc-123.trycloudflare.com",

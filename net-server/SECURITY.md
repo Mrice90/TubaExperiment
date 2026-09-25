@@ -108,6 +108,11 @@ rendezvous and rating ledger. Data minimization is deliberate:
   after 24 hours.
 - It never receives, stores, or logs: game traffic, hands, deck lists,
   file paths, settings, system information, or IP addresses.
+- Tunnel URLs are validated: `POST /lobbies` and `POST /pair` reject any
+  `wssUrl` whose host is an IP literal (IPv4 or IPv6) with 400, so tunnel
+  mode can never leak a direct IP through lobby listings or pairings
+  (defense in depth: the game client only ever posts `*.trycloudflare.com`
+  hostnames anyway).
 - The leaderboard exposes display name, rating, wins, losses — never UUIDs.
 - Rating integrity: both clients independently report `(matchId, winnerUuid,
   loserUuid)`. Elo is applied only when both reports agree; disagreements

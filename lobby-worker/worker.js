@@ -8,6 +8,7 @@
  *
  * HTTP API:
  *   POST /lobbies            {code?, hostUuid, hostName, hostRating, wssUrl, dataVersion} -> {code}
+ *     (wssUrl must be a tunnel hostname; IP-literal hosts are rejected with 400)
  *   GET  /lobbies            -> [{code, hostName, hostRating, wssUrl, dataVersion}]
  *   GET  /lobbies/:code      -> lobby entry | 404
  *   DELETE /lobbies/:code    {hostUuid} -> {ok:true} (only the registering UUID may delete)
@@ -61,6 +62,30 @@ function isUuid(value) {
     return typeof value === "string" && /^[0-9a-fA-F-]{1,64}$/.test(value);
 }
 
+/**
+ * Tunnel mode keeps both players' direct IPs private: the only URLs the
+ * Worker may hand out are tunnel hostnames (e.g. *.trycloudflare.com).
+ * Reject a wss:// URL whose host is an IP literal (IPv4 dotted-quad or
+ * IPv6 in brackets), so a malicious client cannot smuggle a direct-IP
+ * endpoint into lobby listings or quick-match pairings.
+ */
+export function wssUrlHasIpHost(url) {
+    if (typeof url !== "string") return true;
+    const m = /^wss:\/\/([^/?#]*)/i.exec(url);
+    if (!m) return true; // not even a valid wss:// URL
+    let host = m[1];
+    const at = host.lastIndexOf("@");
+    if (at >= 0) host = host.slice(at + 1); // strip userinfo
+    let bare = host;
+    if (bare.startsWith("[") && bare.includes("]")) {
+        bare = bare.slice(1, bare.indexOf("]")); // IPv6 literal
+        return bare.includes(":");
+    }
+    const colon = bare.indexOf(":");
+    if (colon >= 0) bare = bare.slice(0, colon); // strip :port
+    return /^(?:\d{1,3}\.){3}\d{1,3}$/.test(bare);
+}
+
 function json(data, status = 200) {
     return new Response(JSON.stringify(data), {
         status,
@@ -101,6 +126,9 @@ async function registerLobby(request, env) {
     const body = await readJson(request);
     if (!body || !isUuid(body.hostUuid) || typeof body.wssUrl !== "string" || !body.wssUrl.startsWith("wss://")) {
         return bad("hostUuid and wssUrl are required");
+    }
+    if (wssUrlHasIpHost(body.wssUrl)) {
+        return bad("wssUrl must be a tunnel hostname, never a direct IP address");
     }
     let code = typeof body.code === "string" && /^[A-Z0-9]{6}$/.test(body.code) ? body.code : makeCode();
     const entry = {
@@ -224,6 +252,9 @@ async function publishPairing(request, env) {
     if (!body || !isUuid(body.hostUuid) || !isUuid(body.forUuid)
         || typeof body.wssUrl !== "string" || !body.wssUrl.startsWith("wss://")) {
         return bad("hostUuid, forUuid, and wssUrl are required");
+    }
+    if (wssUrlHasIpHost(body.wssUrl)) {
+        return bad("wssUrl must be a tunnel hostname, never a direct IP address");
     }
     await env.IC_KV.put(pairKey(body.forUuid), JSON.stringify({
         wssUrl: body.wssUrl.slice(0, 200),
