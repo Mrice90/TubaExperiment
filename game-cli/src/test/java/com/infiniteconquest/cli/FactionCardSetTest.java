@@ -19,15 +19,18 @@ class FactionCardSetTest {
     void everyFactionHasAnExpandedUniquePlayablePool() {
         PrototypeCardPool pool = new PrototypeCardPool();
 
-        assertEquals(152, pool.cards().size());
+        assertEquals(155, pool.cards().size());
+        Map<String, Integer> expectedPerFaction = Map.of("ZEUS", 65, "POSEIDON", 66);
         for (String faction : FactionDecks.FACTIONS) {
             List<CardDefinition> cards = pool.cardsForFaction(faction);
-            assertEquals(64, cards.size(), faction);
-            assertEquals(64, cards.stream().map(CardDefinition::id).distinct().count(), faction);
+            assertEquals(expectedPerFaction.get(faction).intValue(), cards.size(), faction);
+            assertEquals(expectedPerFaction.get(faction).intValue(),
+                    cards.stream().map(CardDefinition::id).distinct().count(), faction);
 
+            int expected = expectedPerFaction.get(faction).intValue();
             Map<CardType, Long> types = cards.stream()
                     .collect(Collectors.groupingBy(CardDefinition::type, Collectors.counting()));
-            assertEquals(64L, types.values().stream().mapToLong(Long::longValue).sum(), faction);
+            assertEquals((long) expected, types.values().stream().mapToLong(Long::longValue).sum(), faction);
         }
     }
 
@@ -50,7 +53,9 @@ class FactionCardSetTest {
                             : card.id().contains("_apex_") ? 19
                             : card.id().contains("_land_") ? 22 : 10), card.id() + " HP");
                 } else if (card.type() == CardType.STRUCTURE) {
-                    assertTrue(card.hitPoints() >= 5 && card.hitPoints() <= (card.id().contains("_tutor_") ? 26
+                    // Floor is 4 for cheap fragile burn structures (Ion Storm Lattice);
+                    // everything else stays at 5+.
+                    assertTrue(card.hitPoints() >= 4 && card.hitPoints() <= (card.id().contains("_tutor_") ? 26
                             : card.id().contains("_apex_") ? 24
                             : card.id().contains("_structure_") ? 26 : 13), card.id() + " HP");
                 }
@@ -124,10 +129,11 @@ class FactionCardSetTest {
         }
         Set<AbilityTrigger> triggers = pool.cards().stream().flatMap(card -> card.abilities().stream())
                 .map(ability -> ability.trigger()).collect(Collectors.toSet());
-        // DESTROYED-trigger abilities shipped with the retired factions (Ares, Hades, Hephaestus);
-        // the set grows back as factions return via DLC.
-        assertEquals(Set.of(AbilityTrigger.ENTERS_PLAY,
-                AbilityTrigger.PASSIVE, AbilityTrigger.ACTIVATED), triggers);
+        // DESTROYED-trigger abilities shipped with the retired factions (Ares, Hades, Hephaestus)
+        // and return with the Zeus/Poseidon land/structure redesign; the set grows further as
+        // factions return via DLC.
+        assertEquals(Set.of(AbilityTrigger.ENTERS_PLAY, AbilityTrigger.PASSIVE,
+                AbilityTrigger.ACTIVATED, AbilityTrigger.DESTROYED), triggers);
     }
 
     private long keywordCount(PrototypeCardPool pool, String faction, String keyword) {

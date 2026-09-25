@@ -253,10 +253,18 @@
       "movement": 0,
       "hitPoints": 5,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "When this enters play, gain 1 GP.",
       "description": "A floating district wrapped in conductive mist.",
       "rarity": 1,
-      "contentStatus": "PROTOTYPE"
+      "contentStatus": "PROTOTYPE",
+      "abilities": [
+        {
+          "trigger": "ENTERS_PLAY",
+          "effect": "GAIN_GP",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ]
     },
     {
       "id": "zeus_ionized_skyway",
@@ -272,7 +280,7 @@
       "keywords": [
         "WAYSTATION"
       ],
-      "rulesText": "Waystation (range 0, amount 1).",
+      "rulesText": "Waystation (range 0, amount 1). When this enters play, draw a card.",
       "description": "A charged transit lane linking the upper towers.",
       "rarity": 2,
       "contentStatus": "PROTOTYPE",
@@ -282,7 +290,15 @@
           "amount": 1
         }
       },
-      "developmentGoldCost": 1
+      "developmentGoldCost": 1,
+      "abilities": [
+        {
+          "trigger": "ENTERS_PLAY",
+          "effect": "DRAW_CARD",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ]
     },
     {
       "id": "zeus_eagles_perch_array",
@@ -298,7 +314,7 @@
       "keywords": [
         "HIGH_GROUND"
       ],
-      "rulesText": "High Ground (range 0, amount 1).",
+      "rulesText": "High Ground (range 0, amount 1). Activate once per turn — 3 GP: deal 2 damage to the enemy Capital.",
       "description": "A sensor plateau overlooking Neo-Olympus.",
       "rarity": 2,
       "contentStatus": "PROTOTYPE",
@@ -311,7 +327,15 @@
           "amount": 1
         }
       },
-      "developmentGoldCost": 1
+      "developmentGoldCost": 1,
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "DAMAGE_ENEMY_CAPITAL",
+          "amount": 2,
+          "gpCost": 3
+        }
+      ]
     },
     {
       "id": "zeus_throneward_conduit",
@@ -325,12 +349,20 @@
       "movement": 0,
       "hitPoints": 9,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "When this is destroyed, gain 2 GP.",
       "description": "A fortified power route feeding Zeus's command spire.",
       "rarity": 3,
       "contentStatus": "PROTOTYPE",
       "archetypes": [
         "INDUSTRIAL"
+      ],
+      "abilities": [
+        {
+          "trigger": "DESTROYED",
+          "effect": "GAIN_GP",
+          "amount": 2,
+          "gpCost": 0
+        }
       ]
     },
     {
@@ -345,10 +377,18 @@
       "movement": 0,
       "hitPoints": 5,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "Activate once per turn — 2 GP: deal 1 damage to the enemy Capital.",
       "description": "A compact conductor redirecting atmospheric power.",
       "rarity": 1,
-      "contentStatus": "PROTOTYPE"
+      "contentStatus": "PROTOTYPE",
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "DAMAGE_ENEMY_CAPITAL",
+          "amount": 1,
+          "gpCost": 2
+        }
+      ]
     },
     {
       "id": "zeus_cloudwall_bastion",
@@ -364,7 +404,7 @@
       "keywords": [
         "BULWARK"
       ],
-      "rulesText": "Bulwark (range 0, amount 1).",
+      "rulesText": "Bulwark (range 0, amount 1). Start of your turn: heal this 1.",
       "description": "A dense weather shield that breaks enemy sightlines.",
       "rarity": 2,
       "contentStatus": "PROTOTYPE",
@@ -377,7 +417,15 @@
           "amount": 1
         }
       },
-      "developmentGoldCost": 1
+      "developmentGoldCost": 1,
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "HEAL_SELF",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ]
     },
     {
       "id": "zeus_keraunos_charging_spire",
@@ -391,10 +439,18 @@
       "movement": 0,
       "hitPoints": 8,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "When this is destroyed, deal 3 damage to the enemy Capital.",
       "description": "A lightning reservoir beneath the Olympian grid.",
       "rarity": 2,
-      "contentStatus": "PROTOTYPE"
+      "contentStatus": "PROTOTYPE",
+      "abilities": [
+        {
+          "trigger": "DESTROYED",
+          "effect": "DAMAGE_ENEMY_CAPITAL",
+          "amount": 3,
+          "gpCost": 0
+        }
+      ]
     },
     {
       "id": "zeus_zeus_command_nexus",
@@ -675,12 +731,20 @@
       "movement": 0,
       "hitPoints": 6,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "Start of your turn: heal this 1.",
       "description": "Shallow luminous water surrounding the sea districts.",
       "rarity": 1,
       "contentStatus": "PROTOTYPE",
       "archetypes": [
         "COAST"
+      ],
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "HEAL_SELF",
+          "amount": 1,
+          "gpCost": 0
+        }
       ]
     },
     {
@@ -695,12 +759,20 @@
       "movement": 0,
       "hitPoints": 7,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "When this enters play, draw a card.",
       "description": "A living archive grown through synthetic coral.",
       "rarity": 2,
       "contentStatus": "PROTOTYPE",
       "archetypes": [
         "COAST"
+      ],
+      "abilities": [
+        {
+          "trigger": "ENTERS_PLAY",
+          "effect": "DRAW_CARD",
+          "amount": 1,
+          "gpCost": 0
+        }
       ]
     },
     {
@@ -715,12 +787,20 @@
       "movement": 0,
       "hitPoints": 8,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "When this is destroyed, heal your Capital 3.",
       "description": "A deep channel armored against surface assault.",
       "rarity": 2,
       "contentStatus": "PROTOTYPE",
       "archetypes": [
         "COAST"
+      ],
+      "abilities": [
+        {
+          "trigger": "DESTROYED",
+          "effect": "HEAL_CAPITAL",
+          "amount": 3,
+          "gpCost": 0
+        }
       ]
     },
     {
@@ -735,12 +815,20 @@
       "movement": 0,
       "hitPoints": 10,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "Activate once per turn — 1 GP: heal this 2.",
       "description": "A fortified current leading toward Poseidon's domain.",
       "rarity": 3,
       "contentStatus": "PROTOTYPE",
       "archetypes": [
         "COAST"
+      ],
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "HEAL_SELF",
+          "amount": 2,
+          "gpCost": 1
+        }
       ]
     },
     {
@@ -757,7 +845,7 @@
       "keywords": [
         "MEDIC_TENT"
       ],
-      "rulesText": "Medic Tent (range 1, amount 1).",
+      "rulesText": "Medic Tent (range 1, amount 1). Start of your turn: heal this 2.",
       "description": "A pressure engine sustaining the flooded grid.",
       "rarity": 1,
       "contentStatus": "PROTOTYPE",
@@ -770,7 +858,15 @@
           "amount": 1
         }
       },
-      "developmentGoldCost": 1
+      "developmentGoldCost": 1,
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "HEAL_SELF",
+          "amount": 2,
+          "gpCost": 0
+        }
+      ]
     },
     {
       "id": "poseidon_coral_bulwark",
@@ -786,7 +882,7 @@
       "keywords": [
         "BULWARK"
       ],
-      "rulesText": "",
+      "rulesText": "Start of your turn: heal this 1.",
       "description": "A regenerative wall hardened by mineral growth.",
       "rarity": 2,
       "contentStatus": "PROTOTYPE",
@@ -799,7 +895,15 @@
           "amount": 1
         }
       },
-      "developmentGoldCost": 1
+      "developmentGoldCost": 1,
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "HEAL_SELF",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ]
     },
     {
       "id": "poseidon_sonar_beacon",
@@ -813,10 +917,18 @@
       "movement": 0,
       "hitPoints": 6,
       "keywords": [],
-      "rulesText": "",
+      "rulesText": "Activate once per turn — 2 GP: draw a character.",
       "description": "A resonant tower revealing motion through water and steel.",
       "rarity": 2,
-      "contentStatus": "PROTOTYPE"
+      "contentStatus": "PROTOTYPE",
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "DRAW_CHARACTER",
+          "amount": 1,
+          "gpCost": 2
+        }
+      ]
     },
     {
       "id": "poseidon_abyss_gate",
@@ -839,6 +951,81 @@
       "archetypes": [
         "FORTRESS"
       ]
+    },
+    {
+      "id": "zeus_ion_storm_lattice",
+      "name": "Ion Storm Lattice",
+      "type": "STRUCTURE",
+      "faction": "ZEUS",
+      "cost": 2,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 4,
+      "keywords": [],
+      "abilities": [
+        {
+          "trigger": "ACTIVATED",
+          "effect": "DAMAGE_ENEMY_CAPITAL",
+          "amount": 1,
+          "gpCost": 1
+        }
+      ],
+      "rulesText": "Activate once per turn — 1 GP: deal 1 damage to the enemy Capital.",
+      "description": "A cheap, hungry lattice that throws lightning at anything.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_moonwell_tidegate",
+      "name": "Moonwell Tidegate",
+      "type": "STRUCTURE",
+      "faction": "POSEIDON",
+      "cost": 3,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 6,
+      "keywords": [],
+      "abilities": [
+        {
+          "trigger": "PASSIVE",
+          "effect": "HEAL_CAPITAL",
+          "amount": 1,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "Start of your turn: heal your Capital 1.",
+      "description": "A lunar engine breathing with the tide.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
+    },
+    {
+      "id": "poseidon_drowned_archive",
+      "name": "Drowned Archive",
+      "type": "LAND",
+      "faction": "POSEIDON",
+      "cost": 1,
+      "attack": 0,
+      "defense": 0,
+      "range": 0,
+      "movement": 0,
+      "hitPoints": 7,
+      "keywords": [],
+      "abilities": [
+        {
+          "trigger": "DESTROYED",
+          "effect": "DRAW_CARD",
+          "amount": 2,
+          "gpCost": 0
+        }
+      ],
+      "rulesText": "When this is destroyed, draw 2 cards.",
+      "description": "Sunken records surfacing only when disturbed.",
+      "rarity": 1,
+      "contentStatus": "PROTOTYPE"
     }
   ]
 }

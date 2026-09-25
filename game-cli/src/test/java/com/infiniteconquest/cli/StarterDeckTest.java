@@ -9,6 +9,21 @@ import java.util.stream.Collectors;
 import static org.junit.jupiter.api.Assertions.*;
 class StarterDeckTest {
     @TempDir Path folder;
+    @Test void redesignedCatalogStaysUniqueParsesAndStartersValidate(){
+        // PrototypeCardPool loads every catalog through CardCatalog (throws on
+        // parse failure) and rejects duplicate ids across all catalogs.
+        var pool=new PrototypeCardPool();
+        assertNotNull(pool.require("zeus_ion_storm_lattice"));
+        assertNotNull(pool.require("poseidon_moonwell_tidegate"));
+        assertNotNull(pool.require("poseidon_drowned_archive"));
+        var decks=new FactionDecks(pool);
+        for(String f:FactionDecks.FACTIONS){
+            var starter=decks.starter(f);
+            assertEquals(60,starter.size(),f);
+            assertTrue(new DeckValidator().validate(starter).isEmpty(),
+                    "Starter fails DeckValidator for "+f+": "+new DeckValidator().validate(starter));
+        }
+    }
     @Test void startersHaveReliableCurvesAndRepeatableFactionPlans(){
         var pool=new PrototypeCardPool();var decks=new FactionDecks(pool);
         for(String f:FactionDecks.FACTIONS){var cards=decks.starter(f);
