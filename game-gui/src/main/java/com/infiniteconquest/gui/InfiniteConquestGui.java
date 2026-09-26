@@ -95,7 +95,17 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     /** Generation counter for reaction windows; stale dialogs must not answer. */
     private int netReactionGen;
     /** The currently open network reaction dialog, if any (for timeout dismissal). */
-    private VisualReactionDialog activeReactionDialog;
+    private ReactionOverlay activeReactionOverlay;
+    /** Non-null while a reaction overlay routes board clicks to target selection. */
+    private java.util.function.Consumer<BoardPosition> reactionTargetClicks;
+    /** The reaction overlay currently docked over the board, if any (local or net). */
+    private ReactionOverlay shownReactionOverlay;
+    /** Non-null while a reaction overlay wants hover previews on the live board. */
+    private java.util.function.Consumer<BoardPosition> reactionHoverPreview;
+    /** Runs when the player right-clicks the board during a reaction (clears spell choice). */
+    private Runnable reactionDeselect;
+    /** Header control buttons, disabled while a reaction overlay is open. */
+    private final List<JButton> headerControls = new ArrayList<>();
     private boolean victoryDialogShown;
     private boolean fullScreen;
     private boolean boardFullScreen;
@@ -189,10 +199,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         addWindowListener(new java.awt.event.WindowAdapter() {
             @Override public void windowClosing(java.awt.event.WindowEvent event) {
-                int answer = JOptionPane.showConfirmDialog(InfiniteConquestGui.this,
-                        "Quit Infinite Conquest?", "Exit",
-                        JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-                if (answer == JOptionPane.YES_OPTION) {
+                boolean quit = ThemedDialogs.confirm(InfiniteConquestGui.this,
+                        "Quit Infinite Conquest?",
+                        "Quit Infinite Conquest and return to your desktop?<br>Any match in progress will be abandoned.",
+                        "Quit", "Keep Playing");
+                if (quit) {
                     dispose();
                     System.exit(0);
                 }
@@ -337,9 +348,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         if (netGameOver) return;
         netGameOver = true;
         netReactionWaiting = false;
-        JOptionPane.showMessageDialog(this,
-                "Lost connection to the host.\n" + (reason == null ? "" : reason),
-                "Disconnected", JOptionPane.WARNING_MESSAGE);
+        ThemedDialogs.message(this, "Disconnected",
+                "Lost connection to the host." + (reason == null ? "" : "<br>" + html(reason))
+                        + "<br><br>The match cannot continue.",
+                true);
         onQuitToTitle.run();
         dispose();
     }
@@ -393,9 +405,15 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         if (netGameOver || !netMode() || reactingPlayer != localPlayer()) return;
         message("Reaction window — answer before the timer runs out!");
         int generation = ++netReactionGen;
-        activeReactionDialog = new VisualReactionDialog(reactingPlayer, commands, expiresInSeconds);
-        String chosen = activeReactionDialog.choose();
-        activeReactionDialog = null;
+        interaction.beginReaction();
+        activeReactionOverlay = new ReactionOverlay(reactingPlayer, commands, expiresInSeconds);
+        String chosen;
+        try {
+            chosen = activeReactionOverlay.choose();
+        } finally {
+            interaction.finishReaction();
+            activeReactionOverlay = null;
+        }
         if (generation != netReactionGen || netSession == null || netGameOver) return; // timed out/disconnected
         netSession.sendReaction(chosen);
         addHistory("You", chosen == null || chosen.isBlank() ? "Reaction — pass" : "Reaction — " + describe(chosen));
@@ -405,10 +423,11 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     @Override public void onReactionTimeout(int player) {
         if (netGameOver || !netMode()) return;
         netReactionWaiting = false; // the window resolved; input unlocks below
-        netReactionGen++; // any open dialog must not answer a dead window
-        VisualReactionDialog dialog = activeReactionDialog;
-        activeReactionDialog = null;
-        if (dialog != null && player == localPlayer()) dialog.dispose();
+        netReactionGen++; // any open overlay must not answer a dead window
+        ReactionOverlay overlay = activeReactionOverlay;
+        activeReactionOverlay = null;
+        if (overlay != null && player == localPlayer()) overlay.dismiss();
+        if (player == localPlayer()) interaction.finishReaction();
         message(player == localPlayer() ? "Your reaction window expired — auto-passed."
                 : opponentName + "'s reaction window expired — auto-passed.");
         refresh();
@@ -433,15 +452,14 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         String title = won ? "Victory!" : "Defeat";
         String ratingLine = netRatingLine == null ? ""
                 : "<br><br><font color='#f0bf49'>" + html(netRatingLine) + "</font>";
-        int answer = JOptionPane.showConfirmDialog(this,
-                "<html><div style='text-align:center'>"
-                        + (won ? "You have destroyed the enemy capital!" : opponentName + " has destroyed your capital.")
+        boolean backToTitle = ThemedDialogs.confirm(this, title,
+                "<div style='text-align:center'>"
+                        + (won ? "You have destroyed the enemy capital!" : html(opponentName) + " has destroyed your capital.")
                         + ratingLine
-                        + "<br><br>Return to the title menu?</div></html>",
-                title, JOptionPane.YES_NO_OPTION,
-                won ? JOptionPane.INFORMATION_MESSAGE : JOptionPane.WARNING_MESSAGE);
+                        + "<br><br>Return to the title menu?</div>",
+                "Return to Title", "Stay");
         netWinner = null; // show once
-        if (answer == JOptionPane.YES_OPTION) {
+        if (backToTitle) {
             onQuitToTitle.run();
             dispose();
         }
@@ -760,11 +778,19 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             popup.show((Component)e.getSource(),0,((Component)e.getSource()).getHeight());
         });
         controls.add(menu);
-        controls.add(button("Background", e -> boardPanel.toggleBackground()));
-        controls.add(button("Actions", e -> openActionPanel(0)));
-        controls.add(button("History", e -> openActionPanel(1)));
+        headerControls.add(menu);
+        JButton background = button("Background", e -> boardPanel.toggleBackground());
+        controls.add(background);
+        headerControls.add(background);
+        JButton actions = button("Actions", e -> openActionPanel(0));
+        controls.add(actions);
+        headerControls.add(actions);
+        JButton history = button("History", e -> openActionPanel(1));
+        controls.add(history);
+        headerControls.add(history);
         endTurnButton = button("End Turn", e -> executeHuman("end"));
         controls.add(endTurnButton);
+        headerControls.add(endTurnButton);
         header.add(controls, BorderLayout.EAST);
         JPanel information = new JPanel(new BorderLayout(8, 3));
         information.setOpaque(false);
@@ -894,6 +920,13 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 cell.setMargin(new Insets(2, 2, 2, 2));
                 cell.setCursor(Cursor.getPredefinedCursor(Cursor.HAND_CURSOR));
                 cell.addMouseListener(dragListener(new DragSource(null, position)));
+                // Reaction overlays route live-board clicks and hover previews through these hooks.
+                cell.addMouseListener(new MouseAdapter() {
+                    @Override public void mouseEntered(MouseEvent event) {
+                        java.util.function.Consumer<BoardPosition> hover = reactionHoverPreview;
+                        if (hover != null) hover.accept(position);
+                    }
+                });
                 cell.putClientProperty("position", position);
                 boardButtons.put(position, cell);
                 boardPanel.add(cell);
@@ -1156,7 +1189,9 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                 build=StarterDeckMigration.upgrade(file,build,matchFactory.pool(),buildStore);
                 savedDecks.put(faction, build);
             } catch (RuntimeException exception) {
-                JOptionPane.showMessageDialog(this, exception.getMessage() + "\nOriginal file is unchanged. Use the deck builder to create a new build.", "Deck Loading", JOptionPane.WARNING_MESSAGE);
+                ThemedDialogs.message(this, "Deck Loading",
+                        html(exception.getMessage()) + "<br>Original file is unchanged. Use the deck builder to create a new build.",
+                        true);
             }
         }
     }
@@ -1172,9 +1207,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             Path path = deckDirectory.resolve(edited.primaryFaction().toLowerCase(Locale.ROOT) + ".json");
             buildStore.save(path, edited);
             savedDecks.put(edited.primaryFaction(), edited);
-            JOptionPane.showMessageDialog(this, "Deck saved. Start a new match with " + edited.primaryFaction() + " to play it.\n" + path, "Deck Saved", JOptionPane.INFORMATION_MESSAGE);
+            toast("<b>Deck saved.</b><br>Start a new match with " + html(edited.primaryFaction())
+                    + " to play it.<br><font size='2'>" + html(path.toString()) + "</font>");
         } catch (IllegalArgumentException exception) {
-            JOptionPane.showMessageDialog(this, exception.getMessage(), "Deck Not Saved", JOptionPane.ERROR_MESSAGE);
+            ThemedDialogs.message(this, "Deck Not Saved", html(exception.getMessage()), true);
         }
     }
 
@@ -1308,19 +1344,31 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         }
         CardInstance capital=new CardInstance(UUID.randomUUID(),matchFactory.capitals().require("zeus_capital_cloud_throne"),0,Zone.BATTLEFIELD);capital.addDamage(3);state.register(capital);
         CardInspectionPanel panel=new CardInspectionPanel(state,capital);panel.setSize(800,520);layoutTree(panel);captureComponent(panel,directory.resolve("full-card-capital.png"));
-        var dialog=new VisualReactionDialog(0,hints.spellActionsForPlayer(state,0));
-        dialog.addNotify();dialog.getRootPane().setSize(dialog.getWidth()-16,dialog.getHeight()-40);layoutTree(dialog.getRootPane());captureComponent((JComponent)dialog.getContentPane(),directory.resolve("reaction-before-selection.png"));
-        String before=captureStateFingerprint();int gold=state.player(0).currentGp();
-        dialog.selectSpell(0);dialog.previewTarget(new BoardPosition(1,4));
-        layoutTree(dialog.getRootPane());captureComponent((JComponent)dialog.getContentPane(),directory.resolve("reaction-threshold-preview.png"));
-        if(!before.equals(captureStateFingerprint())||gold!=state.player(0).currentGp())throw new IllegalStateException("Preview mutated the match");
-        dialog.chooseTarget(new BoardPosition(2,4));
-        if(dialog.result==null || !commands.execute(dialog.result).startsWith("OK:"))throw new IllegalStateException("Reaction UI did not emit an executable command");
-        if(!state.board().isEmpty(new BoardPosition(2,4)) || state.player(0).currentGp()!=gold-3 || state.activePlayer()!=1)throw new IllegalStateException("Reaction did not resolve on opponent turn");
-        dialog.dispose();
+        var overlay = new ReactionOverlay(0, hints.spellActionsForPlayer(state, 0));
+        overlay.show();
+        layoutTree(battlefieldLayers);
+        captureComponent(battlefieldLayers, directory.resolve("reaction-before-selection.png"));
+        String before = captureStateFingerprint(); int gold = state.player(0).currentGp();
+        overlay.selectSpell(0); overlay.previewTarget(new BoardPosition(1, 4));
+        layoutTree(battlefieldLayers);
+        captureComponent(battlefieldLayers, directory.resolve("reaction-threshold-preview.png"));
+        if (!before.equals(captureStateFingerprint()) || gold != state.player(0).currentGp())
+            throw new IllegalStateException("Preview mutated the match");
+        overlay.chooseTarget(new BoardPosition(2, 4));
+        if (overlay.result == null || !commands.execute(overlay.result).startsWith("OK:"))
+            throw new IllegalStateException("Reaction UI did not emit an executable command");
+        if (!state.board().isEmpty(new BoardPosition(2, 4)) || state.player(0).currentGp() != gold - 3 || state.activePlayer() != 1)
+            throw new IllegalStateException("Reaction did not resolve on opponent turn");
+        overlay.dismiss();
     }
-    void beginReactionReview(){runBotTurn();}
-    JDialog visibleReactionReview(){for(Window w:getOwnedWindows())if(w instanceof VisualReactionDialog d && d.isVisible())return d;return null;}
+    void beginReactionReview() { runBotTurn(); }
+    ReactionOverlay visibleReactionReview() { return shownReactionOverlay; }
+
+    /** Dismisses the currently docked reaction overlay, if any (screenshot-harness hook). */
+    void dismissReactionReview() {
+        ReactionOverlay overlay = shownReactionOverlay;
+        if (overlay != null) overlay.dismiss();
+    }
 
     void captureOpeningScreens(Path directory) {
         setupCaptureDirectory=directory;try{chooseMatch();}finally{setupCaptureDirectory=null;}
@@ -1338,6 +1386,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
 
     private void showCoinFlip(int winner) {
         InitiativeCoinPanel coin = new InitiativeCoinPanel(winner,coinSkin);
+        coin.setWinnerName(title(winner==0?humanFaction:botFaction));
         coin.setPreferredSize(new Dimension(460, 410));
         JDialog dialog = new JDialog(this, "Determine First Player", true);
         dialog.add(coin);
@@ -1467,6 +1516,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     }
 
     private boolean canAcceptHumanInput() {
+        if (confirmStripOpen) return false; // opportunity-attack strip is deciding
         if (netMode() && netPendingCommand != null) return false; // awaiting server confirmation
         if (netMode() && (netMulliganOpen || netMulliganWaiting)) return false; // mulligan not resolved
         if (netMode() && netReactionWaiting) return false; // opponent is reacting
@@ -1537,7 +1587,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         if (reactions.isEmpty()) return;
         interaction.beginReaction();
         try {
-            String chosen = new VisualReactionDialog(reacting, reactions).choose();
+            String chosen = new ReactionOverlay(reacting, reactions).choose();
             if (chosen != null && !chosen.isBlank()) {
                 PresentationSnapshot.Frame before = PresentationSnapshot.capture(state);
                 message(commands.execute(chosen));
@@ -1889,6 +1939,14 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private MouseAdapter dragListener(DragSource source) {
         return new MouseAdapter() {
             @Override public void mousePressed(MouseEvent event) {
+                // A docked reaction overlay owns board clicks: route them to target
+                // selection instead of the normal drag/select pipeline.
+                if (reactionTargetClicks != null && source.position() != null) {
+                    if (SwingUtilities.isRightMouseButton(event)) {
+                        if (reactionDeselect != null) reactionDeselect.run();
+                    } else reactionTargetClicks.accept(source.position());
+                    return;
+                }
                 if (SwingUtilities.isRightMouseButton(event)) {
                     if (source.position() != null) showStackContextMenu(event, source.position());
                     else if (source.handIndex() != null) showHandCardContextMenu(event, source.handIndex());
@@ -1992,12 +2050,12 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         ActionOption choice = choices.get(0);
         if (choices.size() > 1) {
             String stack = stackSummary(destination);
-            Object selected = JOptionPane.showInputDialog(this,
-                    "Choose the action and stack position.\nCurrent stack (top first): " + stack,
+            ActionOption selected = ThemedDialogs.chooseOption(this,
                     "Choose Action / Stack Order",
-                    JOptionPane.QUESTION_MESSAGE, null, choices.toArray(), choice);
-            if (!(selected instanceof ActionOption selectedOption)) return;
-            choice = selectedOption;
+                    "Choose the action and stack position.<br>Current stack (top first): " + html(stack),
+                    choices.toArray(new ActionOption[0]), choice);
+            if (selected == null) return;
+            choice = selected;
         }
         executeHuman(choice.command());
     }
@@ -2157,19 +2215,19 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         List<GameEngine.OpportunityThreat> threats = new GameEngine()
                 .opportunityThreats(state, moverId.get(), to);
         if (threats.isEmpty()) return true;
-        StringBuilder warning = new StringBuilder("This route crosses enemy attack range:\n\n");
+        StringBuilder warning = new StringBuilder();
         for (GameEngine.OpportunityThreat threat : threats) {
-            warning.append("• ").append(threat.attackerName()).append(" at (")
+            warning.append("• <b>").append(html(threat.attackerName())).append("</b> at (")
                     .append(threat.attackerPosition().x()).append(", ")
                     .append(threat.attackerPosition().y()).append(") — ATK ")
                     .append(threat.attack()).append(" vs DEF ").append(threat.moverDefense())
                     .append("; triggers at (").append(threat.triggerPosition().x()).append(", ")
                     .append(threat.triggerPosition().y()).append(")")
-                    .append(threat.lethal() ? " — LETHAL" : " — survives").append('\n');
+                    .append(threat.lethal() ? " — <b>LETHAL</b>" : " — survives").append("<br>");
         }
-        warning.append("\nEach listed enemy gets one free attack during this move. Continue?");
-        return JOptionPane.showConfirmDialog(this, warning.toString(), "Opportunity Attack Warning",
-                JOptionPane.YES_NO_OPTION, JOptionPane.WARNING_MESSAGE) == JOptionPane.YES_OPTION;
+        warning.append("<br>Each listed enemy gets one free attack during this move.");
+        return new ConfirmStrip("Opportunity Attack — this route crosses enemy attack range",
+                warning.toString(), "Move Anyway", "Keep Position").ask();
     }
 
     private void showResolution(PresentationSnapshot resolution) {
@@ -2645,8 +2703,8 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         help.setForeground(new Color(155, 231, 255));
         help.setBorder(new EmptyBorder(2, 7, 2, 7));
         inspector.add(help, BorderLayout.SOUTH);
-        JOptionPane.showMessageDialog(this, inspector,
-                "Stack at (" + position.x() + ", " + position.y() + ") — top first", JOptionPane.PLAIN_MESSAGE);
+        ThemedDialogs.showComponent(this,
+                "Stack at (" + position.x() + ", " + position.y() + ") — top first", inspector);
     }
 
     private void showFullCard(CardInstance card) {
@@ -2787,6 +2845,14 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         messageLabel.setText("<html>" + html(text).replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>") + "</html>");
         recentAction.setText("› " + text);
         recentAction.setToolTipText(text);
+    }
+
+    /**
+     * Transient non-blocking confirmation (e.g. "Deck saved") that slides in
+     * at the top of the window, lingers, and slides away. Safe from any thread.
+     */
+    private void toast(String htmlMessage) {
+        ThemedDialogs.toast(this, htmlMessage);
     }
 
     private String handCardHtml(CardDefinition def) {
@@ -2988,6 +3054,37 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         return visualChoiceCard(card, width, height, 78);
     }
 
+    /**
+     * Compact mulligan card: real card art up top, name/cost/type below, full
+     * rules in the tooltip. Sized to {@link MulliganDialogView#CARD_WIDTH} ×
+     * {@link MulliganDialogView#CARD_HEIGHT} so a 7-card opening hand fits
+     * without horizontal scrolling.
+     */
+    private JButton visualMulliganCard(MulliganChoice choice) {
+        CardDefinition card = choice.card();
+        String stats = card.type() == CardType.CHARACTER
+                ? "ATK " + card.attack() + " / DEF " + card.defense()
+                : card.isPermanent() ? card.hitPoints() + " HP" : effectLine(card);
+        JButton result = new JButton(
+                "<html><center><b>" + html(card.name()) + "</b><br>"
+                        + card.goldCost() + " GP · " + card.type() + "<br><font color='#c9d5e4'>"
+                        + html(stats) + "</font></center></html>",
+                CardArtFactory.iconFor(card, MulliganDialogView.CARD_WIDTH - 16, 118));
+        Dimension size = new Dimension(MulliganDialogView.CARD_WIDTH, MulliganDialogView.CARD_HEIGHT);
+        result.setPreferredSize(size); result.setMinimumSize(size); result.setMaximumSize(size);
+        result.setVerticalAlignment(SwingConstants.TOP);
+        result.setHorizontalAlignment(SwingConstants.CENTER);
+        result.setHorizontalTextPosition(SwingConstants.CENTER);
+        result.setVerticalTextPosition(SwingConstants.BOTTOM);
+        result.setForeground(Color.WHITE);
+        result.setBackground(blend(PANEL_LIGHT, factionColor(card.faction()), .40f));
+        result.setBorder(new CompoundBorder(new LineBorder(factionColor(card.faction()), 2, true),
+                new EmptyBorder(6, 6, 6, 6)));
+        result.setFocusPainted(false);
+        result.setToolTipText(CardRulesText.details(card));
+        return result;
+    }
+
     private JButton visualChoiceCard(CardDefinition card, int width, int height, int artHeight) {
         JButton result = new JButton(cardHtml(card), CardArtFactory.iconFor(card, width - 16, artHeight));
         Dimension size = new Dimension(width, height);
@@ -3005,191 +3102,455 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         return result;
     }
 
-    private final class VisualReactionDialog extends JDialog {
+    /** True while an opportunity-attack ConfirmStrip is deciding; blocks all other input. */
+    private boolean confirmStripOpen;
+
+    /**
+     * A styled in-board confirmation strip for risky moves (opportunity
+     * attacks): docks above the hand over the live battlefield and blocks
+     * with a {@link SecondaryLoop} like the reaction overlay, instead of a
+     * {@link JOptionPane} takeover.
+     */
+    private final class ConfirmStrip {
+        private final JPanel panel = new JPanel();
+        private SecondaryLoop activeLoop;
+        private boolean result;
+        ConfirmStrip(String title, String htmlBody, String yesLabel, String noLabel) {
+            panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+            panel.setBackground(new Color(46, 18, 24));
+            panel.setBorder(new CompoundBorder(new LineBorder(new Color(244, 92, 92), 2),
+                    new EmptyBorder(12, 16, 12, 16)));
+
+            JLabel titleLabel = new JLabel(title);
+            titleLabel.setForeground(new Color(255, 170, 150));
+            titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+            titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(titleLabel);
+            panel.add(Box.createVerticalStrut(6));
+
+            JLabel body = new JLabel("<html><div style='width:600px'>" + htmlBody + "</div></html>");
+            body.setForeground(new Color(240, 232, 228));
+            body.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+            body.setAlignmentX(Component.LEFT_ALIGNMENT);
+            panel.add(body);
+            panel.add(Box.createVerticalStrut(10));
+
+            JPanel row = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
+            row.setOpaque(false);
+            row.setAlignmentX(Component.LEFT_ALIGNMENT);
+            JButton yes = ThemedDialogs.themedButton(yesLabel, e -> dismiss(true));
+            JButton no = ThemedDialogs.themedButton(noLabel, e -> dismiss(false));
+            row.add(no);
+            row.add(yes);
+            panel.add(row);
+        }
+
+        /** Shows the strip and blocks until the player answers. */
+        boolean ask() {
+            if (!SwingUtilities.isEventDispatchThread()) {
+                final boolean[] out = new boolean[1];
+                try {
+                    SwingUtilities.invokeAndWait(() -> out[0] = ask());
+                } catch (Exception e) { throw new IllegalStateException(e); }
+                return out[0];
+            }
+            int layersH = battlefieldLayers.getHeight();
+            int handH = handArea.getHeight();
+            Dimension size = panel.getPreferredSize();
+            int width = Math.min(700, Math.max(320, battlefieldLayers.getWidth() - 32));
+            int height = Math.min(size.height, Math.max(120, layersH - handH - 40));
+            panel.setBounds((battlefieldLayers.getWidth() - width) / 2,
+                    Math.max(8, layersH - handH - height - 14), width, height);
+            battlefieldLayers.add(panel, JLayeredPane.POPUP_LAYER);
+            battlefieldLayers.revalidate();
+            battlefieldLayers.repaint();
+            confirmStripOpen = true;
+            SecondaryLoop loop = Toolkit.getDefaultToolkit().getSystemEventQueue().createSecondaryLoop();
+            activeLoop = loop;
+            loop.enter();
+            activeLoop = null;
+            return result;
+        }
+
+        private void dismiss(boolean value) {
+            result = value;
+            confirmStripOpen = false;
+            battlefieldLayers.remove(panel);
+            battlefieldLayers.revalidate();
+            battlefieldLayers.repaint();
+            SecondaryLoop loop = activeLoop;
+            activeLoop = null;
+            if (loop != null) loop.exit();
+        }
+    }
+
+    /**
+     * Reaction UI as a docked panel over the live board. When a reaction is
+     * available the panel slides in on the left of the battlefield; the real
+     * board stays visible and interactive so targets are picked on the live
+     * hexes instead of a duplicated mini-board. Legal targets pulse gold
+     * while a spell is selected; the rest of the battlefield is dimmed by a
+     * non-blocking wash that forwards mouse traffic to the live hexes.
+     *
+     * <p>Blocking contract: {@link #choose()} pumps a {@link SecondaryLoop}
+     * until the player picks a target, passes, or the server timeout fires —
+     * the same synchronous contract the old modal dialog offered its
+     * callers, so the local bot flow, the net flow, and the "bot turns must
+     * not advance while a human reaction is open" invariant are unchanged.
+     */
+    private final class ReactionOverlay {
+        private static final int DOCK_WIDTH = 336;
+
         private final int reacting;
         private final List<String> commands;
+        private final int expiresInSeconds;
+        private final List<Integer> spellIndices;
+        private final JPanel panel = new JPanel(new BorderLayout(8, 8));
         private final JPanel spellTray = new JPanel();
-        private final Map<BoardPosition, JButton> targets = new LinkedHashMap<>();
-        private final JLabel instruction = new JLabel("Choose a spell, then click or drag it to a glowing target.");
+        private final List<JButton> spellButtons = new ArrayList<>();
+        private final JLabel instruction = new JLabel();
         private final JLabel countdown = new JLabel();
         private javax.swing.Timer countdownTimer;
+        private javax.swing.Timer slideTimer;
         private Integer selectedHandIndex;
         private String result;
+        private SecondaryLoop activeLoop;
+        private final DimPanel dim = new DimPanel();
+        private boolean shown;
+        private final Map<BoardPosition, Object[]> savedCellPaint = new HashMap<>();
+        private final java.awt.event.ComponentAdapter resizeHook = new java.awt.event.ComponentAdapter() {
+            @Override public void componentResized(java.awt.event.ComponentEvent event) { layoutOverlay(); }
+        };
 
-        /** Local games: no server timeout, so no countdown. */
-        VisualReactionDialog(int reacting, List<String> commands) {
-            this(reacting, commands, 0);
-        }
+        ReactionOverlay(int reacting, List<String> commands) { this(reacting, commands, 0); }
 
         /**
          * Network games: shows a visible countdown of the server's auto-pass
          * timeout ({@code expiresInSeconds} &gt; 0) and closes when it elapses.
          */
-        VisualReactionDialog(int reacting, List<String> commands, int expiresInSeconds) {
-            super(InfiniteConquestGui.this, "Reaction Window", true);
+        ReactionOverlay(int reacting, List<String> commands, int expiresInSeconds) {
             this.reacting = reacting;
-            this.commands = commands;
-            SoundEffects.play(SoundEffects.Cue.REACTION);
+            this.commands = List.copyOf(commands);
+            this.expiresInSeconds = expiresInSeconds;
+            spellIndices = this.commands.stream().map(this::handIndex).distinct().toList();
             spellTray.setLayout(new BoxLayout(spellTray, BoxLayout.Y_AXIS));
             spellTray.setBackground(PANEL);
-            HexBoardPanel board = new HexBoardPanel();
-            board.setLocalPlayer(reacting);board.setShowContext(false);
-            board.setOpaque(false);
-            for (int y = BoardPosition.HEIGHT - 1; y >= 0; y--) for (int x = 0; x < BoardPosition.WIDTH; x++) {
-                BoardPosition position = new BoardPosition(x, y);
-                JButton cell = auxiliaryHex(position);
-                cell.setText(reactionCellText(position));
-                cell.setPreferredSize(new Dimension(135, 82));
-                cell.setForeground(Color.WHITE); cell.setBackground(position.isOnPlayerSide(0) ? HUMAN_PLOT : BOT_PLOT);
-                state.board().topAt(position).flatMap(state::card)
-                        .ifPresent(card -> cell.setIcon(CardArtFactory.iconFor(card.definition(), 72, 42)));
-                cell.setHorizontalTextPosition(SwingConstants.CENTER);
-                cell.setVerticalTextPosition(SwingConstants.BOTTOM);
-                cell.addActionListener(e -> chooseTarget(position));
-                cell.addMouseListener(new MouseAdapter() {
-                    @Override public void mouseEntered(MouseEvent e) { previewTarget(position); }
-
-                });
-                cell.addFocusListener(new FocusAdapter(){@Override public void focusGained(FocusEvent e){previewTarget(position);}});
-                targets.put(position, cell); board.add(cell);
-            }
-            commands.stream().map(this::handIndex).distinct().forEach(index -> {
+            for (int index : spellIndices) {
                 CardDefinition spell = state.card(state.player(reacting).hand().get(index)).orElseThrow().definition();
-                JButton card = new JButton("<html><div style='width:210px'><b>"+html(spell.name())+"</b><br>"+spell.goldCost()+" GOLD<br><br>"+html(CardRulesText.spellSummary(spell))+"<br><br><b>Choose targets →</b></div></html>");
-                card.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,14));card.setForeground(Color.WHITE);card.setBackground(PANEL_LIGHT);
-                card.setHorizontalAlignment(SwingConstants.LEFT);card.setMargin(new Insets(10,10,10,10));
-                Dimension size=new Dimension(300,240);card.setPreferredSize(size);card.setMinimumSize(size);card.setMaximumSize(size);
+                JButton card = new JButton("<html><div style='width:195px'><b>" + html(spell.name()) + "</b><br>"
+                        + spell.goldCost() + " GOLD<br><br>" + html(CardRulesText.spellSummary(spell))
+                        + "<br><br><b>Choose, then pick a glowing target →</b></div></html>");
+                card.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
+                card.setForeground(Color.WHITE);
+                card.setBackground(PANEL_LIGHT);
+                card.setHorizontalAlignment(SwingConstants.LEFT);
+                card.setMargin(new Insets(10, 10, 10, 10));
+                Dimension size = new Dimension(300, 210);
+                card.setPreferredSize(size); card.setMinimumSize(size);
+                card.setMaximumSize(new Dimension(Integer.MAX_VALUE, 210));
                 card.setToolTipText(CardRulesText.details(spell));
                 card.addActionListener(e -> selectSpell(index));
                 card.addMouseListener(new MouseAdapter() {
                     @Override public void mousePressed(MouseEvent e) { selectSpell(index); }
                     @Override public void mouseReleased(MouseEvent e) {
-                        Point point = SwingUtilities.convertPoint(card, e.getPoint(), board);
-                        targets.entrySet().stream().filter(entry -> entry.getValue().contains(point.x-entry.getValue().getX(), point.y-entry.getValue().getY()))
-                                .map(Map.Entry::getKey).findFirst().ifPresent(VisualReactionDialog.this::chooseTarget);
+                        Point point = SwingUtilities.convertPoint(card, e.getPoint(), boardPanel);
+                        boardButtons.entrySet().stream()
+                                .filter(entry -> entry.getValue().getBounds().contains(point))
+                                .map(Map.Entry::getKey).findFirst().ifPresent(ReactionOverlay.this::chooseTarget);
                     }
                 });
-                spellTray.add(card); spellTray.add(Box.createVerticalStrut(8));
-            });
-            JButton pass = button("Pass Reaction", e -> dispose());
+                spellButtons.add(card);
+                spellTray.add(card);
+                spellTray.add(Box.createVerticalStrut(8));
+            }
+            JButton pass = button("Pass Reaction", e -> { result = null; dismiss(); });
             instruction.setForeground(Color.WHITE);
-            instruction.setText("<html><b>Between opponent actions · You have "+state.player(reacting).currentGp()+" gold.</b><br>Read a spell, choose it, then choose a target. Passing spends nothing.</html>");
-            JPanel header = new JPanel(new BorderLayout()); header.setOpaque(false);header.setPreferredSize(new Dimension(800,74));
-            header.add(instruction, BorderLayout.CENTER); header.add(pass, BorderLayout.EAST);
+            instruction.setText(chooseInstructions(null));
+            JLabel title = new JLabel("REACTION");
+            title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 20));
+            title.setForeground(CAST);
+            JPanel header = new JPanel(new BorderLayout(6, 6));
+            header.setOpaque(false);
+            header.add(title, BorderLayout.NORTH);
+            header.add(instruction, BorderLayout.CENTER);
+            JPanel actions = new JPanel(new BorderLayout(6, 6));
+            actions.setOpaque(false);
             if (expiresInSeconds > 0) {
                 countdown.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 16));
                 countdown.setForeground(new Color(240, 191, 73));
-                countdown.setHorizontalAlignment(SwingConstants.CENTER);
-                JPanel timerWrap = new JPanel(new BorderLayout());
-                timerWrap.setOpaque(false);
-                timerWrap.add(countdown, BorderLayout.CENTER);
-                timerWrap.setPreferredSize(new Dimension(150, 74));
-                header.add(timerWrap, BorderLayout.WEST);
-                int[] remaining = {expiresInSeconds};
-                Runnable tick = () -> {
-                    if (remaining[0] <= 0) {
-                        if (countdownTimer != null) countdownTimer.stop();
-                        instruction.setText("<html><b>Time's up — the server auto-passes.</b></html>");
-                        dispose();
-                        return;
-                    }
-                    countdown.setText("⏱ " + remaining[0] + "s");
-                    countdown.getAccessibleContext().setAccessibleDescription(
-                            "Reaction window closes in " + remaining[0] + " seconds");
-                    remaining[0]--;
-                };
-                tick.run();
-                countdownTimer = new javax.swing.Timer(1000, e -> tick.run());
-                countdownTimer.start();
+                countdown.setText("⏱ " + expiresInSeconds + "s");
+                countdown.getAccessibleContext().setAccessibleDescription("Reaction timeout countdown");
+                actions.add(countdown, BorderLayout.NORTH);
             }
-            JPanel content = panel(new BorderLayout(8, 8)); content.setBorder(new EmptyBorder(12, 12, 12, 12));
-            content.add(header, BorderLayout.NORTH);
-            content.add(board, BorderLayout.CENTER);
-            JScrollPane spells = new JScrollPane(spellTray, ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
-                    ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
+            actions.add(pass, BorderLayout.CENTER);
+            JScrollPane spells = new JScrollPane(spellTray,
+                    ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED, ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
             spells.getViewport().setBackground(PANEL);
-            spells.setBorder(new TitledBorder(new LineBorder(CAST, 2), "REACTION SPELLS", TitledBorder.LEFT,
-                    TitledBorder.TOP, getFont(), CAST));
-            spells.setPreferredSize(new Dimension(330, 400)); content.add(spells, BorderLayout.WEST);
-            setContentPane(content); Rectangle usable=GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds(); setSize(Math.min(1100,usable.width-40),Math.min(790,usable.height-50)); setLocationRelativeTo(InfiniteConquestGui.this);
-            setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE); refreshTargets();
+            spells.setBorder(new TitledBorder(new LineBorder(CAST, 2), "REACTION SPELLS",
+                    TitledBorder.LEFT, TitledBorder.TOP, new Font(Font.SANS_SERIF, Font.BOLD, 12), CAST));
+            panel.setBackground(PANEL);
+            panel.setBorder(new CompoundBorder(new MatteBorder(0, 0, 0, 3, CAST), new EmptyBorder(12, 12, 12, 12)));
+            panel.add(header, BorderLayout.NORTH);
+            panel.add(spells, BorderLayout.CENTER);
+            panel.add(actions, BorderLayout.SOUTH);
         }
 
-        String choose() { setVisible(true); return result; }
+        private String chooseInstructions(CardDefinition spell) {
+            String gold = "<b>Between opponent actions · You have " + state.player(reacting).currentGp() + " gold.</b><br>";
+            if (spell == null) return "<html>" + gold
+                    + "Read a spell, choose it, then click a glowing target on the live board. "
+                    + "Right-click to change your mind. Passing spends nothing.</html>";
+            return "<html>" + gold + "<b>" + html(spell.name()) + " · " + spell.goldCost() + " gold.</b><br>"
+                    + html(CardRulesText.spellSummary(spell))
+                    + "<br>Click a glowing target on the board to cast.</html>";
+        }
 
-        @Override public void dispose() {
-            if (countdownTimer != null) countdownTimer.stop();
-            super.dispose();
+        /** Shows the docked panel (no blocking). Idempotent. */
+        void show() {
+            if (shown) return;
+            shown = true;
+            shownReactionOverlay = this;
+            SoundEffects.play(SoundEffects.Cue.REACTION);
+            dragSource = null;
+            saveCellPaint();
+            battlefieldLayers.add(dim, JLayeredPane.MODAL_LAYER);
+            // NB: the layer must be an Integer object — an int would resolve to
+            // add(Component, int position) and strand the panel at layer 0.
+            battlefieldLayers.add(panel, JLayeredPane.POPUP_LAYER);
+            battlefieldLayers.addComponentListener(resizeHook);
+            headerControls.forEach(b -> b.setEnabled(false));
+            endTurnButton.setEnabled(false);
+            reactionTargetClicks = this::chooseTarget;
+            reactionHoverPreview = this::previewTarget;
+            reactionDeselect = () -> selectSpell(null);
+            if (captureMode) {
+                layoutOverlay();
+            } else {
+                int height = Math.max(1, battlefieldLayers.getHeight() - 16);
+                dim.setBounds(0, 0, battlefieldLayers.getWidth(), battlefieldLayers.getHeight());
+                panel.setBounds(-DOCK_WIDTH, 8, DOCK_WIDTH, height);
+                int[] x = {-DOCK_WIDTH};
+                slideTimer = new javax.swing.Timer(12, null);
+                slideTimer.addActionListener(e -> {
+                    x[0] += 34;
+                    if (x[0] >= 8) { x[0] = 8; slideTimer.stop(); }
+                    panel.setLocation(x[0], 8);
+                    panel.repaint();
+                });
+                slideTimer.start();
+            }
+            if (expiresInSeconds > 0) startCountdown();
+            refreshTargets();
+            battlefieldLayers.revalidate();
+            battlefieldLayers.repaint();
+        }
+
+        /** Shows the panel and blocks until the player answers. */
+        String choose() {
+            runOnEdt(this::show);
+            SecondaryLoop loop = Toolkit.getDefaultToolkit().getSystemEventQueue().createSecondaryLoop();
+            activeLoop = loop;
+            loop.enter();
+            activeLoop = null;
+            return result;
+        }
+
+        private static void runOnEdt(Runnable task) {
+            if (SwingUtilities.isEventDispatchThread()) { task.run(); return; }
+            try { SwingUtilities.invokeAndWait(task); }
+            catch (InterruptedException e) { Thread.currentThread().interrupt(); throw new IllegalStateException(e); }
+            catch (java.lang.reflect.InvocationTargetException e) { throw new IllegalStateException(e.getCause()); }
+        }
+
+        /** Hides the panel and unblocks {@link #choose()}. Safe from any thread. */
+        void dismiss() {
+            Runnable task = () -> {
+                if (countdownTimer != null) { countdownTimer.stop(); countdownTimer = null; }
+                if (slideTimer != null) { slideTimer.stop(); slideTimer = null; }
+                if (shown) {
+                    shown = false;
+                    if (shownReactionOverlay == ReactionOverlay.this) shownReactionOverlay = null;
+                    battlefieldLayers.removeComponentListener(resizeHook);
+                    battlefieldLayers.remove(dim);
+                    battlefieldLayers.remove(panel);
+                    restoreCellPaint();
+                    reactionTargetClicks = null;
+                    reactionHoverPreview = null;
+                    reactionDeselect = null;
+                    headerControls.forEach(b -> b.setEnabled(true));
+                    battlefieldLayers.revalidate();
+                    battlefieldLayers.repaint();
+                    refreshBoard();
+                    refresh();
+                }
+                SecondaryLoop loop = activeLoop;
+                activeLoop = null;
+                if (loop != null) loop.exit();
+            };
+            if (SwingUtilities.isEventDispatchThread()) task.run();
+            else SwingUtilities.invokeLater(task);
+        }
+
+        /** Old dialog API, kept for the harness and timeout paths. */
+        void dispose() { dismiss(); }
+        boolean isShowing() { return shown; }
+        /** The docked content, for the screenshot harness. */
+        JPanel contentPanel() { return panel; }
+
+        private void layoutOverlay() {
+            int width = battlefieldLayers.getWidth(), height = battlefieldLayers.getHeight();
+            if (width <= 0 || height <= 0) return;
+            dim.setBounds(0, 0, width, height);
+            panel.setBounds(8, 8, DOCK_WIDTH, Math.max(1, height - 16));
+            panel.revalidate();
+        }
+
+        private void startCountdown() {
+            int[] remaining = {expiresInSeconds};
+            countdownTimer = new javax.swing.Timer(1000, null);
+            countdownTimer.addActionListener(e -> {
+                remaining[0]--;
+                if (remaining[0] <= 0) {
+                    instruction.setText("<html><b>Time's up — the server auto-passes.</b></html>");
+                    dismiss();
+                    return;
+                }
+                countdown.setText("⏱ " + remaining[0] + "s");
+            });
+            countdownTimer.start();
+        }
+
+        private void saveCellPaint() {
+            savedCellPaint.clear();
+            for (var entry : boardButtons.entrySet())
+                savedCellPaint.put(entry.getKey(), new Object[]{
+                        entry.getValue().getClientProperty("outline"),
+                        entry.getValue().getClientProperty("outlineWidth"),
+                        entry.getValue().getClientProperty("pulse")});
+        }
+
+        private void restoreCellPaint() {
+            for (var entry : boardButtons.entrySet()) {
+                Object[] saved = savedCellPaint.get(entry.getKey());
+                if (saved == null) continue;
+                entry.getValue().putClientProperty("outline", saved[0]);
+                entry.getValue().putClientProperty("outlineWidth", saved[1]);
+                entry.getValue().putClientProperty("pulse", saved[2]);
+                entry.getValue().repaint();
+            }
+            savedCellPaint.clear();
         }
 
         private int handIndex(String command) { return Integer.parseInt(command.split("\\s+")[2]); }
+
         private BoardPosition target(String command) {
-            String[] p = command.split("\\s+"); return new BoardPosition(Integer.parseInt(p[3]), Integer.parseInt(p[4]));
+            String[] p = command.split("\\s+");
+            return new BoardPosition(Integer.parseInt(p[3]), Integer.parseInt(p[4]));
         }
-        private void selectSpell(int index) {
+
+        private void selectSpell(Integer index) {
             selectedHandIndex = index;
-            CardDefinition spell = state.card(state.player(reacting).hand().get(index)).orElseThrow().definition();
-            instruction.setText("<html><b>" + html(spell.name()) + " · "+spell.goldCost()+" gold.</b><br>"+html(CardRulesText.spellSummary(spell))+"<br>Hover or focus a gold target to preview the result; click to cast.</html>");
-            refreshTargets();
+            CardDefinition spell = index == null ? null
+                    : state.card(state.player(reacting).hand().get(index)).orElseThrow().definition();
+            instruction.setText(chooseInstructions(spell));
+            for (int i = 0; i < spellButtons.size(); i++)
+                spellButtons.get(i).setBorder(new CompoundBorder(
+                        new LineBorder(java.util.Objects.equals(spellIndices.get(i), index) ? CAST : PANEL_LIGHT, 3, true),
+                        new EmptyBorder(6, 6, 6, 6)));
+            if (index == null) restoreCellPaint();
+            else refreshTargets();
+            panel.repaint();
         }
+
         private void refreshTargets() {
-            targets.forEach((position, button) -> {
-                boolean legal = selectedHandIndex != null && commands.stream()
+            if (selectedHandIndex == null) return;
+            CardDefinition spell = state.card(state.player(reacting).hand().get(selectedHandIndex)).orElseThrow().definition();
+            for (var entry : boardButtons.entrySet()) {
+                BoardPosition position = entry.getKey();
+                JButton cell = entry.getValue();
+                boolean legal = commands.stream()
                         .anyMatch(command -> handIndex(command) == selectedHandIndex && target(command).equals(position));
-                button.setBorder(new CompoundBorder(new BevelBorder(BevelBorder.RAISED),
-                        new LineBorder(legal ? CAST : PANEL_LIGHT, legal ? 4 : 1, true)));
-                button.putClientProperty("outline", legal ? CAST : PANEL_LIGHT);
-                button.putClientProperty("outlineWidth", legal ? 3 : 1);
-                button.setEnabled(selectedHandIndex == null || legal);
-                if(legal) state.board().topAt(position).flatMap(state::card).ifPresent(target->{
-                    var spell=state.card(state.player(reacting).hand().get(selectedHandIndex)).orElseThrow().definition();
-                    button.setToolTipText("<html><div style='width:240px'><b>"+html(target.definition().name())+"</b><br>"+html(ReactionPreview.outcome(spell,target))+"</div></html>");
-                    button.getAccessibleContext().setAccessibleDescription(ReactionPreview.outcome(spell,target));
-                });
-                button.repaint();
-            });
+                cell.putClientProperty("outline", legal ? CAST : new Color(70, 84, 100));
+                cell.putClientProperty("outlineWidth", legal ? 4 : 1);
+                cell.putClientProperty("pulse", legal);
+                if (legal) state.board().topAt(position).flatMap(state::card).ifPresent(t ->
+                        cell.setToolTipText("<html><div style='width:240px'><b>" + html(t.definition().name())
+                                + "</b><br>" + html(ReactionPreview.outcome(spell, t)) + "</div></html>"));
+                cell.repaint();
+            }
         }
+
         private void previewTarget(BoardPosition position) {
-            if(selectedHandIndex==null)return;
-            var spell=state.card(state.player(reacting).hand().get(selectedHandIndex)).orElseThrow().definition();
-            state.board().topAt(position).flatMap(state::card).ifPresent(target->instruction.setText(
-                    "<html><b>"+html(spell.name())+" · "+spell.goldCost()+" gold → "+html(target.definition().name())+"</b><br>"+
-                    html(ReactionPreview.outcome(spell,target))+"<br>Click a gold target to cast, or choose another spell.</html>"));
+            if (selectedHandIndex == null) return;
+            var spell = state.card(state.player(reacting).hand().get(selectedHandIndex)).orElseThrow().definition();
+            state.board().topAt(position).flatMap(state::card).ifPresent(target -> instruction.setText(
+                    "<html><b>" + html(spell.name()) + " · " + spell.goldCost() + " gold → " + html(target.definition().name()) + "</b><br>" +
+                    html(ReactionPreview.outcome(spell, target)) + "<br>Click a glowing target to cast, or choose another spell.</html>"));
         }
+
         private void chooseTarget(BoardPosition position) {
             if (selectedHandIndex == null) return;
-            List<String> matches = commands.stream().filter(command -> handIndex(command) == selectedHandIndex
-                    && target(command).equals(position)).toList();
+            List<String> matches = commands.stream()
+                    .filter(command -> handIndex(command) == selectedHandIndex && target(command).equals(position))
+                    .toList();
             if (matches.isEmpty()) return;
-            if (matches.size() == 1) result = matches.get(0);
-            else result = chooseTeleportDestination(matches);
-            if (result != null) dispose();
-        }
-        private String chooseTeleportDestination(List<String> matches) {
-            HexBoardPanel grid = new HexBoardPanel();
-            grid.setLocalPlayer(reacting);grid.setShowContext(false);
-            grid.setBackground(PANEL);
-            final String[] selected = {null};
-            JDialog picker = new JDialog(this, "Choose teleport destination", true);
-            for (int y = BoardPosition.HEIGHT - 1; y >= 0; y--) for (int x = 0; x < BoardPosition.WIDTH; x++) {
-                BoardPosition position = new BoardPosition(x, y);
-                String match = matches.stream().filter(command -> {
-                    String[] p = command.split("\\s+");
-                    return Integer.parseInt(p[5]) == position.x() && Integer.parseInt(p[6]) == position.y();
-                }).findFirst().orElse(null);
-                JButton cell = auxiliaryHex(position);
-                cell.putClientProperty("outline", match == null ? PANEL_LIGHT : MOVE);
-                cell.setEnabled(match != null); cell.setBackground(match == null ? PANEL_LIGHT : MOVE); cell.setForeground(Color.WHITE);
-                cell.addActionListener(e -> { selected[0] = match; picker.dispose(); }); grid.add(cell);
+            if (matches.size() == 1) {
+                result = matches.get(0);
+                dismiss();
+                return;
             }
-            picker.setContentPane(grid); picker.setSize(620, 520); picker.setLocationRelativeTo(this); picker.setVisible(true);
-            return selected[0];
+            chooseTeleportDestination(matches);
         }
-        private String reactionCellText(BoardPosition position) {
-            Optional<UUID> top = state.board().topAt(position);
-            if (top.isEmpty()) return "<html>" + position.x() + "," + position.y() + "<br>EMPTY</html>";
-            CardDefinition card = state.card(top.get()).orElseThrow().definition();
-            return "<html>" + position.x() + "," + position.y() + " • " + card.type() + "<br><b>" + html(card.name()) + "</b></html>";
+
+        private void chooseTeleportDestination(List<String> matches) {
+            JDialog picker = new JDialog(InfiniteConquestGui.this, "Choose teleport destination", true);
+            picker.setLayout(new BorderLayout(8, 8));
+            JPanel options = new JPanel();
+            options.setLayout(new BoxLayout(options, BoxLayout.Y_AXIS));
+            options.setBackground(PANEL);
+            for (String command : matches) {
+                BoardPosition position = target(command);
+                JButton option = button("Teleport to " + position.x() + ", " + position.y(), e -> {
+                    result = command;
+                    picker.dispose();
+                    dismiss();
+                });
+                options.add(option);
+                options.add(Box.createVerticalStrut(6));
+            }
+            picker.add(new JScrollPane(options), BorderLayout.CENTER);
+            picker.pack();
+            picker.setLocationRelativeTo(panel);
+            picker.setVisible(true);
+        }
+
+        /** Translucent wash over the battlefield; forwards mouse traffic to the live board. */
+        private final class DimPanel extends JPanel {
+            private static final Color WASH = new Color(4, 10, 18, 110);
+
+            DimPanel() {
+                setOpaque(false);
+                MouseAdapter forward = new MouseAdapter() {
+                    private void forward(MouseEvent event) {
+                        Point p = SwingUtilities.convertPoint(DimPanel.this, event.getPoint(), boardPanel);
+                        Component target = SwingUtilities.getDeepestComponentAt(boardPanel, p.x, p.y);
+                        if (target != null) target.dispatchEvent(SwingUtilities.convertMouseEvent(DimPanel.this, event, target));
+                    }
+                    @Override public void mousePressed(MouseEvent e) { forward(e); }
+                    @Override public void mouseReleased(MouseEvent e) { forward(e); }
+                    @Override public void mouseClicked(MouseEvent e) { forward(e); }
+                    @Override public void mouseMoved(MouseEvent e) { forward(e); }
+                    @Override public void mouseDragged(MouseEvent e) { forward(e); }
+                };
+                addMouseListener(forward);
+                addMouseMotionListener(forward);
+            }
+
+            @Override protected void paintComponent(Graphics g) {
+                super.paintComponent(g);
+                g.setColor(WASH);
+                g.fillRect(0, 0, getWidth(), getHeight());
+            }
         }
     }
 
@@ -3207,7 +3568,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         VisualMulliganDialog(List<MulliganChoice> choices) {
             super(InfiniteConquestGui.this, "Mulligan — Choose Your Opening Hand", true);
             view = new MulliganDialogView(choices,
-                    choice -> visualChoiceCard(choice.card(), 200, 240, 108),
+                    InfiniteConquestGui.this::visualMulliganCard,
                     (text, action) -> button(text, e -> action.run(), true),
                     () -> { SoundEffects.play(SoundEffects.Cue.KEEP); dispose(); },
                     () -> { SoundEffects.play(SoundEffects.Cue.SHUFFLE); dispose(); });
@@ -3219,7 +3580,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             // small or display-scaled screen pushed the discard tray and the
             // action bar below the visible area with no way to reach them.
             Rectangle screen = GraphicsEnvironment.getLocalGraphicsEnvironment().getMaximumWindowBounds();
-            setSize(Math.min(1300, screen.width), Math.min(760, screen.height));
+            setSize(Math.min(1280, screen.width), Math.min(740, screen.height));
             setLocationRelativeTo(InfiniteConquestGui.this);
             setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         }

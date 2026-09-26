@@ -186,21 +186,20 @@ public final class GameShell {
                     edited.primaryFaction().toLowerCase(Locale.ROOT) + ".json");
             context.buildStore.save(path, edited);
             context.savedDecks.put(edited.primaryFaction(), edited);
-            JOptionPane.showMessageDialog(frame,
-                    "Deck saved. Start a match with " + edited.primaryFaction() + " to play it.\n" + path,
-                    "Deck Saved", JOptionPane.INFORMATION_MESSAGE);
+            ThemedDialogs.toast(frame,
+                    "<b>Deck saved.</b><br>Start a match with " + edited.primaryFaction() + " to play it.");
         } catch (IllegalArgumentException failure) {
-            JOptionPane.showMessageDialog(frame, failure.getMessage(),
-                    "Deck Not Saved", JOptionPane.ERROR_MESSAGE);
+            ThemedDialogs.message(frame, "Deck Not Saved", failure.getMessage(), true);
         }
     }
 
     /** Confirm, then quit. Called from menus, the Esc key, and the window chrome. */
     void requestExit() {
-        int answer = JOptionPane.showConfirmDialog(frame,
-                "Leave Infinite Conquest?", "Exit",
-                JOptionPane.YES_NO_OPTION, JOptionPane.QUESTION_MESSAGE);
-        if (answer == JOptionPane.YES_OPTION) {
+        boolean leave = ThemedDialogs.confirm(frame,
+                "Leave Infinite Conquest?",
+                "Leave Infinite Conquest and return to your desktop?",
+                "Leave", "Stay");
+        if (leave) {
             frame.dispose();
             System.exit(0);
         }

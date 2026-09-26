@@ -42,6 +42,7 @@ public final class GuiScreenshotHarness {
             for(var skin:InitiativeCoinPanel.Skin.values())for(int winner=0;winner<2;winner++) {
                 InitiativeCoinPanel coin = new InitiativeCoinPanel(winner,skin);
                 coin.setSize(460,410);
+                coin.setWinnerName(skin == InitiativeCoinPanel.Skin.ZEUS ? "ZEUS" : "POSEIDON");
                 for(int frame=0;frame<=8;frame++) {
                     coin.setProgress(frame/8.0);
                     var image = new java.awt.image.BufferedImage(460,410,java.awt.image.BufferedImage.TYPE_INT_ARGB);
@@ -65,11 +66,11 @@ public final class GuiScreenshotHarness {
             String[] frozen={null};long[] opened={0};long start=System.nanoTime();
             Timer monitor=new Timer(25,event->{
                 try {
-                    var dialog=gui.visibleReactionReview();
-                    if(dialog!=null){
+                    var overlay=gui.visibleReactionReview();
+                    if(overlay!=null){
                         if(frozen[0]==null){frozen[0]=gui.captureStateFingerprint();opened[0]=System.nanoTime();}
-                        if(!frozen[0].equals(gui.captureStateFingerprint()))throw new IllegalStateException("Bot advanced while reaction dialog was open");
-                        if(System.nanoTime()-opened[0]>650_000_000L){((Timer)event.getSource()).stop();dialog.dispose();gui.dispose();finished.countDown();}
+                        if(!frozen[0].equals(gui.captureStateFingerprint()))throw new IllegalStateException("Bot advanced while reaction overlay was open");
+                        if(System.nanoTime()-opened[0]>650_000_000L){((Timer)event.getSource()).stop();gui.dismissReactionReview();gui.dispose();finished.countDown();}
                     }
                     if(System.nanoTime()-start>5_000_000_000L)throw new IllegalStateException("Reaction window did not open");
                 }catch(Throwable error){failure.set(error);((Timer)event.getSource()).stop();for(var w:gui.getOwnedWindows())w.dispose();gui.dispose();finished.countDown();}

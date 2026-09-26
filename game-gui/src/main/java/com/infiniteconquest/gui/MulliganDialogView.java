@@ -30,6 +30,9 @@ import static com.infiniteconquest.gui.UiTheme.*;
  *   <li>The trays region sits in a {@link JScrollPane} that scrolls vertically
  *       when the dialog is shorter than the cards, so the discard tray is
  *       always reachable.</li>
+ *   <li>Trays are stacked vertically and each is capped at one card row: the
+ *       discard tray collapses to a hint strip when empty instead of holding
+ *       open a vast empty expanse.</li>
  * </ul>
  * The owning dialog caps its own size to the usable screen area; this panel
  * adapts to whatever space it is given.
@@ -51,8 +54,17 @@ final class MulliganDialogView extends JPanel {
     private final JButton redrawButton;
     private final JPanel footer;
     private final JScrollPane traysScroll;
+    private JScrollPane handScroll;
+    private JScrollPane discardScroll;
+    private final JPanel discardHint;
     private UUID dragging;
     private Point pressPoint;
+
+    /** Card footprint the trays are sized around; the card factory should honor it. */
+    static final int CARD_WIDTH = 160;
+    static final int CARD_HEIGHT = 200;
+    /** Tray strips never grow taller than one card row plus their chrome. */
+    private static final int TRAY_MAX_HEIGHT = CARD_HEIGHT + 44;
 
     /**
      * @param choices       the opening-hand cards to choose from
@@ -77,6 +89,15 @@ final class MulliganDialogView extends JPanel {
         discardTray.setLayout(new BoxLayout(discardTray, BoxLayout.X_AXIS));
         handTray.setBackground(new Color(24, 72, 58));
         discardTray.setBackground(new Color(78, 42, 50));
+        discardHint = new JPanel(new BorderLayout());
+        discardHint.setBackground(new Color(52, 30, 36));
+        JLabel hintLabel = new JLabel(
+                "<html><i>No cards selected — click a card above (or press Space on it) to mark it for redraw.</i></html>");
+        hintLabel.setForeground(new Color(214, 170, 178));
+        hintLabel.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+        hintLabel.setBorder(new EmptyBorder(14, 16, 14, 16));
+        discardHint.add(hintLabel, BorderLayout.CENTER);
+        discardHint.setPreferredSize(new Dimension(10, 56));
 
         JLabel title = new JLabel("MULLIGAN");
         title.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 30));
@@ -94,8 +115,9 @@ final class MulliganDialogView extends JPanel {
         header.add(directions, BorderLayout.CENTER);
 
         TraysPanel trays = new TraysPanel();
-        trays.add(tray(handTitle, "OPENING HAND — KEEPING", handTray, KEEP_GREEN));
-        trays.add(tray(discardTitle, "DISCARD & REDRAW", discardTray, REDRAW_RED));
+        trays.add(tray(handTitle, "OPENING HAND — KEEPING", handTray, KEEP_GREEN, false));
+        trays.add(Box.createVerticalStrut(10));
+        trays.add(tray(discardTitle, "DISCARD & REDRAW", discardTray, REDRAW_RED, true));
         traysScroll = new JScrollPane(trays,
                 ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
@@ -158,7 +180,7 @@ final class MulliganDialogView extends JPanel {
         rebuild();
     }
 
-    private JPanel tray(JLabel titleLabel, String name, JPanel cards, Color color) {
+    private JPanel tray(JLabel titleLabel, String name, JPanel cards, Color color, boolean isDiscard) {
         titleLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
         titleLabel.setForeground(color);
         JPanel header = new JPanel(new BorderLayout());
@@ -170,8 +192,13 @@ final class MulliganDialogView extends JPanel {
         JScrollPane scroll = new JScrollPane(cards, ScrollPaneConstants.VERTICAL_SCROLLBAR_NEVER,
                 ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
         scroll.setBorder(new LineBorder(color, 2, true));
+        // Trays only ever occupy the space they need: one card row at most, so
+        // an empty discard tray collapses to its hint instead of a vast expanse.
+        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, TRAY_MAX_HEIGHT));
         result.add(scroll, BorderLayout.CENTER);
+        result.setMaximumSize(new Dimension(Integer.MAX_VALUE, TRAY_MAX_HEIGHT + 34));
         result.getAccessibleContext().setAccessibleName(name);
+        if (isDiscard) discardScroll = scroll; else handScroll = scroll;
         return result;
     }
 
@@ -229,6 +256,9 @@ final class MulliganDialogView extends JPanel {
         statusLine.setText("Discarding " + discarded.size() + " of up to 3  •  Keeping " + keeping);
         redrawButton.setText("REDRAW SELECTED" + (discarded.isEmpty() ? "" : " (" + discarded.size() + ")"));
         redrawButton.setEnabled(!discarded.isEmpty());
+        // An empty discard tray collapses to a hint strip instead of a vast
+        // empty expanse; the tray regains its card row as cards are marked.
+        discardScroll.setViewportView(discarded.isEmpty() ? discardHint : discardTray);
         handTray.revalidate();
         discardTray.revalidate();
         handTray.repaint();
@@ -248,13 +278,16 @@ final class MulliganDialogView extends JPanel {
     }
 
     /**
-     * The two-tray stack. Tracks the viewport width so the outer scroll pane
-     * only ever scrolls vertically; each tray scrolls its own cards
-     * horizontally.
+     * The two-tray stack. A vertical box: each tray only occupies the space
+     * it needs (capped at one card row), so the discard tray never stretches
+     * into a vast empty expanse. Tracks the viewport width so the outer
+     * scroll pane only ever scrolls vertically; each tray scrolls its own
+     * cards horizontally.
      */
     private static final class TraysPanel extends JPanel implements Scrollable {
         TraysPanel() {
-            super(new GridLayout(2, 1, 0, 10));
+            super();
+            setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
             setOpaque(false);
         }
 

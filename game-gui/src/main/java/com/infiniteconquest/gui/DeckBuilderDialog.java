@@ -85,7 +85,7 @@ final class DeckBuilderDialog extends JDialog {
         List<CardDefinition> removed=cards.stream().filter(c->!DeckBuild.eligible(c,primary(),ally())).toList();
         if(removed.isEmpty())return true;
         JTextArea list=new JTextArea("These cards no longer match your faction and ally:\n\n"+summary(removed)+"\n\nRemove them from this draft? Saved decks are unchanged until you save.",14,50);list.setEditable(false);
-        if(JOptionPane.showConfirmDialog(this,new JScrollPane(list),"Review faction change",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return false;
+        if(!ThemedDialogs.confirmComponent(this,"Review faction change",new JScrollPane(list),"Remove Cards","Keep Draft"))return false;
         cards.removeAll(removed);return true;
     }
     private void render(){
@@ -115,7 +115,7 @@ final class DeckBuilderDialog extends JDialog {
             JPanel buttons=new JPanel();JButton add=new JButton("Add copy →"),remove=new JButton("Remove copy"),starter=new JButton("Reset faction starter");buttons.add(add);buttons.add(remove);buttons.add(starter);collection.add(buttons,BorderLayout.SOUTH);
             add.addActionListener(e->{CardDefinition c=available.getSelectedValue();if(c!=null&&cards.stream().filter(d->d.id().equals(c.id())).count()<4){cards.add(c);refreshCards();}});
             remove.addActionListener(e->{CardDefinition c=deck.getSelectedValue();if(c!=null){cards.remove(c);refreshCards();}});
-            starter.addActionListener(e->{if(JOptionPane.showConfirmDialog(this,"Reset this draft to the new 60-card faction starter, with no ally and the default Capital? Your saved deck changes only when you save.","Replace draft",JOptionPane.OK_CANCEL_OPTION)==JOptionPane.OK_OPTION){refreshAllies(null);capital=roster.forFaction(primary()).get(0);cards.clear();cards.addAll(new FactionDecks(pool).starter(primary()));render();}});
+            starter.addActionListener(e->{if(ThemedDialogs.confirm(this,"Replace draft","Reset this draft to the new 60-card faction starter, with no ally and the default Capital? Your saved deck changes only when you save.","Replace Draft","Cancel")){refreshAllies(null);capital=roster.forFaction(primary()).get(0);cards.clear();cards.addAll(new FactionDecks(pool).starter(primary()));render();}});
             JSplitPane split=new JSplitPane(JSplitPane.HORIZONTAL_SPLIT,collection,new JScrollPane(inspection));split.setResizeWeight(.64);split.setDividerLocation((int)(getWidth()*.60));stage.add(split);refreshCards();if(!availableModel.isEmpty())available.setSelectedIndex(0);
         }
         updateStatus();style(getContentPane());heading.setFont(new Font(Font.SERIF,Font.BOLD,25));stage.revalidate();stage.repaint();
@@ -126,14 +126,14 @@ final class DeckBuilderDialog extends JDialog {
     private void inspect(CardDefinition c){inspection.setText(details(c));inspection.setCaretPosition(0);}
     static String details(CardDefinition c){ return CardRulesText.details(c); }
     private static String cost(CardDefinition c){return c.type()==CardType.LAND||c.type()==CardType.STRUCTURE?"Turn "+Math.max(1,c.cost())+" · "+(c.developmentGoldCost()==0?"free":c.developmentGoldCost()+" Gold"):c.cost()+" GP";}
-    private void showCode(String code){JTextArea text=new JTextArea(code,8,55);text.setLineWrap(true);text.setWrapStyleWord(false);text.setEditable(false);JPanel panel=new JPanel(new BorderLayout(8,8));panel.add(new JScrollPane(text));JButton copy=new JButton("Copy deck code");copy.addActionListener(e->{try{Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(code),null);copy.setText("Copied");}catch(IllegalStateException ex){text.selectAll();text.requestFocusInWindow();}});panel.add(copy,BorderLayout.SOUTH);JOptionPane.showMessageDialog(this,panel,"Share this complete deck code",JOptionPane.PLAIN_MESSAGE);}
-    private void importDeck(){JTextArea input=new JTextArea(8,55);input.setLineWrap(true);if(JOptionPane.showConfirmDialog(this,new JScrollPane(input),"Paste deck code",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;try{
+    private void showCode(String code){JTextArea text=new JTextArea(code,8,55);text.setLineWrap(true);text.setWrapStyleWord(false);text.setEditable(false);JPanel panel=new JPanel(new BorderLayout(8,8));panel.add(new JScrollPane(text));JButton copy=new JButton("Copy deck code");copy.addActionListener(e->{try{Toolkit.getDefaultToolkit().getSystemClipboard().setContents(new StringSelection(code),null);copy.setText("Copied");}catch(IllegalStateException ex){text.selectAll();text.requestFocusInWindow();}});panel.add(copy,BorderLayout.SOUTH);ThemedDialogs.showComponent(this,"Share this complete deck code",panel);}
+    private void importDeck(){JTextArea input=new JTextArea(8,55);input.setLineWrap(true);if(!ThemedDialogs.confirmComponent(this,"Paste deck code",new JScrollPane(input),"Import","Cancel"))return;try{
         DeckBuild imported=store.importCode(input.getText());JTextArea preview=new JTextArea(imported.primaryFaction()+" + "+Objects.toString(imported.allyFaction(),"No ally")+"\n"+imported.capital().name()+"\n\n"+summary(imported.cards())+"\nReplace the current draft?",18,50);preview.setEditable(false);
-        if(JOptionPane.showConfirmDialog(this,new JScrollPane(preview),"Review imported deck",JOptionPane.OK_CANCEL_OPTION)!=JOptionPane.OK_OPTION)return;
+        if(!ThemedDialogs.confirmComponent(this,"Review imported deck",new JScrollPane(preview),"Replace Draft","Cancel"))return;
         faction.setSelectedItem(imported.primaryFaction());refreshAllies(imported.allyFaction());capital=imported.capital();cards.clear();cards.addAll(imported.cards());step=3;render();
     }catch(IllegalArgumentException ex){error(ex);}}
     private static String summary(List<CardDefinition> cards){Map<String,Integer> counts=new TreeMap<>();cards.forEach(c->counts.merge(c.name(),1,Integer::sum));StringBuilder s=new StringBuilder();counts.forEach((name,n)->s.append(n).append(" × ").append(name).append('\n'));return s.toString();}
-    private void error(Exception e){JOptionPane.showMessageDialog(this,e.getMessage(),"Deck needs attention",JOptionPane.WARNING_MESSAGE);}
+    private void error(Exception e){ThemedDialogs.message(this,"Deck needs attention",escape(String.valueOf(e.getMessage())),true);}
     private void style(Component component){
         if(component instanceof JPanel||component instanceof JViewport){component.setBackground(new Color(22,32,44));component.setForeground(new Color(236,237,229));}
         if(component instanceof JLabel){component.setForeground(new Color(236,237,229));}

@@ -46,6 +46,13 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     private JButton cancelQueueButton;
     private JLabel queueStatus;
     private JLabel tunnelShareLabel;
+    // One inline error line per setup section; blank (invisible) until set.
+    private JLabel identityError;
+    private JLabel deckError;
+    private JLabel internetError;
+    private JLabel publicGamesError;
+    private JLabel quickMatchError;
+    private JLabel lanError;
     private JTextField tunnelShareField;
     private JButton copyLinkButton;
     private JPanel tunnelSharePanel;
@@ -74,80 +81,24 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         JPanel card = SubScreen.card();
         card.setMaximumSize(new Dimension(640, 900));
 
-        nameField = styledField(settings.playerName, 24);
-        nameField.setToolTipText("Shown to other players. Max 24 characters.");
-        nameField.addActionListener(e -> saveName());
-        card.add(SubScreen.row("Display name", nameField));
-        card.add(caption("Public — other players will see this name. Your player ID stays private."));
+        card.add(identitySection());
         card.add(Box.createVerticalStrut(14));
-
-        JPanel factionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        factionRow.setOpaque(false);
-        zeusButton = factionToggle("Zeus");
-        poseidonButton = factionToggle("Poseidon");
-        ButtonGroup group = new ButtonGroup();
-        group.add(zeusButton);
-        group.add(poseidonButton);
-        zeusButton.setSelected(true);
-        factionRow.add(zeusButton);
-        factionRow.add(poseidonButton);
-        card.add(SubScreen.row("Your deck", factionRow));
-        card.add(caption("Your saved deck for the chosen faction. The host will see your deck list."));
+        card.add(deckSection());
         card.add(Box.createVerticalStrut(14));
-
-        card.add(sectionLabel("Internet play"));
-        card.add(caption("Play over the internet through a free Cloudflare tunnel. "
-                + "Neither player learns the other's IP address."));
-        hostOnlineButton = new ShellUi.MenuButton("Host Online Game");
-        hostOnlineButton.addActionListener(e -> hostOnlineGame());
-        card.add(buttons(hostOnlineButton));
-        card.add(caption("Hosting starts a tunnel on your machine — keep the game open while playing."));
-        card.add(Box.createVerticalStrut(10));
-
-        tunnelLinkField = styledField("", 24);
-        tunnelLinkField.setToolTipText("Paste a wss:// tunnel link from the host.");
-        joinLinkButton = new ShellUi.MenuButton("Join by Link");
-        joinLinkButton.addActionListener(e -> joinByLink());
-        JPanel linkRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        linkRow.setOpaque(false);
-        linkRow.add(tunnelLinkField);
-        linkRow.add(joinLinkButton);
-        card.add(SubScreen.row("Tunnel link", linkRow));
-        card.add(caption("The host will see your deck list. No account needed."));
-        card.add(Box.createVerticalStrut(10));
+        card.add(internetSection());
+        card.add(Box.createVerticalStrut(14));
 
         if (lobbyService() != null) {
-            buildLobbyBrowser(card);
-            card.add(Box.createVerticalStrut(10));
-            buildQuickMatch(card);
+            card.add(publicGamesSection());
+            card.add(Box.createVerticalStrut(14));
+            card.add(quickMatchSection());
+            card.add(Box.createVerticalStrut(14));
         } else {
             card.add(caption("Lobby browser, join codes, quick match, and ratings need a lobby server — "
                     + "set one under Settings \u2192 Lobby server. Direct tunnel links work without it."));
+            card.add(Box.createVerticalStrut(14));
         }
-        card.add(Box.createVerticalStrut(14));
-
-        card.add(sectionLabel("Local / LAN play"));
-        hostButton = new ShellUi.MenuButton("Host Game");
-        hostButton.addActionListener(e -> hostGame());
-        card.add(buttons(hostButton));
-        card.add(Box.createVerticalStrut(14));
-
-        card.add(sectionLabel("Join a game"));
-        addressField = styledField("127.0.0.1", 16);
-        portField = styledField(Integer.toString(EmbeddedServer.DEFAULT_PORT), 8);
-        JPanel joinRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        joinRow.setOpaque(false);
-        joinRow.add(new JLabel("Host:"));
-        styleLabel((JLabel) joinRow.getComponent(0));
-        joinRow.add(addressField);
-        joinRow.add(new JLabel("Port:"));
-        styleLabel((JLabel) joinRow.getComponent(2));
-        joinRow.add(portField);
-        card.add(SubScreen.row("Connect to", joinRow));
-        card.add(caption("The host will see your deck list. No account needed — play stays between the two machines."));
-        joinButton = new ShellUi.MenuButton("Join Game");
-        joinButton.addActionListener(e -> joinGame());
-        card.add(buttons(joinButton));
+        card.add(lanSection());
         card.add(Box.createVerticalStrut(14));
 
         lobbyPanel = buildLobbyPanel();
@@ -189,9 +140,110 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         return constraints;
     }
 
+    /** Your Identity section: display name plus its privacy caption. */
+    private JPanel identitySection() {
+        JPanel section = newSection("Your Identity");
+        nameField = styledField(settings.playerName, 24);
+        nameField.setToolTipText("Shown to other players. Max 24 characters.");
+        nameField.addActionListener(e -> saveName());
+        section.add(fieldRow("Display name", nameField));
+        section.add(Box.createVerticalStrut(6));
+        section.add(sectionCaption("Public — other players will see this name. Your player ID stays private."));
+        section.add(Box.createVerticalStrut(6));
+        identityError = sectionErrorLabel();
+        section.add(identityError);
+        return section;
+    }
+
+    /** Your Deck section: faction toggle plus its caption. */
+    private JPanel deckSection() {
+        JPanel section = newSection("Your Deck");
+        JPanel factionRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        factionRow.setOpaque(false);
+        zeusButton = factionToggle("Zeus");
+        poseidonButton = factionToggle("Poseidon");
+        ButtonGroup group = new ButtonGroup();
+        group.add(zeusButton);
+        group.add(poseidonButton);
+        zeusButton.setSelected(true);
+        factionRow.add(zeusButton);
+        factionRow.add(poseidonButton);
+        section.add(fieldRow("Your deck", factionRow));
+        section.add(Box.createVerticalStrut(6));
+        section.add(sectionCaption("Your saved deck for the chosen faction. The host will see your deck list."));
+        section.add(Box.createVerticalStrut(6));
+        deckError = sectionErrorLabel();
+        section.add(deckError);
+        return section;
+    }
+
+    /** Internet Play section: host online, join by tunnel link, link sharing. */
+    private JPanel internetSection() {
+        JPanel section = newSection("Internet Play");
+        section.add(sectionCaption("Play over the internet through a free Cloudflare tunnel. "
+                + "Neither player learns the other's IP address."));
+        section.add(Box.createVerticalStrut(8));
+        hostOnlineButton = new ShellUi.MenuButton("Host Online Game");
+        hostOnlineButton.addActionListener(e -> hostOnlineGame());
+        section.add(sectionButtons(hostOnlineButton));
+        section.add(Box.createVerticalStrut(6));
+        section.add(sectionCaption("Hosting starts a tunnel on your machine — keep the game open while playing."));
+        section.add(Box.createVerticalStrut(8));
+
+        tunnelLinkField = styledField("", 24);
+        tunnelLinkField.setToolTipText("Paste a wss:// tunnel link from the host.");
+        joinLinkButton = new ShellUi.MenuButton("Join by Link");
+        joinLinkButton.addActionListener(e -> joinByLink());
+        section.add(rowLabel("Tunnel link"));
+        section.add(Box.createVerticalStrut(4));
+        JPanel linkRow = new JPanel(new BorderLayout(10, 0));
+        linkRow.setOpaque(false);
+        linkRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        linkRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+        linkRow.add(tunnelLinkField, BorderLayout.CENTER);
+        linkRow.add(joinLinkButton, BorderLayout.EAST);
+        section.add(linkRow);
+        section.add(Box.createVerticalStrut(6));
+        section.add(sectionCaption("The host will see your deck list. No account needed."));
+        section.add(Box.createVerticalStrut(8));
+
+        tunnelSharePanel = new JPanel();
+        tunnelSharePanel.setOpaque(false);
+        tunnelSharePanel.setLayout(new BoxLayout(tunnelSharePanel, BoxLayout.Y_AXIS));
+        tunnelSharePanel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tunnelShareLabel = new JLabel(" ");
+        tunnelShareLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
+        tunnelShareLabel.setForeground(new Color(240, 191, 73));
+        tunnelShareLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        tunnelSharePanel.add(tunnelShareLabel);
+        JPanel shareRow = new JPanel(new BorderLayout(8, 0));
+        shareRow.setOpaque(false);
+        shareRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        shareRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+        tunnelShareField = styledField("", 26);
+        tunnelShareField.setEditable(false);
+        copyLinkButton = new ShellUi.MenuButton("Copy Link");
+        copyLinkButton.addActionListener(e -> {
+            copyToClipboard(tunnelShareField.getText());
+            copyLinkButton.setText("Copied!");
+            new javax.swing.Timer(1500, ev -> copyLinkButton.setText("Copy Link")).start();
+        });
+        shareRow.add(tunnelShareField, BorderLayout.CENTER);
+        shareRow.add(copyLinkButton, BorderLayout.EAST);
+        tunnelSharePanel.add(Box.createVerticalStrut(4));
+        tunnelSharePanel.add(shareRow);
+        tunnelSharePanel.setVisible(false);
+        section.add(tunnelSharePanel);
+
+        section.add(Box.createVerticalStrut(6));
+        internetError = sectionErrorLabel();
+        section.add(internetError);
+        return section;
+    }
+
     /** Public lobby browser: refresh, join selected, join by code. */
-    private void buildLobbyBrowser(JPanel card) {
-        card.add(sectionLabel("Public games"));
+    private JPanel publicGamesSection() {
+        JPanel section = newSection("Public Games");
         lobbyBrowserModel = new DefaultListModel<>();
         lobbyBrowserList = new JList<>(lobbyBrowserModel);
         lobbyBrowserList.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 14));
@@ -211,44 +263,91 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
             }
         });
         JScrollPane scroll = new JScrollPane(lobbyBrowserList);
-        scroll.setMaximumSize(new Dimension(560, 76));
-        scroll.setAlignmentX(CENTER_ALIGNMENT);
-        card.add(scroll);
-        card.add(Box.createVerticalStrut(6));
+        scroll.setMaximumSize(new Dimension(Integer.MAX_VALUE, 76));
+        scroll.setAlignmentX(Component.LEFT_ALIGNMENT);
+        section.add(scroll);
+        section.add(Box.createVerticalStrut(6));
 
         refreshBrowserButton = new ShellUi.MenuButton("Refresh");
         refreshBrowserButton.addActionListener(e -> refreshLobbyBrowser());
         joinSelectedButton = new ShellUi.MenuButton("Join Selected");
         joinSelectedButton.addActionListener(e -> joinSelectedLobby());
-        card.add(buttons(refreshBrowserButton, joinSelectedButton));
-        card.add(Box.createVerticalStrut(6));
+        section.add(sectionButtons(refreshBrowserButton, joinSelectedButton));
+        section.add(Box.createVerticalStrut(6));
 
         codeField = styledField("", 10);
         codeField.setToolTipText("6-character lobby code from the host.");
         joinCodeButton = new ShellUi.MenuButton("Join by Code");
         joinCodeButton.addActionListener(e -> joinByCode());
-        JPanel codeRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        section.add(rowLabel("Lobby code"));
+        section.add(Box.createVerticalStrut(4));
+        JPanel codeRow = new JPanel(new BorderLayout(10, 0));
         codeRow.setOpaque(false);
-        codeRow.add(codeField);
-        codeRow.add(joinCodeButton);
-        card.add(SubScreen.row("Lobby code", codeRow));
+        codeRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        codeRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 56));
+        codeRow.add(codeField, BorderLayout.CENTER);
+        codeRow.add(joinCodeButton, BorderLayout.EAST);
+        section.add(codeRow);
+        section.add(Box.createVerticalStrut(6));
+        publicGamesError = sectionErrorLabel();
+        section.add(publicGamesError);
+        return section;
     }
 
     /** Quick match: enqueue, poll, and either host or join the pairing. */
-    private void buildQuickMatch(JPanel card) {
-        card.add(sectionLabel("Quick match"));
+    private JPanel quickMatchSection() {
+        JPanel section = newSection("Quick Match");
         quickMatchButton = new ShellUi.MenuButton("Find Match");
         quickMatchButton.addActionListener(e -> findMatch());
         cancelQueueButton = new ShellUi.MenuButton("Cancel");
         cancelQueueButton.addActionListener(e -> cancelQuickMatch());
         cancelQueueButton.setVisible(false);
-        card.add(buttons(quickMatchButton, cancelQueueButton));
+        section.add(sectionButtons(quickMatchButton, cancelQueueButton));
         queueStatus = new JLabel(" ");
         queueStatus.setFont(new Font(Font.SANS_SERIF, Font.ITALIC, 14));
         queueStatus.setForeground(new Color(170, 178, 190));
-        queueStatus.setAlignmentX(CENTER_ALIGNMENT);
-        card.add(Box.createVerticalStrut(4));
-        card.add(queueStatus);
+        queueStatus.setAlignmentX(Component.LEFT_ALIGNMENT);
+        section.add(Box.createVerticalStrut(4));
+        section.add(queueStatus);
+        section.add(Box.createVerticalStrut(6));
+        quickMatchError = sectionErrorLabel();
+        section.add(quickMatchError);
+        return section;
+    }
+
+    /** Local / LAN Play section: host on the LAN, or join by address and port. */
+    private JPanel lanSection() {
+        JPanel section = newSection("Local / LAN Play");
+        hostButton = new ShellUi.MenuButton("Host Game");
+        hostButton.addActionListener(e -> hostGame());
+        section.add(sectionButtons(hostButton));
+        section.add(Box.createVerticalStrut(8));
+
+        addressField = styledField("127.0.0.1", 16);
+        portField = styledField(Integer.toString(EmbeddedServer.DEFAULT_PORT), 8);
+        section.add(rowLabel("Connect to"));
+        section.add(Box.createVerticalStrut(4));
+        JPanel joinRow = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
+        joinRow.setOpaque(false);
+        joinRow.setAlignmentX(Component.LEFT_ALIGNMENT);
+        joinRow.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+        joinRow.add(new JLabel("Host:"));
+        styleLabel((JLabel) joinRow.getComponent(0));
+        joinRow.add(addressField);
+        joinRow.add(new JLabel("Port:"));
+        styleLabel((JLabel) joinRow.getComponent(2));
+        joinRow.add(portField);
+        section.add(joinRow);
+        section.add(Box.createVerticalStrut(6));
+        section.add(sectionCaption("The host will see your deck list. No account needed — play stays between the two machines."));
+        section.add(Box.createVerticalStrut(6));
+        joinButton = new ShellUi.MenuButton("Join Game");
+        joinButton.addActionListener(e -> joinGame());
+        section.add(sectionButtons(joinButton));
+        section.add(Box.createVerticalStrut(6));
+        lanError = sectionErrorLabel();
+        section.add(lanError);
+        return section;
     }
 
     /** Lobby service, or null when no lobby server URL is configured. */
@@ -291,34 +390,8 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         panel.add(Box.createVerticalStrut(8));
         panel.add(lobbyStatus);
 
-        tunnelSharePanel = new JPanel();
-        tunnelSharePanel.setOpaque(false);
-        tunnelSharePanel.setLayout(new BoxLayout(tunnelSharePanel, BoxLayout.Y_AXIS));
-        tunnelSharePanel.setAlignmentX(CENTER_ALIGNMENT);
-        tunnelShareLabel = new JLabel(" ");
-        tunnelShareLabel.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
-        tunnelShareLabel.setForeground(new Color(240, 191, 73));
-        tunnelShareLabel.setAlignmentX(CENTER_ALIGNMENT);
-        tunnelSharePanel.add(Box.createVerticalStrut(6));
-        tunnelSharePanel.add(tunnelShareLabel);
-        JPanel shareRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 0));
-        shareRow.setOpaque(false);
-        shareRow.setAlignmentX(CENTER_ALIGNMENT);
-        tunnelShareField = styledField("", 26);
-        tunnelShareField.setEditable(false);
-        copyLinkButton = new ShellUi.MenuButton("Copy Link");
-        copyLinkButton.addActionListener(e -> {
-            copyToClipboard(tunnelShareField.getText());
-            copyLinkButton.setText("Copied!");
-            new javax.swing.Timer(1500, ev -> copyLinkButton.setText("Copy Link")).start();
-        });
-        shareRow.add(tunnelShareField);
-        shareRow.add(copyLinkButton);
-        tunnelSharePanel.add(Box.createVerticalStrut(4));
-        tunnelSharePanel.add(shareRow);
-        tunnelSharePanel.setVisible(false);
-        panel.add(tunnelSharePanel);
-
+        // The tunnel share panel now lives in the Internet Play setup section;
+        // enterLobby() toggles its visibility there when hosting online.
         JPanel buttons = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
         buttons.setOpaque(false);
         buttons.setAlignmentX(CENTER_ALIGNMENT);
@@ -375,7 +448,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     private void hostGame() {
         saveName();
         setConnecting(true);
-        lobbyStatus.setText("Starting server…");
+        setLobbyStatus("Starting server…", false);
         new SwingWorker<NetSession, Void>() {
             @Override protected NetSession doInBackground() throws Exception {
                 return NetSession.host(settings, chosenDeck(), context.matchFactory, MultiplayerScreen.this);
@@ -386,7 +459,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                     enterLobby(get(), true);
                 } catch (Exception e) {
                     setConnecting(false);
-                    showError("Could not host a game", e);
+                    showError(lanError, "Could not host a game", e);
                 }
             }
         }.execute();
@@ -394,19 +467,19 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
 
     private void joinGame() {
         saveName();
+        setSectionError(lanError, null); // a fresh attempt clears the old error
         String address = addressField.getText().trim();
         int port;
         try {
             port = Integer.parseInt(portField.getText().trim());
         } catch (NumberFormatException e) {
-            JOptionPane.showMessageDialog(this, "Port must be a number.", "Join Game",
-                    JOptionPane.ERROR_MESSAGE);
+            setSectionError(lanError, "Port must be a number.");
             return;
         }
         if (address.isEmpty()) address = "127.0.0.1";
         String finalAddress = address;
         setConnecting(true);
-        lobbyStatus.setText("Connecting…");
+        setLobbyStatus("Connecting…", false);
         new SwingWorker<NetSession, Void>() {
             @Override protected NetSession doInBackground() throws Exception {
                 return NetSession.join(settings, chosenDeck(), finalAddress, port, MultiplayerScreen.this);
@@ -417,17 +490,16 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                     enterLobby(get(), false);
                 } catch (Exception e) {
                     setConnecting(false);
-                    showError("Could not join " + finalAddress + ":" + port, e);
+                    showError(lanError, "Could not join " + finalAddress + ":" + port, e);
                 }
             }
         }.execute();
     }
 
-    private void showError(String what, Exception e) {
+    private void showError(JLabel sectionError, String what, Exception e) {
         Throwable cause = e.getCause() == null ? e : e.getCause();
         String detail = cause.getMessage() == null ? cause.toString() : cause.getMessage();
-        JOptionPane.showMessageDialog(this, what + ":\n" + detail, "Multiplayer",
-                JOptionPane.ERROR_MESSAGE);
+        setSectionError(sectionError, what + ": " + detail);
     }
 
     // --- Internet play ---
@@ -440,7 +512,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     private void hostOnlineGame() {
         saveName();
         setConnecting(true);
-        lobbyStatus.setText("Starting tunnel — this can take up to a minute…");
+        setLobbyStatus("Starting tunnel — this can take up to a minute…", false);
         LobbyService lobby = lobbyService();
         new SwingWorker<NetSession, Void>() {
             @Override protected NetSession doInBackground() throws Exception {
@@ -453,32 +525,31 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                     NetSession hosted = get();
                     enterLobby(hosted, true);
                     if (hosted.lobbyCode() != null) {
-                        lobbyStatus.setText("Public lobby open — share the code or the link.");
+                        setLobbyStatus("Public lobby open — share the code or the link.", false);
                     } else {
-                        lobbyStatus.setText("Private game — share the link below.");
+                        setLobbyStatus("Private game — share the link below.", false);
                     }
                 } catch (Exception e) {
                     setConnecting(false);
-                    lobbyStatus.setText(" ");
-                    showError("Could not start the tunnel", e);
+                    setLobbyStatus(" ", false);
+                    showError(internetError, "Could not start the tunnel", e);
                 }
             }
         }.execute();
     }
 
     private void joinByLink() {
+        setSectionError(internetError, null); // a fresh attempt clears the old error
         String link = tunnelLinkField.getText().trim();
         if (link.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Paste the host's tunnel link first.", "Join by Link",
-                    JOptionPane.WARNING_MESSAGE);
+            setSectionError(internetError, "Paste the host's tunnel link first.");
             return;
         }
         if (!link.startsWith("wss://")) {
             if (link.startsWith("https://")) link = "wss://" + link.substring("https://".length());
             else {
-                JOptionPane.showMessageDialog(this,
-                        "That doesn't look like a tunnel link — it should start with wss://.",
-                        "Join by Link", JOptionPane.WARNING_MESSAGE);
+                setSectionError(internetError,
+                        "That doesn't look like a tunnel link — it should start with wss://.");
                 return;
             }
         }
@@ -489,7 +560,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     private void joinTunnel(String wssUrl) {
         saveName();
         setConnecting(true);
-        lobbyStatus.setText("Connecting through the tunnel…");
+        setLobbyStatus("Connecting through the tunnel…", false);
         new SwingWorker<NetSession, Void>() {
             @Override protected NetSession doInBackground() throws Exception {
                 return NetSession.joinViaTunnel(settings, chosenDeck(), wssUrl, MultiplayerScreen.this);
@@ -500,8 +571,8 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                     enterLobby(get(), false);
                 } catch (Exception e) {
                     setConnecting(false);
-                    lobbyStatus.setText(" ");
-                    showError("Could not join through the tunnel", e);
+                    setLobbyStatus(" ", false);
+                    showError(internetError, "Could not join through the tunnel", e);
                 }
             }
         }.execute();
@@ -510,6 +581,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     private void refreshLobbyBrowser() {
         LobbyService lobby = lobbyService();
         if (lobby == null) return;
+        setSectionError(publicGamesError, null); // a fresh refresh clears the old error
         refreshBrowserButton.setEnabled(false);
         new SwingWorker<List<LobbyService.LobbyEntry>, Void>() {
             @Override protected List<LobbyService.LobbyEntry> doInBackground() throws Exception {
@@ -523,22 +595,21 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                     List<LobbyService.LobbyEntry> entries = get();
                     for (LobbyService.LobbyEntry entry : entries) lobbyBrowserModel.addElement(entry);
                     if (entries.isEmpty()) {
-                        JOptionPane.showMessageDialog(MultiplayerScreen.this,
-                                "No public games right now — host one or try quick match.",
-                                "Public games", JOptionPane.INFORMATION_MESSAGE);
+                        setSectionError(publicGamesError,
+                                "No public games right now — host one or try quick match.");
                     }
                 } catch (Exception e) {
-                    showError("Could not load the lobby list", e);
+                    showError(publicGamesError, "Could not load the lobby list", e);
                 }
             }
         }.execute();
     }
 
     private void joinSelectedLobby() {
+        setSectionError(publicGamesError, null); // a fresh attempt clears the old error
         LobbyService.LobbyEntry entry = lobbyBrowserList.getSelectedValue();
         if (entry == null) {
-            JOptionPane.showMessageDialog(this, "Select a game from the list first.", "Public games",
-                    JOptionPane.WARNING_MESSAGE);
+            setSectionError(publicGamesError, "Select a game from the list first.");
             return;
         }
         joinTunnel(entry.wssUrl());
@@ -547,10 +618,10 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
     private void joinByCode() {
         LobbyService lobby = lobbyService();
         if (lobby == null) return;
+        setSectionError(publicGamesError, null); // a fresh attempt clears the old error
         String code = codeField.getText().trim().toUpperCase(java.util.Locale.ROOT);
         if (code.isEmpty()) {
-            JOptionPane.showMessageDialog(this, "Enter the host's 6-character lobby code.", "Join by Code",
-                    JOptionPane.WARNING_MESSAGE);
+            setSectionError(publicGamesError, "Enter the host's 6-character lobby code.");
             return;
         }
         joinCodeButton.setEnabled(false);
@@ -564,14 +635,12 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                 try {
                     LobbyService.LobbyEntry entry = get();
                     if (entry == null) {
-                        JOptionPane.showMessageDialog(MultiplayerScreen.this,
-                                "Unknown or expired lobby code.", "Join by Code",
-                                JOptionPane.WARNING_MESSAGE);
+                        setSectionError(publicGamesError, "Unknown or expired lobby code.");
                         return;
                     }
                     joinTunnel(entry.wssUrl());
                 } catch (Exception e) {
-                    showError("Could not look up the lobby code", e);
+                    showError(publicGamesError, "Could not look up the lobby code", e);
                 }
             }
         }.execute();
@@ -666,7 +735,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
             SwingUtilities.invokeLater(() -> {
                 queueStatus.setText(" ");
                 cancelQuickMatch();
-                showError("Quick match failed", e);
+                showError(quickMatchError, "Quick match failed", e);
             });
         }
     }
@@ -696,11 +765,11 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                 lobbyTitle.setText("Lobby — hosting on port " + newSession.hostPort());
                 tunnelSharePanel.setVisible(false);
             }
-            lobbyStatus.setText("Waiting for an opponent to join…");
+            setLobbyStatus("Waiting for an opponent to join…", false);
         } else {
             lobbyTitle.setText("Lobby");
             tunnelSharePanel.setVisible(false);
-            lobbyStatus.setText("Waiting for the host to start…");
+            setLobbyStatus("Waiting for the host to start…", false);
         }
         refreshPlayers(newSession.lobbyPlayers());
         revalidate();
@@ -723,21 +792,21 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
                 // Quick match: the guest is here because we published the
                 // pairing for them — start without another click.
                 autoStart = false;
-                lobbyStatus.setText("Opponent joined — starting match…");
+                setLobbyStatus("Opponent joined — starting match…", false);
                 startMatch();
-            } else if (ready) lobbyStatus.setText("Opponent joined — start when ready.");
-            else lobbyStatus.setText("Waiting for an opponent to join…");
+            } else if (ready) setLobbyStatus("Opponent joined — start when ready.", false);
+            else setLobbyStatus("Waiting for an opponent to join…", false);
         }
     }
 
     private void startMatch() {
         startButton.setEnabled(false);
-        lobbyStatus.setText("Starting match…");
+        setLobbyStatus("Starting match…", false);
         try {
             session.startMatch();
         } catch (RuntimeException e) {
             startButton.setEnabled(true);
-            lobbyStatus.setText("Could not start: " + e.getMessage());
+            setLobbyStatus("Could not start: " + e.getMessage(), false);
         }
     }
 
@@ -801,7 +870,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
 
     @Override public void onError(String message) {
         if (inMatch) return;
-        JOptionPane.showMessageDialog(this, message, "Multiplayer", JOptionPane.WARNING_MESSAGE);
+        setLobbyStatus(message, true);
     }
 
     @Override public void onDisconnected(String reason) {
@@ -809,9 +878,7 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         closeSession();
         lobbyPanel.setVisible(false);
         setConnecting(false);
-        JOptionPane.showMessageDialog(this,
-                "Disconnected from host." + (reason == null ? "" : "\n" + reason),
-                "Multiplayer", JOptionPane.WARNING_MESSAGE);
+        setLobbyStatus("Disconnected from host." + (reason == null ? "" : " " + reason), true);
         revalidate();
         repaint();
     }
@@ -861,8 +928,96 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         JLabel label = new JLabel(text);
         label.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 17));
         label.setForeground(new Color(240, 191, 73));
-        label.setAlignmentX(Component.CENTER_ALIGNMENT);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
         return label;
+    }
+
+    /** Bordered sub-panel for one setup section: gold header, 12px padding, left-aligned content. */
+    private static JPanel newSection(String title) {
+        JPanel section = new JPanel();
+        section.setOpaque(false);
+        section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
+        section.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(70, 85, 110)),
+                new EmptyBorder(12, 12, 12, 12)));
+        section.setMaximumSize(new Dimension(Integer.MAX_VALUE, Integer.MAX_VALUE));
+        section.setAlignmentX(Component.CENTER_ALIGNMENT);
+        section.add(sectionLabel(title));
+        section.add(Box.createVerticalStrut(8));
+        return section;
+    }
+
+    /** Compact labeled row for section interiors: narrower label than SubScreen.row. */
+    private static JPanel fieldRow(String labelText, JComponent control) {
+        JPanel row = new JPanel(new BorderLayout(12, 0));
+        row.setOpaque(false);
+        JLabel label = new JLabel(labelText);
+        label.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 15));
+        label.setForeground(new Color(220, 226, 236));
+        label.setPreferredSize(new Dimension(120, 40));
+        row.add(label, BorderLayout.WEST);
+        row.add(control, BorderLayout.CENTER);
+        row.setAlignmentX(Component.LEFT_ALIGNMENT);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 52));
+        return row;
+    }
+
+    /** Small label that sits above a full-width control row inside a section. */
+    private static JLabel rowLabel(String text) {
+        JLabel label = new JLabel(text);
+        styleLabel(label);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    /** Caption pinned to the section's left edge. */
+    private static JLabel sectionCaption(String text) {
+        JLabel label = caption(text);
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        return label;
+    }
+
+    /** Left-aligned button row for section interiors. */
+    private static JPanel sectionButtons(JButton... buttons) {
+        JPanel panel = new JPanel(new FlowLayout(FlowLayout.LEFT, 12, 0));
+        panel.setOpaque(false);
+        panel.setAlignmentX(Component.LEFT_ALIGNMENT);
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 64));
+        for (JButton button : buttons) panel.add(button);
+        return panel;
+    }
+
+    /** The red inline error line at the bottom of a section; blank and hidden until set. */
+    private static JLabel sectionErrorLabel() {
+        JLabel label = new JLabel(" ");
+        label.setFont(new Font(Font.SANS_SERIF, Font.PLAIN, 13));
+        label.setForeground(new Color(255, 120, 120));
+        label.setAlignmentX(Component.LEFT_ALIGNMENT);
+        label.setVisible(false);
+        return label;
+    }
+
+    /** Sets a section's inline error (null/blank clears it back to hidden). */
+    private static void setSectionError(JLabel label, String message) {
+        if (label == null) return;
+        if (message == null || message.isBlank()) {
+            label.setText(" ");
+            label.setVisible(false);
+            return;
+        }
+        String html = escapeHtml(message).replace("\n", "<br>");
+        label.setText("<html><div style='width:560px;'>" + html + "</div></html>");
+        label.setVisible(true);
+    }
+
+    private static String escapeHtml(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    /** Pre-match lobby status line; errors render red, normal statuses gray. */
+    private void setLobbyStatus(String text, boolean error) {
+        lobbyStatus.setText(text);
+        lobbyStatus.setForeground(error ? new Color(255, 120, 120) : new Color(170, 178, 190));
     }
 
     private static JLabel caption(String text) {
@@ -871,14 +1026,6 @@ final class MultiplayerScreen extends SubScreen implements NetSession.Listener {
         label.setForeground(new Color(150, 158, 172));
         label.setAlignmentX(Component.CENTER_ALIGNMENT);
         return label;
-    }
-
-    private static JPanel buttons(JButton... buttons) {
-        JPanel panel = new JPanel(new FlowLayout(FlowLayout.CENTER, 12, 0));
-        panel.setOpaque(false);
-        panel.setAlignmentX(Component.CENTER_ALIGNMENT);
-        for (JButton button : buttons) panel.add(button);
-        return panel;
     }
 
     /** Card-definition lookup for rebuilding client state from snapshots. */
