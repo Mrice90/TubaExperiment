@@ -2,7 +2,25 @@ package com.infiniteconquest.core;
 
 import com.infiniteconquest.data.Keyword;
 
+import java.util.Optional;
+
 public final class LineOfSightRules {
+    /**
+     * Activated abilities that strike the enemy Capital are aimed shots: they
+     * need a clear sight line from the source to that Capital. An enemy
+     * structure between the two works as cover and blocks the ability, unless
+     * the source is aiming from a higher height — the height-aware trace lets
+     * a higher eye level shoot over lower cover. Vacuously true when no enemy
+     * Capital stands on the battlefield.
+     */
+    public boolean hasLineToEnemyCapital(GameState state, CardInstance source, BoardPosition from) {
+        return state.battlefieldCards(1 - source.owner()).stream()
+                .filter(card -> card.definition().type() == CardType.CAPITAL)
+                .map(card -> state.board().positionOf(card.instanceId()))
+                .flatMap(Optional::stream)
+                .anyMatch(capital -> hasLineOfSight(state, from, capital));
+    }
+
     public boolean hasLineOfSight(GameState state, BoardPosition from, BoardPosition to) {
         if (state.rules().geometry() == BoardGeometry.HEX) {
             return java.util.stream.DoubleStream.of(0.000001, -0.000001).anyMatch(nudge ->

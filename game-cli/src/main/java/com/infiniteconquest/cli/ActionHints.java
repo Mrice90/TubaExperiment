@@ -63,10 +63,24 @@ public final class ActionHints {
                             .mapToInt(CardAbility::gpCost).sum() <= state.player(player).currentGp())
                     .filter(card -> card.definition().abilities().stream()
                             .anyMatch(ability -> ability.trigger() == AbilityTrigger.ACTIVATED))
+                    .filter(card -> aimsAtEnemyCapital(card)
+                            ? new LineOfSightRules().hasLineToEnemyCapital(state, card, position)
+                            : true)
                     .ifPresent(card -> hints.add("activate " + position.x() + " " + position.y()));
         }
         hints.add("end");
         return List.copyOf(hints);
+    }
+
+    /**
+     * True when one of the card's activated abilities strikes the enemy
+     * Capital — an aimed shot that needs a clear sight line, so the hint list
+     * only offers it when cover does not block it.
+     */
+    private boolean aimsAtEnemyCapital(CardInstance card) {
+        return card.definition().abilities().stream()
+                .anyMatch(ability -> ability.trigger() == AbilityTrigger.ACTIVATED
+                        && ability.effect() == AbilityEffectType.DAMAGE_ENEMY_CAPITAL);
     }
 
     public List<String> spellActionsForPlayer(GameState state, int player) {

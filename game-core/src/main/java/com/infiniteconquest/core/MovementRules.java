@@ -24,10 +24,10 @@ public final class MovementRules {
             if (nextDistance > allowance) continue;
             for (BoardPosition next : state.rules().geometry().neighbors(current)) {
                 if (distance.containsKey(next)) continue;
-                boolean stackableDestination = canJoinFriendlyStack(state, character, next);
-                if (!state.board().isEmpty(next) && !stackableDestination) continue;
+                Passability pass = passability(state, character, next);
+                if (pass == Passability.BLOCKED) continue;
                 distance.put(next, nextDistance);
-                if (state.board().isEmpty(next)) queue.addLast(next);
+                if (pass == Passability.OPEN) queue.addLast(next);
             }
         }
         distance.remove(origin);
@@ -59,7 +59,11 @@ public final class MovementRules {
                 return List.copyOf(path);
             }
             for (BoardPosition next : state.rules().geometry().neighbors(current)) {
-                if ((!state.board().isEmpty(next) && !next.equals(destination)) || distance.containsKey(next)) continue;
+                if (distance.containsKey(next)) continue;
+                // The destination was validated against legalDestinations, so it is
+                // enterable by construction; every other step must be open ground.
+                Passability pass = next.equals(destination) ? Passability.OPEN : passability(state, character, next);
+                if (pass == Passability.BLOCKED) continue;
                 distance.put(next, distance.get(current) + 1);
                 previous.put(next, current);
                 queue.addLast(next);
@@ -68,11 +72,28 @@ public final class MovementRules {
         return List.of();
     }
 
-    private boolean canJoinFriendlyStack(GameState state, CardInstance character, BoardPosition position) {
-        if (state.board().isEmpty(position)) return false;
-        return state.board().stackAt(position).stream()
+    /**
+     * How a moving character may treat a hex.
+     * <ul>
+     *   <li>OPEN — empty or open ground: the character may enter, pass through, and end its move here.</li>
+     *   <li>ENTER_ONLY — a friendly stack: the character may end its move here but not pass through.</li>
+     *   <li>BLOCKED — solid: an enemy structure, the enemy Capital, or an enemy Character.</li>
+     * </ul>
+     * Enemy land is open ground — a character marches straight through it — but
+     * enemy structures are solid and cannot be entered or passed through.
+     */
+    private enum Passability { OPEN, ENTER_ONLY, BLOCKED }
+
+    private Passability passability(GameState state, CardInstance character, BoardPosition position) {
+        if (state.board().isEmpty(position)) return Passability.OPEN;
+        List<CardInstance> stack = state.board().stackAt(position).stream()
                 .map(id -> state.card(id).orElseThrow())
+                .toList();
+        if (stack.stream().allMatch(card -> card.definition().type() == CardType.LAND)) return Passability.OPEN;
+        boolean friendly = stack.stream()
+                .filter(card -> card.definition().type() != CardType.LAND)
                 .allMatch(card -> card.owner() == character.owner());
+        return friendly ? Passability.ENTER_ONLY : Passability.BLOCKED;
     }
 
 }

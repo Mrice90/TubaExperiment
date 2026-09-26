@@ -38,6 +38,10 @@ public final class GameEngine {
         List<CardAbility> abilities = cardAbilityRules.abilities(source, AbilityTrigger.ACTIVATED);
         if (abilities.isEmpty()) return ActionResult.rejected("Card has no activated ability");
         if (source.abilityUsedThisTurn()) return ActionResult.rejected("Ability already used this turn");
+        if (abilities.stream().anyMatch(ability -> ability.effect() == AbilityEffectType.DAMAGE_ENEMY_CAPITAL)
+                && !lineOfSightRules.hasLineToEnemyCapital(state, source, position)) {
+            return ActionResult.rejected("No line of sight to the enemy Capital — blocked by cover");
+        }
         int totalCost = abilities.stream().mapToInt(CardAbility::gpCost).sum();
         if (state.player(action.playerId()).currentGp() < totalCost) return ActionResult.rejected("Not enough GP");
         state.spendGp(action.playerId(), totalCost, source.definition().name() + " ability");

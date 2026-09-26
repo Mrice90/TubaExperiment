@@ -173,6 +173,9 @@ final class HowToPlayScreen extends SubScreen {
                   or attack without moving. It cannot do either twice.
                 • Invading is slow: a Character standing on the enemy's home
                   rows moves at half its Movement (minimum 1).
+                • A Character cannot enter or march through an enemy Structure or
+                  Capital — buildings are solid. Enemy land is open ground:
+                  you can walk straight across it, but its turrets will notice.
                 • Attacks target a hex in Range. Melee fighters (Range 1) must
                   stand adjacent; archers and siege engines reach farther.
                 • Striking a Character provokes retaliation if the defender can
@@ -185,6 +188,12 @@ final class HowToPlayScreen extends SubScreen {
                 Hexes have height and terrain. High ground sees farther and
                 strikes first in the ways that matter; turrets punish anything
                 that wanders into range. Scout before you march.
+
+                COVER
+                Structures screen what stands behind them. A Structure between
+                an attacker and your Capital blocks the shot — attacks and
+                aimed abilities alike — unless the attacker aims from higher
+                ground. Build your walls where the enemy must look through them.
 
                 READING THE BOARD
                 • A golden chevron marks a Character that can still attack.
@@ -205,6 +214,10 @@ final class HowToPlayScreen extends SubScreen {
                 Rules of the craft:
                 • Only the TOP card of a stack can use its ability.
                 • Each ability fires once per turn and costs gold.
+                • Aimed abilities that strike the enemy Capital need a clear
+                  sight line: enemy Structures between the source and the
+                  Capital block the shot, unless the source aims from higher
+                  ground.
                 • Look for the glowing sigil: it means the ability is ready.
 
                 CAPITAL PASSIVES

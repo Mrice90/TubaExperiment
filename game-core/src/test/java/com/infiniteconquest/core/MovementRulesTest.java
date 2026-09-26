@@ -28,15 +28,46 @@ class MovementRulesTest {
         assertTrue(engine.legalMovementDestinations(state, runner.instanceId()).isEmpty());
     }
 
-    @Test void enemyOccupiedCellsBlockOrdinaryMovementPaths() {
+    private CardInstance permanent(GameState state, CardType type, int owner, BoardPosition position) {
+        CardDefinition definition = new CardDefinition("block", "Block", type, "DEV", 0, 0, 0, 0, 0);
+        CardInstance card = new CardInstance(UUID.randomUUID(), definition, owner, Zone.BATTLEFIELD);
+        state.register(card);
+        state.board().push(position, card.instanceId());
+        return card;
+    }
+
+    @Test void enemyStructureBlocksMovement() {
         GameState state = new GameState(2L);
         CardInstance runner = character(state, 1, new BoardPosition(0, 0));
-        CardDefinition landDef = new CardDefinition("block", "Block", CardType.LAND, "DEV", 0, 0, 0, 0, 0);
-        CardInstance blocker = new CardInstance(UUID.randomUUID(), landDef, 1, Zone.BATTLEFIELD);
-        state.register(blocker);
-        state.board().push(new BoardPosition(1, 1), blocker.instanceId());
+        permanent(state, CardType.STRUCTURE, 1, new BoardPosition(1, 0));
 
-        assertFalse(new GameEngine().legalMovementDestinations(state, runner.instanceId()).contains(new BoardPosition(1, 1)));
+        assertFalse(new GameEngine().legalMovementDestinations(state, runner.instanceId()).contains(new BoardPosition(1, 0)));
+    }
+
+    @Test void enemyLandIsOpenGround() {
+        GameState state = new GameState(2L);
+        CardInstance runner = character(state, 2, new BoardPosition(0, 0));
+        permanent(state, CardType.LAND, 1, new BoardPosition(1, 0));
+        GameEngine engine = new GameEngine();
+
+        var destinations = engine.legalMovementDestinations(state, runner.instanceId());
+        assertTrue(destinations.contains(new BoardPosition(1, 0)), "a character can enter enemy land");
+        assertTrue(destinations.contains(new BoardPosition(2, 0)), "a character can march straight through enemy land");
+        assertTrue(engine.apply(state,
+                new GameAction.MoveCharacter(0, runner.instanceId(), new BoardPosition(2, 0))).accepted());
+        assertEquals(new BoardPosition(2, 0), state.board().positionOf(runner.instanceId()).orElseThrow());
+    }
+
+    @Test void enemyCharacterAndMixedStacksStillBlock() {
+        GameState state = new GameState(2L);
+        CardInstance runner = character(state, 1, new BoardPosition(0, 0));
+        permanent(state, CardType.CHARACTER, 1, new BoardPosition(1, 0));
+        permanent(state, CardType.LAND, 1, new BoardPosition(0, 1));
+        permanent(state, CardType.STRUCTURE, 1, new BoardPosition(0, 1));
+
+        var destinations = new GameEngine().legalMovementDestinations(state, runner.instanceId());
+        assertFalse(destinations.contains(new BoardPosition(1, 0)), "enemy Character blocks");
+        assertFalse(destinations.contains(new BoardPosition(0, 1)), "enemy land under an enemy structure still blocks");
     }
 
     @Test void characterCanMoveOntoAnotherFriendlyCharacter() {

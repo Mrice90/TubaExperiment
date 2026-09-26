@@ -8,6 +8,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
+import java.util.UUID;
 
 public final class BotPlayer {
     public static final int BOT_ID = 1;
@@ -243,7 +244,11 @@ public final class BotPlayer {
         double material = materialValue(state, playerId) - materialValue(state, foe);
         double gp = state.player(playerId).currentGp() - state.player(foe).currentGp();
         double cards = state.player(playerId).hand().size() - state.player(foe).hand().size();
-        return 100.0 * capitals + 10.0 * material + 1.5 * gp + 2.0 * cards;
+        // A screened Capital (few enemy attackers with a sight line to it)
+        // and an exposed enemy Capital are both worth real, if modest, value:
+        // screens buy the turns that win games.
+        double exposure = capitalExposure(state, foe) - capitalExposure(state, playerId);
+        return 100.0 * capitals + 10.0 * material + 1.5 * gp + 2.0 * cards + 8.0 * exposure;
     }
 
     private double materialValue(GameState state, int playerId) {
@@ -302,7 +307,12 @@ public final class BotPlayer {
                 CardType type = state.card(state.player(playerId).hand().get(index)).orElseThrow().definition().type();
                 yield switch (type) {
                     case LAND -> 90;
-                    case STRUCTURE -> 85;
+                    // A structure that screens the Capital — standing on a
+                    // sight line between an exposed enemy attacker and home —
+                    // is worth far more than a bare stat play. The bonus
+                    // fades on its own: once attackers are screened they no
+                    // longer count as exposed.
+                    case STRUCTURE -> 85 + screenBonus(state, parts, playerId);
                     case CHARACTER -> 80;
                     default -> 0;
                 };
@@ -391,8 +401,66 @@ public final class BotPlayer {
                 .sum();
     }
 
-    private int capitalSynergy(GameState state, int playerId, String action) {
-        CapitalPassive passive = state.capitalPassiveFor(playerId).orElse(null);
+    /**
+     * Bonus for playing a structure on a hex that would screen the Capital:
+     * +15 per enemy attacker whose currently-clear sight line to our Capital
+     * the new structure would block, capped at +45. Evaluated against the
+     * live board, so the bonus naturally disappears once the Capital is
+     * already screened.
+     */
+    private int screenBonus(GameState state, String[] parts, int playerId) {
+        BoardPosition at = new BoardPosition(Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
+        BoardPosition capital = capitalPosition(state, playerId);
+        if (capital == null) return 0;
+        int foe = 1 - playerId;
+        LineOfSightRules sight = new LineOfSightRules();
+        List<BoardPosition> exposed = new ArrayList<>();
+        for (CardInstance enemy : state.battlefieldCards(foe)) {
+            if (enemy.definition().type() != CardType.CHARACTER) continue;
+            BoardPosition from = state.board().positionOf(enemy.instanceId()).orElse(null);
+            if (from == null) continue;
+            if (!state.board().topAt(from).map(top -> top.equals(enemy.instanceId())).orElse(false)) continue;
+            if (sight.hasLineOfSight(state, from, capital)) exposed.add(from);
+        }
+        if (exposed.isEmpty()) return 0;
+        // Ghost the structure onto the candidate hex and re-check the sight lines.
+        GameState probe = state.copy();
+        int index = Integer.parseInt(parts[1]);
+        CardDefinition definition = state.card(state.player(playerId).hand().get(index)).orElseThrow().definition();
+        CardInstance ghost = new CardInstance(UUID.randomUUID(), definition, playerId, Zone.BATTLEFIELD);
+        probe.register(ghost);
+        probe.board().push(at, ghost.instanceId());
+        int screened = 0;
+        for (BoardPosition from : exposed) {
+            if (!sight.hasLineOfSight(probe, from, capital)) screened++;
+        }
+        return Math.min(45, 15 * screened);
+    }
+
+    private BoardPosition capitalPosition(GameState state, int playerId) {
+        return state.battlefieldCards(playerId).stream()
+                .filter(card -> card.definition().type() == CardType.CAPITAL)
+                .map(card -> state.board().positionOf(card.instanceId()).orElse(null))
+                .filter(Objects::nonNull)
+                .findFirst().orElse(null);
+    }
+
+    /** How many of {@code owner}'s enemies can currently see their Capital. */
+    private int capitalExposure(GameState state, int owner) {
+        BoardPosition capital = capitalPosition(state, owner);
+        if (capital == null) return 0;
+        int foe = 1 - owner;
+        LineOfSightRules sight = new LineOfSightRules();
+        int exposed = 0;
+        for (CardInstance enemy : state.battlefieldCards(foe)) {
+            if (enemy.definition().type() != CardType.CHARACTER) continue;
+            BoardPosition from = state.board().positionOf(enemy.instanceId()).orElse(null);
+            if (from != null && sight.hasLineOfSight(state, from, capital)) exposed++;
+        }
+        return exposed;
+    }
+
+    private int capitalSynergy(GameState state, int playerId, String action) {        CapitalPassive passive = state.capitalPassiveFor(playerId).orElse(null);
         if (passive == null) return 0;
         return switch (passive) {
             case STORM_TITHE -> action.equals("cast") || action.equals("react") ? 8 : 0;
