@@ -30,6 +30,8 @@ final class HowToPlayScreen extends SubScreen {
         tabs.setFont(new Font(Font.SANS_SERIF, Font.BOLD, 15));
         tabs.setBackground(new Color(20, 28, 44));
         tabs.setForeground(new Color(232, 236, 244));
+        // One row with scroll arrows instead of two uneven wrapped rows.
+        tabs.setTabLayoutPolicy(JTabbedPane.SCROLL_TAB_LAYOUT);
         tabs.addTab("Goal", scroll(goalText()));
         tabs.addTab("Your Turn", scroll(turnText()));
         tabs.addTab("Gold & Cards", scroll(economyText()));

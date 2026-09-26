@@ -26,8 +26,8 @@ public final class Fx {
     public static final int HIT_FLASH_MS = 350;
     /** Glass-pane shake on capital hits and lethal destruction. */
     public static final int SHAKE_MS = 450;
-    /** "YOUR TURN / ENEMY TURN" banner sweep. */
-    public static final int TURN_BANNER_MS = 1300;
+    /** "YOUR TURN / ENEMY TURN" banner beat: scrim fade+scale in, hold, fade out. */
+    public static final int TURN_BANNER_MS = 1100;
     /** Board badge lifetime (damage/destroyed/blink labels). */
     public static final int BADGE_MS = 2200;
     /** Badge fade in/out at each end of its lifetime. */
@@ -85,5 +85,21 @@ public final class Fx {
     /** Damped spring: overshoots then settles. Snap-backs and landing pops. */
     public static float spring(float value) {
         return (float) (1.0 - Math.exp(-5.0 * value) * Math.cos(9.0 * value));
+    }
+
+    /**
+     * Melee lunge as a fraction of the source-&gt;target distance: anticipation
+     * pull-back, fast ease-in snap forward, a beat of contact at the target,
+     * then an eased recoil back to origin.
+     */
+    public static float meleeLunge(float progress) {
+        if (progress < 0.22f) return -0.14f * easeOutCubic(progress / 0.22f);
+        if (progress < 0.48f) {
+            float t = (progress - 0.22f) / 0.26f;
+            return -0.14f + 0.99f * t * t;
+        }
+        if (progress < 0.62f) return 0.85f;
+        float t = (progress - 0.62f) / 0.38f;
+        return 0.85f * (1f - easeOutCubic(t));
     }
 }

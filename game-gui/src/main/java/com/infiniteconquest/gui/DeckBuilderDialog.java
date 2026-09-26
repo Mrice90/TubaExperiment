@@ -33,6 +33,7 @@ final class DeckBuilderDialog extends JDialog {
         super(owner, "Forge your deck", true);
         this.pool=pool; this.roster=roster; this.store=new DeckBuildStore(pool,roster);
         faction.setSelectedItem(initial.primaryFaction());refreshAllies(initial.allyFaction());
+        ShellUi.styleComboBox(faction);ShellUi.styleComboBox(ally);
         capital=initial.capital();cards.addAll(initial.cards());
         setDefaultCloseOperation(DISPOSE_ON_CLOSE);
         JPanel root=new JPanel(new BorderLayout(14,14));root.setBorder(new EmptyBorder(18,18,18,18));

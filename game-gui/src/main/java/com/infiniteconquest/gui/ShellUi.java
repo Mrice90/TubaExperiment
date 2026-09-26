@@ -167,4 +167,27 @@ final class ShellUi {
         label.setForeground(new Color(168, 182, 200));
         return label;
     }
+
+    /**
+     * Dresses a JComboBox in the game's dark/gold theme instead of the
+     * default Swing gray: dark field, gold hairline border, themed popup.
+     */
+    static void styleComboBox(JComboBox<?> box) {
+        box.setBackground(PANEL_LIGHT);
+        box.setForeground(new Color(232, 236, 244));
+        box.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(120, 102, 48), 1),
+                BorderFactory.createEmptyBorder(2, 6, 2, 6)));
+        box.setRenderer(new DefaultListCellRenderer() {
+            @Override
+            public Component getListCellRendererComponent(JList<?> list, Object value,
+                                                          int index, boolean isSelected, boolean cellHasFocus) {
+                super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+                setBackground(isSelected ? new Color(58, 72, 104) : PANEL_LIGHT);
+                setForeground(isSelected ? Color.WHITE : new Color(232, 236, 244));
+                setBorder(new EmptyBorder(6, 10, 6, 10));
+                return this;
+            }
+        });
+    }
 }

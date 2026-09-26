@@ -127,6 +127,9 @@ final class TitleScreen extends JPanel implements ShellScreen {
         button.addActionListener(action::accept);
         FadePanel wrapper = new FadePanel(button);
         wrapper.setAlignmentX(CENTER_ALIGNMENT);
+        // The column is as wide as the letter-spaced title; without a cap the
+        // buttons stretch under the Zeus/Poseidon art chips at the sides.
+        wrapper.setMaximumSize(new Dimension(560, Integer.MAX_VALUE));
         column.add(wrapper);
         column.add(Box.createVerticalStrut(10));
         menuButtons.add(button);

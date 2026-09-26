@@ -1231,6 +1231,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         c.weightx = 1;
         for(JComboBox<?> box : new JComboBox<?>[]{humanFactionBox,botFactionBox,humanCapitalBox,botCapitalBox,playerOneControl,difficultyBox}){
             box.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,16));box.setPreferredSize(new Dimension(380,36));
+            ShellUi.styleComboBox(box);
         }
         JPanel humanIdentity=new JPanel(new BorderLayout(0,6));humanIdentity.setOpaque(false);humanIdentity.add(humanFactionBox,BorderLayout.NORTH);humanIdentity.add(humanStrategy);
         JPanel botIdentity=new JPanel(new BorderLayout(0,6));botIdentity.setOpaque(false);botIdentity.add(botFactionBox,BorderLayout.NORTH);botIdentity.add(botStrategy);
@@ -1241,6 +1242,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
         addSetupRow(setup,c,2,"CAPITAL PASSIVE",humanPassive,"CAPITAL PASSIVE",botPassive);
         JComboBox<InitiativeCoinPanel.Skin> coinChoice=new JComboBox<>(InitiativeCoinPanel.Skin.values());
         coinChoice.setSelectedItem(coinSkin);coinChoice.setPreferredSize(new Dimension(380,36));coinChoice.setFont(new Font(Font.SANS_SERIF,Font.PLAIN,16));
+        ShellUi.styleComboBox(coinChoice);
         coinChoice.addActionListener(e->coinSkin=(InitiativeCoinPanel.Skin)coinChoice.getSelectedItem());
         addSetupRow(setup,c,3,"PLAY AS",playerOneControl,"INITIATIVE COIN",coinChoice);
         difficultyDescription.setPreferredSize(new Dimension(380,36));
@@ -2311,6 +2313,17 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                     badge(at, "ACTIVATED", "#ffd75c");
                     combatOverlay.animate(at, at, new Color(255, 215, 92), false, AnimationStyle.SPELL);
                 }
+                // Activated abilities can damage things (pingers hit the enemy
+                // Capital). Surface that damage through the floating-number
+                // renderer, like combat and spell damage.
+                for (Map.Entry<UUID, PresentationSnapshot.CardVisual> entry
+                        : resolution.after().cards().entrySet()) {
+                    PresentationSnapshot.CardVisual was = resolution.before().card(entry.getKey());
+                    PresentationSnapshot.CardVisual after = entry.getValue();
+                    if (was == null || after.zone() != Zone.BATTLEFIELD) continue;
+                    int dealt = after.damage() - was.damage();
+                    if (dealt > 0) damageFeedback(after.position(), resolution.before(), dealt, Fx.GENERIC_MS);
+                }
                 SoundEffects.play(SoundEffects.Cue.SPELL);
             }
             default -> { }
@@ -3354,9 +3367,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
     private final class CombatOverlay extends JComponent {
         // Per-frame allocation hoists: these are created once and reused every
         // animation tick instead of being rebuilt ~60 times a second.
-        private static final Font BANNER_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 46);
+        private static final Font BANNER_FONT = new Font(Font.SANS_SERIF, Font.BOLD, 34);
         private static final Color BANNER_SHADOW = new Color(0, 0, 0, 170);
         private static final Color DAMAGE_COLOR = new Color(255, 122, 105);
+        private static final Color DAMAGE_OUTLINE = new Color(12, 8, 6);
         private static final Color DESTROY_EMBER = new Color(255, 140, 90);
         private static final BasicStroke CARD_OUTLINE = new BasicStroke(2f);
         private static final BasicStroke TRAIL_THIN = new BasicStroke(4f,
@@ -3513,7 +3527,7 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             repaint();
         }
 
-        /** Full-board turn banner ("YOUR TURN" etc.). Independent of the animation queue. */
+        /** "YOUR TURN / ENEMY TURN" banner: dark scrim, fade+scale entrance, fade-out exit. */
         void showBanner(String text, Color color) {
             if (Fx.reduced(gameSettings)) return;
             if (!SwingUtilities.isEventDispatchThread()) {
@@ -3557,10 +3571,10 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             // Rising number: pops in, drifts up, holds so it can be read, then
             // eases out on the fade instead of snapping away.
             float rise = Fx.easeOutCubic(Math.min(1f, progress * 1.15f));
-            float pop = 1f + 0.35f * Math.max(0f, 1f - progress * 5f);
+            float pop = 1f + 0.5f * Math.max(0f, 1f - progress * 4f);
             float alpha = progress < 0.55f ? 1f
                     : 1f - Fx.easeInOutQuad(Math.min(1f, (progress - 0.55f) / 0.45f));
-            int size = Math.max(12, Math.round(30 * pop));
+            int size = Math.max(16, Math.round(44 * pop));
             if (damageFont == null || damageFontSize != size) {
                 damageFont = new Font(Font.SANS_SERIF, Font.BOLD, size);
                 damageFontSize = size;
@@ -3569,27 +3583,41 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
             FontMetrics metrics = g.getFontMetrics();
             int width = metrics.stringWidth(text);
             int x = target.x - width / 2;
-            int y = Math.round(target.y - 46 * rise);
-            g.setComposite(AlphaComposite.SrcOver.derive(0.75f * alpha));
-            g.setColor(Color.BLACK);
-            g.drawString(text, x + 2, y + 2);
+            int y = Math.round(target.y - 52 * rise);
+            // Dark outline so the number reads over any card art behind it.
             g.setComposite(AlphaComposite.SrcOver.derive(alpha));
+            g.setColor(DAMAGE_OUTLINE);
+            int outline = Math.max(2, size / 14);
+            for (int dx = -outline; dx <= outline; dx += outline)
+                for (int dy = -outline; dy <= outline; dy += outline)
+                    if (dx != 0 || dy != 0) g.drawString(text, x + dx, y + dy);
             g.setColor(DAMAGE_COLOR);
             g.drawString(text, x, y);
         }
 
-        /** "YOUR TURN" style banner sweeping across the board. */
+        /** Turn banner: a dark scrim dims the board, then smaller centered type
+         *  fades and scales in, holds, and fades out. Never pasted over the
+         *  board, never sliding across it. */
         private void drawBanner(Graphics2D g, long now) {
             float total = Fx.nanos(Fx.TURN_BANNER_MS);
             float bp = Math.min(1f, (now - bannerStartedAt) / total);
-            g.setFont(BANNER_FONT);
+            // Entrance: fade in with a gentle scale-up over the first quarter.
+            float entrance = Fx.easeOutCubic(Math.min(1f, bp / 0.25f));
+            // Exit: fade out over the final third.
+            float exit = bp < 0.67f ? 1f
+                    : 1f - Fx.easeInOutQuad(Math.min(1f, (bp - 0.67f) / 0.33f));
+            float alpha = Math.min(entrance, exit);
+            if (alpha <= 0f) return;
+            // Dim the board behind the banner so it reads as a moment, not a paste-over.
+            g.setComposite(AlphaComposite.SrcOver.derive(0.55f * alpha));
+            g.setColor(Color.BLACK);
+            g.fillRect(0, 0, getWidth(), getHeight());
+            float scale = 0.88f + 0.12f * entrance;
+            g.setFont(BANNER_FONT.deriveFont(BANNER_FONT.getSize2D() * scale));
             FontMetrics metrics = g.getFontMetrics();
             int textWidth = metrics.stringWidth(bannerText);
-            float sweep = Fx.easeInOutQuad(Math.min(1f, bp / 0.45f));
-            int x = Math.round(-textWidth + (getWidth() / 2f - textWidth / 2f + textWidth) * sweep);
-            int y = getHeight() / 2;
-            float alpha = bp < 0.70f ? 1f
-                    : 1f - Fx.easeInOutQuad(Math.min(1f, (bp - 0.70f) / 0.30f));
+            int x = (getWidth() - textWidth) / 2;
+            int y = getHeight() / 2 + (metrics.getAscent() - metrics.getDescent()) / 2;
             g.setComposite(AlphaComposite.SrcOver.derive(alpha));
             g.setColor(BANNER_SHADOW);
             g.drawString(bannerText, x + 3, y + 3);
@@ -3690,15 +3718,26 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                     : progress < .72f ? 1f : Math.max(0f, (1f - progress) / .28f);
             g.setComposite(AlphaComposite.SrcOver.derive(.88f * fade));
             g.setColor(animation.color());
+            // Melee strikes lunge out and recoil; board moves ease in-out with a
+            // hop; everything else travels one way.
+            boolean orbTravel = animation.cardImage() == null;
+            AnimationStyle style = animation.style();
             float travel = cardDestroy ? 0f
-                    : cardLunge ? (float) Math.sin(Math.PI * progress) * .72f
+                    : style == AnimationStyle.MELEE ? Fx.meleeLunge(progress)
+                    : style == AnimationStyle.MOVE ? Fx.easeInOutQuad(progress)
                     : animation.spring() ? Fx.spring(progress)
-                    : Fx.easeOutCubic(animation.cardImage() == null ? Math.min(1f, progress / .72f) : progress);
+                    : Fx.easeOutCubic(orbTravel ? Math.min(1f, progress / .72f) : progress);
             int orbX = Math.round(source.x + (target.x - source.x) * travel);
             int orbY = Math.round(source.y + (target.y - source.y) * travel);
+            if (orbTravel && style == AnimationStyle.MOVE) {
+                // Hop arc: the piece lifts mid-move instead of sliding flat.
+                orbY -= Math.round(Math.sin(Math.PI * Math.min(1f, progress)) * 22);
+            }
             if (animation.cardImage() != null) {
                 // Play flights arc higher so the throw reads clearly across the board.
+                // Board moves get a visible hop arc instead of a flat slide.
                 int arc = playFlight ? Math.min(72, Math.abs(target.x - source.x) / 5 + 26)
+                        : style == AnimationStyle.MOVE ? Math.min(34, Math.abs(target.x - source.x) / 8 + 14)
                         : Math.min(22, Math.abs(target.x-source.x)/12);
                 float inverse = 1f - travel;
                 orbX = Math.round(inverse * inverse * source.x
@@ -3754,10 +3793,28 @@ public final class InfiniteConquestGui extends JFrame implements NetClient.Liste
                     VisualEffects.drawInto(fx, VisualEffects.Sprite.LIGHT, orbX, orbY,
                             Math.max(width, height), animation.color(), .36f, progress);
                 }
-                if (cardLunge && progress > .34f && progress < .68f) {
-                    float strikeAlpha = 1f - Math.abs(progress - .51f) / .17f;
+                if (cardLunge && progress > .40f && progress < .78f) {
+                    float strikeAlpha = 1f - Math.abs(progress - .59f) / .19f;
                     VisualEffects.drawInto(fx, VisualEffects.Sprite.SLASH, target.x, target.y, 104,
                             Color.WHITE, Math.max(0f, strikeAlpha), Math.atan2(target.y - source.y, target.x - source.x));
+                    // White/gold impact flash blooming on the contact hex through the strike beat.
+                    float flashT = 1f - Math.abs(progress - .55f) / .23f;
+                    VisualEffects.drawInto(fx, VisualEffects.Sprite.LIGHT, target.x, target.y, 132,
+                            new Color(255, 244, 210), Math.max(0f, .9f * flashT), progress * 2.0);
+                }
+                if (cardDestroy) {
+                    // Red flash washing over the hex while the card dissolves.
+                    float flashWindow = 0.45f;
+                    if (progress < flashWindow && targetButton != null) {
+                        float flashAlpha = (1f - Fx.easeOutCubic(progress / flashWindow)) * 0.6f;
+                        Rectangle tile = SwingUtilities.convertRectangle(
+                                targetButton, targetButton.getBounds(), this);
+                        g.setComposite(AlphaComposite.SrcOver.derive(flashAlpha));
+                        g.setColor(new Color(255, 70, 60));
+                        g.fillRoundRect(tile.x + 4, tile.y + 4,
+                                Math.max(8, tile.width - 8), Math.max(8, tile.height - 8), 18, 18);
+                        g.setComposite(AlphaComposite.SrcOver.derive(Math.max(0f, fade)));
+                    }
                 }
                 if (cardDestroy && Fx.particles(gameSettings)) {
                     // Textured debris chunks instead of flat circles.
