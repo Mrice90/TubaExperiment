@@ -326,18 +326,51 @@ final class UpdateApplier {
         System.exit(0);
     }
 
+    /**
+     * Exact command used to launch the NSIS installer elevated. Pure, for tests.
+     * ProcessBuilder maps to CreateProcess, which cannot show a UAC prompt —
+     * launching an installer that needs admin rights fails with
+     * "CreateProcess error=740". PowerShell's Start-Process with -Verb RunAs
+     * goes through ShellExecute, which raises the Windows permission prompt.
+     * The setup path is single-quoted for PowerShell (embedded quotes doubled)
+     * so temp dirs containing spaces or apostrophes survive verbatim.
+     */
+    static List<String> installerRunAsCommand(Path setupExe) {
+        String quoted = "'" + setupExe.toString().replace("'", "''") + "'";
+        return List.of("powershell.exe", "-NoProfile", "-WindowStyle", "Hidden",
+                "-ExecutionPolicy", "Bypass", "-Command",
+                "Start-Process -FilePath " + quoted + " -Verb RunAs");
+    }
+
     /** Hands off to the NSIS installer and exits so files are free to replace. */
     void handoffToInstaller(Path setupExe) throws IOException {
         Path root = UpdateChecker.installRoot();
+        List<String> command = installerRunAsCommand(setupExe);
         appendUpdateLog(root, "Handing off to installer (build " + GameVersion.VERSION
-                + "): command=[" + setupExe + "]"
-                + " cwd=" + Path.of(System.getProperty("user.dir")).toAbsolutePath());
+                + "): elevated launch via Start-Process -Verb RunAs");
+        Process child;
         try {
-            Process child = new ProcessBuilder(setupExe.toString()).start();
-            appendUpdateLog(root, "Installer spawned, pid=" + child.pid());
+            child = new ProcessBuilder(command).start();
         } catch (IOException e) {
-            appendUpdateLog(root, "ERROR spawning installer: " + e);
-            throw e;
+            appendUpdateLog(root, "ERROR spawning elevated installer: " + e);
+            throw new IOException("Could not start the installer: " + e.getMessage()
+                    + ". Download the new version manually from the release page.", e);
+        }
+        // Start-Process blocks on the UAC prompt: if PowerShell reports
+        // failure (e.g. elevation declined), stay alive and say so instead of
+        // quitting into a state where no upgrade happens.
+        try {
+            if (child.waitFor(90, java.util.concurrent.TimeUnit.SECONDS)
+                    && child.exitValue() != 0) {
+                String err = new String(child.getErrorStream().readAllBytes()).trim();
+                appendUpdateLog(root, "Elevated installer launch failed, exit="
+                        + child.exitValue() + (err.isEmpty() ? "" : ": " + err));
+                throw new IOException("The installer needs administrator permission to upgrade "
+                        + "the Program Files install. Approve the Windows permission prompt, "
+                        + "or download the new version manually from the release page.");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
         System.exit(0);
     }

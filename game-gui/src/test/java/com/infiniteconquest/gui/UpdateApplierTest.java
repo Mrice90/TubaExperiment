@@ -40,6 +40,30 @@ class UpdateApplierTest {
     }
 
     @Test
+    void installerRunAsCommandElevatesThroughPowerShell() {
+        // Installed builds (Program Files) need admin rights; CreateProcess
+        // cannot raise a UAC prompt (error 740), so the handoff must go
+        // through ShellExecute's runas verb. Spaces in the temp path must
+        // survive: the path is single-quoted for PowerShell.
+        Path setup = tmp.resolve("Some Temp Dir").resolve("InfiniteConquest-Setup-1.exe");
+        List<String> cmd = UpdateApplier.installerRunAsCommand(setup);
+        assertEquals("powershell.exe", cmd.get(0));
+        assertEquals("-Command", cmd.get(6));
+        String script = cmd.get(cmd.size() - 1);
+        assertTrue(script.contains("-Verb RunAs"), "must request elevation: " + script);
+        assertTrue(script.contains("'" + setup + "'"),
+                "setup path must be quoted for spaces: " + script);
+    }
+
+    @Test
+    void installerRunAsCommandDoublesEmbeddedQuotes() {
+        Path setup = tmp.resolve("o'brien").resolve("setup.exe");
+        String script = UpdateApplier.installerRunAsCommand(setup).get(7);
+        assertTrue(script.contains("o''brien"),
+                "PowerShell single-quotes escape as doubled quotes: " + script);
+    }
+
+    @Test
     void updateLogSitsNextToPendingDir() {
         Path root = tmp.resolve("InfiniteConquest");
         Path log = UpdateApplier.updateLogPath(root);
