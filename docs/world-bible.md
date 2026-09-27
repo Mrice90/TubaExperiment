@@ -122,7 +122,9 @@ Notable servants of the Storm:
 - **Hera Protocol Warden** — an imperial guardian enforcing Olympian command
   law. *Hera herself never takes the field* — she is the law behind the throne,
   the protocol Zeus himself must obey. Her wardens are a reminder that even
-  the Skyfather answers to something.
+  the Skyfather answers to something. There is a thing about Hera the court
+  does not say aloud: she is **Cronos's daughter**. The Protocol that binds
+  Zeus is administered by Titan royalty. Remember this.
 - **Iris Signal Runner** — prism-linked couriers carrying battlefield commands
   on light itself. The grid's nervous system.
 - **Stormgate Adept** — spatial technicians stepping through ionized gates.
@@ -204,17 +206,29 @@ Fantasy: war cults, crimson training yards, endless conflict. The faction of
 attack buffs, expendable attackers, and self-sacrifice — it pays HP and burns
 its own permanents to deal damage.
 
-Ares is the war's *beneficiary*. Every battle fought with his doctrines
-proves his creed: that conflict is the only honest god. Zeus offers him the
-vanguard of the storm — first strike, first glory. Poseidon offers him the
-grinding war of attrition his cults were built for. Ares takes meetings with
-both, accepts gifts from both, and commits to neither, because **a god of war
-does not end wars**. His price is rumored to be simple: whichever side
-promises the war never ends gets his legions. Neither side will say it aloud.
-Both sides have drafted the speech.
+Ares **adores his father** — and it is eating him alive. He is Zeus's son,
+and he has spent his existence being measured against the *other* children:
+Athena the wise, the favorite, the one the academies sing about; and
+**Heracles**, the legend, the hero whose name outshines whole armies. Ares
+has the chip on his shoulder to prove it, and he has the war cults to prove
+the chip.
 
-Story role: the arms both sides want pointed at the enemy, and the one
-faction that might prefer the war to *continue* rather than be won.
+He is, of the four unaligned, the one Zeus can win **easiest** — not with
+bribes but with *war itself*. Give Ares the vanguard, name him the storm's
+spearhead, let him prove against Athena's perfect formations and Heracles's
+legend that he is the truest son of Zeus, and his legions march tomorrow.
+Poseidon courts him with promises of the grinding war of attrition, and Ares
+listens the way a hungry wolf listens — but his heart points skyward.
+
+He has one other loyalty, and it is fierce: **Hera**. Mention Heracles, and
+the war god and the queen speak with one voice — and it is hatred. Hera's
+Protocol and Ares's legions agree on exactly one thing: that the hero's
+legend was stolen from them both. It is the only table where those two ever
+sit together.
+
+Story role: the son desperate to prove himself; Zeus's easiest recruit and
+Hera's occasional ally. His entry (part 2) should feel like a dam breaking —
+all that stored resentment, finally pointed at an enemy.
 
 ### ATHENA — Discipline (the academies)
 
@@ -222,20 +236,29 @@ Fantasy: academies, data courts, the Aegis. Measured, mutually supporting —
 formations, tutoring, information advantage. The faction that wins by knowing
 more and standing together.
 
-Athena has declared herself **arbiter**. Her data courts recognize neither
-brother's claim to the sovereign seat until one proves legitimate rule — and
-her definition of legitimacy is a curriculum neither war plan survives. Zeus
-courts her for *legitimacy*: an Athenian charter would make his Skyfather
-claim law. Poseidon courts her for *adjudication*: he wants the courts to
-rule the drowned lands his by right of reclamation.
+Do not mistake her discipline for neutrality. Athena is **Zeus's daughter,
+and she has never hidden whose she is.** Her academies teach the legitimacy
+of the Skyfather's rule as first principle; her data courts ruled quietly,
+years ago, that the sovereign seat is his. She is a daddy's girl with a
+phalanx: she drills her academies in perfect formation for the day he calls —
+and drills them harder every year he doesn't, because the only thing sharper
+than her spears is her need to be *worthy* of him.
 
-She answers both with the same price: **submit the war to arbitration, and
-she will choose the Pantheon's ruler.** Neither brother will. So her owlwatch
-towers observe, her academies drill, and her phalanxes wait in perfect
-formation — the most disciplined army on the board, pointed at no one, which
-is exactly what makes everyone nervous.
+Zeus does not court Athena. He doesn't have to. She is the ally he has
+already won and hasn't yet deployed — an open secret both courts maintain out
+of pride: his, that he won't spend his daughter cheaply; hers, that she won't
+march until he asks properly. Poseidon's embassies still come bearing
+beautiful arguments about arbitration and the drowned lands. She receives
+them politely, in halls hung with her father's lightning, and sends them home
+empty-handed.
 
-Story role: the judge neither side can bribe and neither dares to fight.
+Her price was never arbitration. It is **recognition**: to be named, before
+the Pantheon, as Zeus's finest child — the general of his war, not merely its
+scholar.
+
+Story role: the daughter who already chose her father; the weapon Zeus hasn't
+drawn yet. When she enters (part 2), the war's arithmetic breaks toward the
+storm.
 
 ### HADES — The Underworld (the sealed vault)
 
@@ -283,7 +306,30 @@ to the machines themselves.
 
 ---
 
-## 5. Dramatis Personae (from the cards)
+## 5. The Story in Three Parts
+
+The bible is written for a story told in three parts. The current game is
+part 1.
+
+**Part 1 — Storm vs. Tide (now).** Zeus and Poseidon at war; four factions
+unaligned and courted; the seals holding; the Titans a rumor. This is the
+alpha.
+
+**Part 2 — The Four Enter.** Ares, Athena, Hades, and Hephaestus join the war
+— each arrival a plot event with a named price (see section 4). Athena takes
+the field for her father. Ares gets his vanguard and his proving ground.
+Hades's ledgers come due. Hephaestus sells the Talos line. The war goes
+pantheon-wide.
+
+**Part 3 — The Seals Break.** Heracles frees Prometheus. The keystone seal
+fails and the cascade begins: the other Titans start waking, **Cronos
+second**. Hera — Cronos's daughter, Zeus's queen, the Protocol itself —
+**sides with her father immediately**, and her defection has one purpose: to
+speed **her mother Rhea's** waking. The Storm-Tide war becomes a war for the
+waking world, and every alliance in this bible gets tested against the oldest
+loyalty of all: blood.
+
+## 6. Dramatis Personae (from the cards)
 
 Figures who may be named in flavor text, campaigns, and trailers. Do not
 promote unnamed card characters to this list without a story reason.
@@ -292,9 +338,28 @@ promote unnamed card characters to this list without a story reason.
   from the Cloud Throne. Never depicted as a unit — he is the faction.
 - **The Skyfather Archon** — Zeus's senior command intelligence; his voice
   on the battlefield.
-- **Hera** — never takes the field. She is the Protocol: Olympian command
-  law, enforced by her Wardens. Even Zeus answers to her. (A power, not a
-  faction — do not make her a seventh faction.)
+- **Hera** — never takes the field in parts 1–2. She is the Protocol:
+  Olympian command law, enforced by her Wardens. Even Zeus answers to her.
+  She is also **the daughter of Cronos and Rhea** — Titan royalty wearing
+  the queen's crown, administering the laws of the regime that overthrew her
+  parents. When the seals break (part 3), she will have to choose. The bible
+  already knows her answer: *her father, and her mother's waking.*
+- **Athena** — Zeus's daughter, commander of the academies. Devoted to her
+  father; the weapon he hasn't drawn yet.
+- **Ares** — Zeus's son, god of the proving grounds. Adores his father,
+  resents his siblings, hates Heracles with a passion he shares only with
+  Hera.
+- **Heracles** — Zeus's son, the legend. The hero whose name outshines
+  armies — and whom Hera and Ares hate with a unified passion. A free agent
+  in parts 1–2; in part 3, **he frees Prometheus**, and the cascade begins.
+- **Prometheus** — the sealed Titan, the keystone. His binding is the
+  linchpin of the whole seal-system; when Heracles breaks it, the other seals
+  begin to fail.
+- **Cronos** — the second freed. Hera's father. The old king of the
+  world-engines, waking.
+- **Rhea** — Hera's mother, still sleeping. Hera's defection has one purpose:
+  to speed her mother's waking. Whatever wakes with Rhea is the story after
+  part 3.
 - **Poseidon** — the Ocean God. Claims the drowned world; rules from the
   Atlantis Nexus. Never depicted as a unit — he is the faction.
 - **The Atlantis Tide Sovereign** — Poseidon's royal guardian, armored in
@@ -311,40 +376,46 @@ promote unnamed card characters to this list without a story reason.
 
 ---
 
-## 6. Story Hooks (approved future threads)
+## 7. Story Hooks (approved future threads)
 
 These are load-bearing mysteries. Future sets, DLC factions, and campaigns
 may develop them; nothing may resolve them without a design review.
 
 1. **The seals are under strain.** The war's escalating energies disturb the
    old bindings. Hades's ledgers show anomalies. (Titan hook.)
-2. **Hera's Protocol has a contingency.** The Wardens enforce command law —
-   but whose commands, if Zeus falls? (Zeus-court hook.)
+2. **Hera's maiden name is Cronos.** The Protocol is administered by Titan
+   royalty — and part 3 already knows her answer: her father, and her
+   mother's waking. (Zeus-court hook.)
 3. **The Talos line is still unsold.** Hephaestus watches the field data.
    (Forge hook.)
 4. **Athena's arbitration stands open.** The price of her entry is the war's
    end by judgment, not conquest. (Discipline hook.)
-5. **Ares's price is the war itself.** Someone will eventually say it aloud.
-   (War hook.)
+5. **Ares's price is glory.** The vanguard, the recognition, the chance to
+   prove himself Zeus's truest son against Athena's perfection and
+   Heracles's legend. (War hook.)
 6. **The Drowned Archive keeps surfacing.** Sunken records, Titan schematics,
    things best left filed. (Tide hook.)
-7. **Four factions, four DLCs.** Ares, Athena, Hades, and Hephaestus each
-   enter the game as their story breaks — their arrival should feel like a
-   *plot event*, not a content drop.
+7. **Two sets of four.** Part 2: Ares, Athena, Hades, and Hephaestus — each
+   arrival a plot event, not a content drop. Part 3: the second set of four
+   — Hera, Heracles, Prometheus, Cronos — and the breaking of the seals.
+8. **Rhea sleeps.** Hera's whole defection is aimed at waking her mother.
+   Whatever wakes with Rhea is the story after part 3.
 
 ---
 
-## 7. Consistency Rules for Future Cards
+## 8. Consistency Rules for Future Cards
 
 1. **Names carry history.** New cards should reference the world: districts,
    engines, offices, and veterans of the war. A name with no story is a
    missed opportunity.
 2. **Descriptions are canon.** The `description` field on every card is
    in-world text. It must not contradict this bible.
-3. **The six stay six.** No seventh faction, no Hera faction, no Titan
-   faction — unless this document is revised by design review.
-4. **The Titans stay sealed.** No Titan units, no Titan POV, no opened seals
-   — until the story says otherwise, loudly and deliberately.
+3. **The pantheon grows by parts.** Part 1: six factions. Part 2 adds Ares,
+   Athena, Hades, Hephaestus. Part 3 adds Hera, Heracles, Prometheus,
+   Cronos. No other factions unless this document is revised by design
+   review.
+4. **The Titans stay sealed through parts 1–2.** Part 3 is the breaking —
+   and it must be played as the catastrophe it is, not a content drop.
 5. **Tech, not marble.** Neo-futurist Greco-tech in every brief: data
    streams, pressure seals, command protocols, bioframes. Togas never.
 6. **Capitals are the war.** Every faction's story bends toward its seats
@@ -352,7 +423,14 @@ may develop them; nothing may resolve them without a design review.
 7. **The four unaligned have prices.** Any story in which Ares, Athena,
    Hades, or Hephaestus joins the war must name the price they were paid —
    and it must match section 4.
+8. **Bloodlines are load-bearing.** Athena's devotion to Zeus, Ares's
+   rivalry with Athena and Heracles, Hera and Ares's shared hatred of
+   Heracles, Hera's Titan parentage — these are not flavor, they are plot.
+   New cards must not contradict them.
 
 ---
 
-*Ratified 2026-09-27. Amendments by design review with Mathew.*
+*Ratified 2026-09-27. Revised 2026-09-27 per Mathew's direction: Athena as
+Zeus's devoted daughter, Ares's chip and Hera alliance, the three-part
+structure, and the second set of four (Hera, Heracles, Prometheus, Cronos).
+Amendments by design review with Mathew.*
